@@ -1,0 +1,376 @@
+{
+  "waktu": "2026-11-20T12:31:30.877Z",
+  "index": "D:\\PROJECTS\\planforge\\index.html",
+  "lulus": 76,
+  "gagal": 0,
+  "errors": [],
+  "hasil": [
+    {
+      "nama": "halaman index.html selesai dimuat lewat file://",
+      "lulus": true
+    },
+    {
+      "nama": "kontrol planning utama ada (idea/provider/apiKey/runAll)",
+      "lulus": true,
+      "detail": "{\"idea\":true,\"provider\":true,\"apiKey\":true,\"baseUrl\":true,\"runAll\":true,\"out\":true,\"connect\":false,\"cekKredit\":true,\"autoTambal\":true,\"panduan\":true,\"profiles\":[\"openrouter\",\"custom\",\"ollama\",\"demo\"],\"demoTasks\":9}"
+    },
+    {
+      "nama": "DEMO memuat task lewat planTaskList",
+      "lulus": true,
+      "detail": "9 task"
+    },
+    {
+      "nama": "kontrol baru: cek kredit, tambal opsional, tab Panduan",
+      "lulus": true,
+      "detail": "{\"k\":true,\"a\":true,\"p\":true}"
+    },
+    {
+      "nama": "rubrik rencana contoh lolos gerbang kualitas",
+      "lulus": true,
+      "detail": "{\"siap\":true,\"skor\":100,\"label\":\"Siap dikirim (lingkungan belum diverifikasi)\",\"error\":[]}"
+    },
+    {
+      "nama": "tab Panduan memuat langkah bernomor + kode error 402/429",
+      "lulus": true,
+      "detail": "Panduan pakai PlanForge (dari nol)\nDua kunci yang berbeda: kunci planning (API k"
+    },
+    {
+      "nama": "gerbang kualitas menolak rencana tanpa T-001 scaffold",
+      "lulus": true,
+      "detail": "{\"siap\":false,\"skor\":60,\"pertama\":\"task pertama ber-ID T-002, bukan T-001 — task scaffold biasanya hilang\"}"
+    },
+    {
+      "nama": "lampu 'perlu sinkron' nyala hanya saat sidik jari rencana berubah",
+      "lulus": true,
+      "detail": "{\"beda\":true,\"sama\":false}"
+    },
+    {
+      "nama": "kunci openrouter tersimpan scoped ke provider+baseUrl",
+      "lulus": true,
+      "detail": "persist=true"
+    },
+    {
+      "nama": "pindah provider TIDAK membocorkan kunci openrouter",
+      "lulus": true,
+      "detail": "field custom=''"
+    },
+    {
+      "nama": "balik ke openrouter memulihkan kunci yang benar",
+      "lulus": true
+    },
+    {
+      "nama": "planBundleJson menanam sidik jari == freshStateJson == planFingerprint",
+      "lulus": true,
+      "detail": "339e9d89"
+    },
+    {
+      "nama": "sidik jari berbentuk 8 hex dan rev mulai 0",
+      "lulus": true
+    },
+    {
+      "nama": "mengubah isi task mengubah sidik jari (rencana baru terdeteksi)",
+      "lulus": true
+    },
+    {
+      "nama": "task UI tanpa behavior DITOLAK (tidak boleh dicap selesai)",
+      "lulus": true,
+      "detail": "[\"task UI tanpa behavior — task ini menyentuh UI (src/menu.html) tapi tidak punya `behavior`. Worker tidak punya cara membuktikan tampilannya, jadi task tidak boleh dicap selesai. Tambahkan behavior berisi url + checks (mis. canvasNotBlank pada selector grafik) di plan.json — itu pekerjaan manusia/audit, bukan agen.\"]"
+    },
+    {
+      "nama": "task UI dengan behavior sah diterima",
+      "lulus": true,
+      "detail": "[]"
+    },
+    {
+      "nama": "task backend tanpa behavior dilewati (bukan UI)",
+      "lulus": true
+    },
+    {
+      "nama": "panel Connect muncul sesudah draw(runner)",
+      "lulus": true
+    },
+    {
+      "nama": "Connect golden path: cek -> konfirmasi -> tulis 6 file",
+      "lulus": true,
+      "detail": "{\"k\":\"konfirmasi\",\"a\":\"selesai\",\"n\":6}"
+    },
+    {
+      "nama": "panel Connect menandai koneksi BELUM terverifikasi",
+      "lulus": true
+    },
+    {
+      "nama": "panel Connect menyuruh panggil plan_status dulu",
+      "lulus": true
+    },
+    {
+      "nama": "panel Connect menyuruh STOP kalau folder berbeda",
+      "lulus": true
+    },
+    {
+      "nama": "generic: Connect selesai menulis",
+      "lulus": true,
+      "detail": "selesai"
+    },
+    {
+      "nama": "panel universal menampilkan judul Jalur universal",
+      "lulus": true
+    },
+    {
+      "nama": "panel universal menampilkan perintah node worker.mjs mcp --dir",
+      "lulus": true
+    },
+    {
+      "nama": "panel universal menyediakan tiga dialect (mcpServers/servers/mcp.servers)",
+      "lulus": true,
+      "detail": "{\"ms\":true,\"sv\":true,\"mc\":true}"
+    },
+    {
+      "nama": "ada tombol salin perintah universal",
+      "lulus": true
+    },
+    {
+      "nama": "bacaProgres membaca state.json folder: 4 task, 1 selesai, lastTask T-001",
+      "lulus": true,
+      "detail": "{\"t\":4,\"d\":1,\"l\":\"T-001\"}"
+    },
+    {
+      "nama": "status per task terbaca benar (selesai/sedang/terkendala/belum mulai)",
+      "lulus": true,
+      "detail": "[\"selesai\",\"sedang\",\"terkendala\",\"belum mulai\"]"
+    },
+    {
+      "nama": "judul task diambil dari plan.json FOLDER, bukan rencana browser",
+      "lulus": true,
+      "detail": "[\"Scaffold halaman\",\"Pasang font\",\"Kartu bento\",\"Responsif\"]"
+    },
+    {
+      "nama": "panel progres live menampilkan checklist + tombol Refresh",
+      "lulus": true,
+      "detail": "{\"tombol\":true,\"teks\":true,\"judul\":true}"
+    },
+    {
+      "nama": "task terkendala tampil dengan alasannya (tidak hilang jadi belum mulai)",
+      "lulus": true
+    },
+    {
+      "nama": "folder tanpa state.json -> pesan error jujur, bukan checklist palsu",
+      "lulus": true,
+      "detail": "state.json belum ada di D:/X — agen belum mulai bekerja, atau folder yang di-Connect bukan folder proyek ini."
+    },
+    {
+      "nama": "task list terpotong pulih sendiri: ulang sekali, tidak gagal",
+      "lulus": true,
+      "detail": "{\"ok\":true,\"n\":2,\"err\":\"\"}"
+    },
+    {
+      "nama": "ulangan membawa instruksi LEBIH RINGKAS",
+      "lulus": true,
+      "detail": "[{\"stage\":\"tasks\",\"ringkas\":false},{\"stage\":\"tasks\",\"ringkas\":true}]"
+    },
+    {
+      "nama": "audit (tahap 5) terpotong pulih sendiri: ulang sekali lebih ringkas",
+      "lulus": true,
+      "detail": "{\"ok\":true,\"n\":2,\"err\":\"\"}"
+    },
+    {
+      "nama": "ulangan audit membawa instruksi LEBIH RINGKAS",
+      "lulus": true,
+      "detail": "[{\"stage\":\"audit\",\"ringkas\":false},{\"stage\":\"audit\",\"ringkas\":true}]"
+    },
+    {
+      "nama": "kuesioner render 5 slot + counter + tombol kirim/lewati",
+      "lulus": true,
+      "detail": "{\"jumlah\":5,\"counter\":true,\"kirim\":true,\"lewati\":true,\"slot\":[\"persona\",\"aha\",\"mvp_features\",\"value_prop\",\"retention\"]}"
+    },
+    {
+      "nama": "slot berurut persona/aha/mvp_features/value_prop/retention",
+      "lulus": true,
+      "detail": "[\"persona\",\"aha\",\"mvp_features\",\"value_prop\",\"retention\"]"
+    },
+    {
+      "nama": "counter hidup: 3 terjawab sesudah 3 pertanyaan diisi",
+      "lulus": true,
+      "detail": "3/5 terjawab"
+    },
+    {
+      "nama": "kirim mengumpulkan jawaban text/single/multi dengan benar",
+      "lulus": true,
+      "detail": "{\"text\":true,\"single\":true,\"multi\":true,\"kosong\":true}"
+    },
+    {
+      "nama": "'Lewati semua' menghasilkan 5 jawaban kosong (pakai tebakan model)",
+      "lulus": true,
+      "detail": "{\"semuaKosong\":true,\"n\":5}"
+    },
+    {
+      "nama": "Lewati per pertanyaan mengosongkan jawaban + menonaktifkan input",
+      "lulus": true,
+      "detail": "{\"skipKosong\":true,\"otherTertangkap\":true,\"disabled\":true}"
+    },
+    {
+      "nama": "opsi 'Lainnya' menangkap teks bebas user",
+      "lulus": true,
+      "detail": "{\"skipKosong\":true,\"otherTertangkap\":true,\"disabled\":true}"
+    },
+    {
+      "nama": "Stop saat kuesioner terbuka membatalkan dengan AbortError (bukan menggantung)",
+      "lulus": true,
+      "detail": "{\"nama\":\"AbortError\"}"
+    },
+    {
+      "nama": "runAll berhenti di kuesioner setelah clarify lalu lanjut PRD sesudah dijawab",
+      "lulus": true,
+      "detail": "{\"muncul\":true,\"prd\":true,\"err\":\"\",\"panggilan\":[\"clarify\",\"prd\",\"roadmap\",\"tasks\",\"tasks\",\"tasks\",\"tasks\"]}"
+    },
+    {
+      "nama": "jawaban user dari kuesioner masuk ke brief clarify (jadi sumber PRD)",
+      "lulus": true,
+      "detail": "{\"ua\":true,\"j\":\"Pemilik warung, buku tulis\"}"
+    },
+    {
+      "nama": "kuesioner gabungan render 5 slot + 2 slot bebas = 7",
+      "lulus": true,
+      "detail": "{\"jumlah\":7,\"pill\":[\"persona\",\"aha\",\"mvp_features\",\"value_prop\",\"retention\",\"AI bingung\",\"AI bingung\"],\"why\":true}"
+    },
+    {
+      "nama": "pill slot bebas berlabel 'AI bingung' + alasan why tampil",
+      "lulus": true,
+      "detail": "[\"persona\",\"aha\",\"mvp_features\",\"value_prop\",\"retention\",\"AI bingung\",\"AI bingung\"]"
+    },
+    {
+      "nama": "counter hidup menghitung total gabungan (2/7)",
+      "lulus": true,
+      "detail": "2/7 terjawab"
+    },
+    {
+      "nama": "jawaban slot bebas A- terkumpul benar",
+      "lulus": true,
+      "detail": "{\"a1\":\"cukup tunai\",\"a2\":\"satu\",\"total\":7}"
+    },
+    {
+      "nama": "lewati semua mengosongkan 5 slot + slot bebas (6)",
+      "lulus": true,
+      "detail": "{\"n\":6,\"semuaKosong\":true}"
+    },
+    {
+      "nama": "select starter ada di GUI dengan opsi nextjs-fullstack + kosong",
+      "lulus": true,
+      "detail": "[\"\",\"nextjs-fullstack\"]"
+    },
+    {
+      "nama": "readCfg membaca pilihan starter; prompt prd ikut mengunci stack",
+      "lulus": true,
+      "detail": "{\"cfg\":\"nextjs-fullstack\",\"terkunci\":true}"
+    },
+    {
+      "nama": "bundleFiles ZIP menyertakan fondasi starter di bawah starter/ (package.json + cookie.js)",
+      "lulus": true,
+      "detail": "{\"n\":27,\"pkg\":true,\"cookie\":true}"
+    },
+    {
+      "nama": "ZIP bundel bertanda tangan PK sah walau memuat starter",
+      "lulus": true,
+      "detail": "pk=true"
+    },
+    {
+      "nama": "mematikan starter menghapus fondasi dari bundel + kunci dari prompt",
+      "lulus": true,
+      "detail": "{\"cfg\":\"\",\"n\":0,\"terkunci\":false}"
+    },
+    {
+      "nama": "ER + sequence SVG benar-benar ter-render di DOM (2 svg inline)",
+      "lulus": true,
+      "detail": "{\"n\":2,\"er\":true,\"seq\":true}"
+    },
+    {
+      "nama": "ER: 3 tabel + 2 PK + 2 FK + 2 garis relasi terukur di Edge",
+      "lulus": true,
+      "detail": "{\"rect\":3,\"tabel\":3,\"PK\":2,\"FK\":2,\"garis\":2}"
+    },
+    {
+      "nama": "Sequence: 9 langkah bernomor + 7 panah urutan + teks langkah tampil",
+      "lulus": true,
+      "detail": "{\"circle\":9,\"garis\":7,\"langkah\":2}"
+    },
+    {
+      "nama": "diagram responsif: viewBox + width:100%, lebar terukur > 0 (bukan SVG mati)",
+      "lulus": true,
+      "detail": "{\"vb\":\"0 0 824 162\",\"lebar\":\"100%\",\"erBox\":653,\"seqBox\":564}"
+    },
+    {
+      "nama": "string model jahat di-escape: tidak ada img/script hidup, __pwn tetap 0",
+      "lulus": true,
+      "detail": "{\"pwn\":0,\"imgHidup\":0,\"scriptHidup\":0,\"svg\":2,\"escaped\":true}"
+    },
+    {
+      "nama": "panel GitHub ada: repo + branch(main) + token(password,autocomplete off) + tombol push + pesan",
+      "lulus": true,
+      "detail": "{\"repoAda\":true,\"branchAda\":true,\"branchMain\":true,\"tokenAda\":true,\"tokenPassword\":true,\"tokenAutocomplete\":true,\"pushAda\":true,\"msgAda\":true,\"utama\":true,\"tidakDisimpan\":true,\"cfgTanpaToken\":true}"
+    },
+    {
+      "nama": "hint jujur: MCP/Connect tetap jalur utama + token tidak disimpan; readCfg tidak menangkap token",
+      "lulus": true,
+      "detail": "{\"utama\":true,\"tdk\":true,\"cfg\":true}"
+    },
+    {
+      "nama": "push mock: semua request ke api.github.com + Authorization Bearer token (token hanya di transport)",
+      "lulus": true,
+      "detail": "{\"total\":17,\"api\":true,\"bearer\":true}"
+    },
+    {
+      "nama": "urutan Git Data API benar: ref->base commit->blobs->tree(base_tree)->commit(parents)->PATCH(force false)",
+      "lulus": true,
+      "detail": "{\"ref\":true,\"base\":true,\"blob\":12,\"baseTree\":\"baseTREE\",\"parents\":[\"baseSHA\"],\"force\":false}"
+    },
+    {
+      "nama": "token dibersihkan dari field sesudah push + tidak bocor ke localStorage/readCfg/bundel",
+      "lulus": true,
+      "detail": "{\"kosong\":true,\"ls\":false,\"cfg\":false,\"bundel\":false}"
+    },
+    {
+      "nama": "ghMsg lapor sukses jujur: commit pendek + tautan commit repo",
+      "lulus": true,
+      "detail": "{\"terpush\":true,\"commit\":true,\"link\":\"https://github.com/o/r/commit/newCOMMIT\"}"
+    },
+    {
+      "nama": "starter aktif di GUI: rencana migrasi-first T-001 lolos gerbang Connect (skor 100)",
+      "lulus": true,
+      "detail": "{\"aktif\":true,\"siap\":true,\"skor\":100,\"error\":[],\"tabBersih\":true,\"tabAdaMasalah\":false}"
+    },
+    {
+      "nama": "starter aktif: tab Cek rencana bersih, tidak menampilkan masalah struktur palsu",
+      "lulus": true,
+      "detail": "{\"bersih\":true,\"masalah\":false}"
+    },
+    {
+      "nama": "tanpa starter: migrasi-first tetap ditahan gerbang (bukan scaffold, skor 80)",
+      "lulus": true,
+      "detail": "{\"aktif\":false,\"siap\":false,\"skor\":80,\"adaScaffold\":true,\"tabAdaMasalah\":true,\"tabKlaimLolos\":false}"
+    },
+    {
+      "nama": "tanpa starter: tab Cek rencana JUJUR menampilkan masalah struktur yang menahan Connect",
+      "lulus": true,
+      "detail": "{\"masalah\":true,\"klaimLolos\":false}"
+    },
+    {
+      "nama": "environment hints do not block Connect or lower score",
+      "lulus": true,
+      "detail": "{\"good\":true,\"score\":100,\"hints\":4,\"issuesHints\":true,\"runnerHints\":true,\"bad\":true,\"badVisible\":true}"
+    },
+    {
+      "nama": "issues and Runner both show actionable environment steps",
+      "lulus": true,
+      "detail": "{\"good\":true,\"score\":100,\"hints\":4,\"issuesHints\":true,\"runnerHints\":true,\"bad\":true,\"badVisible\":true}"
+    },
+    {
+      "nama": "unknown starter script remains a visible hard error",
+      "lulus": true,
+      "detail": "{\"good\":true,\"score\":100,\"hints\":4,\"issuesHints\":true,\"runnerHints\":true,\"bad\":true,\"badVisible\":true}"
+    },
+    {
+      "nama": "tidak ada error console selama seluruh probe",
+      "lulus": true,
+      "detail": ""
+    }
+  ]
+}

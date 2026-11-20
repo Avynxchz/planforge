@@ -1,0 +1,9 @@
+:root { --bg:#f7f7f5; --ink:#1a1a1a; --acc:#2f6f4f; --line:#e3e3df; }
+* { box-sizing: border-box; }
+body { margin:0; font-family: system-ui, sans-serif; background:var(--bg); color:var(--ink); }
+main { max-width: 720px; margin: 0 auto; padding: 24px; }
+a { color: var(--acc); }
+input, button { font: inherit; padding: 8px 10px; }
+button { background: var(--acc); color:#fff; border:0; cursor:pointer; }
+.card { background:#fff; border:1px solid var(--line); border-radius:8px; padding:16px; margin:12px 0; }
+.err { color:#b3261e; }

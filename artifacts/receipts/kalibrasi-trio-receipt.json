@@ -1,0 +1,61 @@
+{
+  "waktu": "2026-11-17T00:30:45.511Z",
+  "lingkup": "kalibrasi trio core PlanForge: (1) tier prioritas Utama/Penting/Tambahan, (2) granularitas task natural + generate chunked per milestone (cap 8-20 dihapus), (3) clarify interaktif 5-slot dinamis (kuesioner discovery -> jawaban feed PRD)",
+  "sumberBukti": "5 suite dijalankan langsung (node test/<suite>), output di .verify-tmp/*.log lalu di-parse; bukan klaim manual",
+  "suite": {
+    "core": {
+      "lulus": 151,
+      "gagal": 0,
+      "failLines": 0
+    },
+    "worker": {
+      "lulus": 136,
+      "gagal": 0,
+      "failLines": 0
+    },
+    "connect": {
+      "lulus": 19,
+      "gagal": 0,
+      "failLines": 0
+    },
+    "browser": {
+      "lulus": 33,
+      "gagal": 0,
+      "failLines": 0
+    },
+    "ui-probe": {
+      "lulus": 48,
+      "gagal": 0,
+      "failLines": 0
+    }
+  },
+  "totalLulus": 387,
+  "semuaHijau": true,
+  "tanpaCJK": true,
+  "cjk": {
+    "index.html": false,
+    "worker.mjs": false
+  },
+  "workerBytes": 168334,
+  "workerTidakDisentuh": true,
+  "embedTidakPerlu": "worker.mjs tidak diubah (trio hanya index.html); core.test blok tertanam==worker.mjs tetap lulus",
+  "adapterEquality": "core.test: deepEqual PF.AGENT_ADAPTERS == W.AGENT_ADAPTERS (web==worker) lulus",
+  "perubahanIndex": [
+    "SCHEMAS.clarify +questions +user_answers; SCHEMAS.tasks priority utama|penting|tambahan",
+    "buildStageMessages: clarify 5-slot dinamis, prd hormati user_answers, tasks granularitas natural + mode focus chunk",
+    "CORE baru: taskChunks, mergeTaskChunk, terapkanJawabanClarify (deterministik, tanpa AI)",
+    "validatePlan/normalizePlan: tier baru + pemetaan pendukung->tambahan",
+    "renderMarkdown clarify: seksi Pertanyaan discovery + jawaban (di-escape)",
+    "DOM: checkbox clarifyInteraktif, fungsi tanyaUser (kuesioner + abort), jeda runAll setelah clarify",
+    "runAll: tasks dipecah per milestone via taskChunks/mergeTaskChunk",
+    "STAGE_TOKEN_GUESS + updateCostGuess: hitung chunks tasks & panggilan jujur",
+    "DEMO.clarify: 5 pertanyaan WarungKasir + contoh jawaban"
+  ],
+  "ujiBaru": {
+    "core": "+3 tier, +7 chunking, +7 clarify = 151 (dari 134)",
+    "uiProbe": "+10 kuesioner & jeda runAll = 48 (dari 38)"
+  },
+  "catatanBiaya": "tasks chunked mengulang input PRD+roadmap tiap milestone (~N x input tahap tasks) demi granularitas natural tanpa terpotong di model murah. clarify tetap 1 panggilan (questions+brief sekaligus); jeda kuesioner gratis tanpa AI. updateCostGuess sudah menghitung chunks + jumlah panggilan jujur.",
+  "batasanDiuji": "kuesioner & jeda runAll dibuktikan di Edge headless dengan callModel di-mock (tanpa AI berbayar). Belum diuji dengan model OpenRouter sungguhan secara end-to-end.",
+  "ditunda": "starter template original (fase terpisah, disetujui user: Core dulu template nyusul)"
+}

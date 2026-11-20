@@ -1,0 +1,115 @@
+{
+  "title": "Fix false positive audit: segmen quote-aware",
+  "timestamp": "2026-11-15T22:03:39.379Z",
+  "bug": {
+    "symptom": "Agen opencode berhenti sebelum next_task: audit_plan menandai T-001 error biner \"assert\" tidak ada di PATH (14 error, 11 warning dari 10 task).",
+    "rootCause": "worker.mjs:1353 segmen lama = String(v).split(/ *(?:&&||||[;\n|]) */) — memecah pada ; | && || TANPA menghormati kutip. python -c \"...;assert ...;print(...)\" terpecah jadi 3 segmen; assert (sintaks Python) dikira biner shell yang hilang.",
+    "realCommandVerifiedByAgent": "exit 0, T-001 ok (agen sudah membuktikan perintah aslinya jalan di folder temp)",
+    "decision": "Perbaiki parser audit (opsi 1), BUKAN menyuruh user menulis ulang verification yang sah."
+  },
+  "fix": {
+    "file": "worker.mjs",
+    "line": 1353,
+    "what": "segmen diganti jadi character-scanner yang melacak status kutip (dua/satu/backtick). Pemisah && || ; \n | hanya berlaku DI LUAR kutip. Kutip melindungi isinya sampai ditutup.",
+    "preserved": "& tunggal tidak dipecah (sama seperti lama); pemisah tanpa kutip tetap dipecah (uji jq/echo penutup tetap hijau); tokenAwal tidak berubah.",
+    "scope": "HANYA segmen (dipakai audit: bukanPerintah + auditPlan). Jalur eksekusi verification TIDAK disentuh. Cek penutup tidak-bisa-gagal (1439) TIDAK diubah — tidak false-positive pada perintah ini."
+  },
+  "proof": {
+    "method": "Salin plan/gates/state asli ke folder temp di D: (sumber READ-ONLY), jalankan auditPlan worker kanonik yang sudah diperbaiki di temp. auditPlan fungsi murni — TIDAK menulis PLAN_AUDIT.md ke proyek user.",
+    "source": "D:/PROJECTS/testing-planforge/opencodeee/.planforge",
+    "before": {
+      "errorTotal": 14,
+      "warnTotal": 11,
+      "T001_oldNaiveTokens": [
+        "python",
+        "assert",
+        "print("
+      ],
+      "T001_wouldFlag": [
+        "assert"
+      ]
+    },
+    "after": {
+      "errorTotal": 0,
+      "warnTotal": 11,
+      "T001_errorCount": 0,
+      "T001_onlyFinding": "warn: index.html belum ada (file yang memang dibuat T-001)"
+    },
+    "delta": "14 error -> 0 error. 11 warning TETAP (cocok persis dengan laporan agen = salinan temp faithful). Semua 14 error ternyata false positive dari bug split yang sama.",
+    "tempCopyCleanedUp": true
+  },
+  "suites": {
+    "core": 130,
+    "worker": 124,
+    "connect": 19,
+    "browser": 33,
+    "uiProbe": 32,
+    "total": 338,
+    "gagal": 0,
+    "newRegressionTests": [
+      "audit: ; di dalam kutip dua bukan pemisah (assert/print/h Python)",
+      "audit: node -e dengan ; di dalam kutip bersih dari error biner palsu",
+      "audit: pemisah DI LUAR kutip tetap dipecah (jqxyz ketahuan)"
+    ]
+  },
+  "integrity": {
+    "embedExactMatch": true,
+    "workerBytes": 161960,
+    "cjkWorker": 0,
+    "cjkIndex": 0,
+    "note": "worker.mjs 161237 (lama) -> 161960 (fix). Embed round-trip exact true (core.test.mjs:735 hijau)."
+  },
+  "filesChanged": [
+    "worker.mjs (segmen quote-aware + komentar)",
+    "index.html (embed blob tersinkron)",
+    "test/worker.test.mjs (+3 uji regresi)"
+  ],
+  "notTouched": [
+    "AGENT_ADAPTERS (file/shape/rules semua adapter)",
+    "penutup tidak-bisa-gagal check",
+    "jalur eksekusi verification",
+    "UI/tampilan (sengaja belum diubah)",
+    "proyek user opencodeee (sumber read-only; temp copy sudah dibersihkan)"
+  ],
+  "honestLimits": [
+    "Bukti dijalankan pada SALINAN TEMP, bukan proyek user langsung — sumber tidak diubah.",
+    "worker.mjs di folder user masih 161237 byte (KODE LAMA). Connect harus menulis ulang worker.mjs yang sudah diperbaiki (161960 byte).",
+    "Connector opencode yang SEDANG jalan (pid 6188) memakai kode lama. doctor akan menandai KODE LAMA sampai opencode DITUTUP PENUH lalu DIBUKA lagi. Reload halaman tidak cukup — proses MCP harus lahir ulang.",
+    "11 warning tersisa itu nasihat non-blocking (mis. file belum dibuat), BUKAN error — tidak menghalangi next_task."
+  ],
+  "userSteps": [
+    "1. Reload index.html di browser (muat worker baru yang sudah di-embed).",
+    "2. Connect -> pilih opencode -> pilih folder D:/PROJECTS/testing-planforge/opencodeee. worker.mjs DITIMPA versi fix; plan/gates/state DILEWATI (progres aman).",
+    "3. TUTUP PENUH opencode (semua jendela), lalu BUKA lagi di folder itu. Ini wajib supaya connector jalan kode baru.",
+    "4. Tempel prompt trigger yang sama. audit_plan sekarang 0 error -> agen lanjut next_task -> kerjakan T-001 sampai gerbang hijau."
+  ],
+  "opencodeServiceRestart": {
+    "timestamp": "2026-11-16T12:03:35.507Z",
+    "discovery": "opencode Desktop = GUI (OpenCode.exe, klien) + background service (opencode-cli.exe serve --service). Connector MCP (node worker.mjs mcp) adalah ANAK dari background service, BUKAN anak GUI. Menutup-membuka GUI tidak membunuh service, jadi connector lama tetap hidup -> banner BUILD LAMA / KODE LAMA persisten.",
+    "evidenceBefore": {
+      "servicePid": 13652,
+      "serviceStart": "1:14 AM",
+      "connectorPid": 26248,
+      "connectorStart": "6:31 PM",
+      "guiPid": 27140,
+      "guiStart": "6:51 PM",
+      "diskWorker": "161960:1794829880424"
+    },
+    "wrongAdvice": "Saran sebelumnya tutup-buka aplikasi opencode TIDAK cukup untuk opencode Desktop. Reload GUI tidak me-restart service.",
+    "correctFix": "opencode service restart (subcommand resmi: service = Manage the background server; start/restart/status/stop). Verified dari opencode-cli.exe --help dan service --help.",
+    "consent": "User menyetujui restart via AskUserQuestion (Ya, restart sekarang).",
+    "action": "opencode-cli.exe service restart dijalankan. Sempat status stopped (race), lalu service naik lagi otomatis.",
+    "evidenceAfter": {
+      "newServicePid": 26660,
+      "newServiceStart": "7:01:19 PM",
+      "newConnectorPid": 18348,
+      "newConnectorStart": "7:01:27 PM",
+      "connectorParent": 26660,
+      "vscodeeeConnectorPid": 15276,
+      "vscodeeeUntouched": true
+    },
+    "doctorVerify": "node worker.mjs doctor --dir opencodeee -> ok pid 18348 proyek sesuai umur 1 menit, TANPA KODE LAMA/KARTU LAMA. disk worker 161960:1794829880424 ditulis 18.51.20, connector lahir 19.01 -> kode baru.",
+    "cliPath": "C:/Users/t495s/AppData/Roaming/ai.opencode.desktop/cli/2.3.0-x64/opencode-cli.exe",
+    "followUpRecommended": "Hint adapter opencode di AGENT_ADAPTERS masih bilang tutup-buka opencode; seharusnya sebut opencode service restart. BELUM diubah (adapter rules/display dibekukan user; butuh persetujuan + re-run suite + embed)."
+  }
+}

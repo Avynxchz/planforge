@@ -1,0 +1,1430 @@
+{
+  "version": 1,
+  "baseline": {
+    "snapshot": "D:/PROJECTS/planforge-refactor-baseline-20261118",
+    "sourceSha256": {
+      "index.html": "b4a81fed2f941f069f39b8e54d7f5864e07c184f3e85079f5bdc562971fa07ec",
+      "worker.mjs": "938434297b6d4c11a0976ff3c3e848b0fb631267f1cca4ba1ce8d8fce95799b3",
+      "test/core.test.mjs": "40e335a6b5df2ff7edccd035fad4d2453c019c836736a874ba54ca0d792a15e3"
+    },
+    "suites": {
+      "core": 213,
+      "worker": 147,
+      "connect": 19,
+      "browser": 34,
+      "ui-probe": 76
+    }
+  },
+  "normalization": "Only declared top-level generated dates/timestamps are replaced after checking their format. All other JSON values, keys, array ordering, and error text are retained.",
+  "worker": {
+    "exportNames": [
+      "AGENT_ADAPTERS",
+      "AGENT_ALIAS",
+      "AGENT_PRESETS",
+      "BEH_DILEWATI",
+      "BROWSER_CALON",
+      "CHECK_BROWSER",
+      "FULL_GATES",
+      "HARD_CHECKS",
+      "LIGHT_REVIEW",
+      "MCP_TOOLS",
+      "VERIF_DILEWATI",
+      "absolutkanScript",
+      "auditPlan",
+      "bannerBuildLama",
+      "budgetRencana",
+      "buildFixPrompt",
+      "buildLama",
+      "buildTaskPrompt",
+      "bukanPerintah",
+      "buktiGiliran",
+      "buktiSelesai",
+      "callAgent",
+      "canonPlan",
+      "cariBrowser",
+      "catatBiaya",
+      "cetakFile",
+      "changedFiles",
+      "connectAgent",
+      "crc32",
+      "defaultGates",
+      "doctorMcp",
+      "environmentReadiness",
+      "extractVerdict",
+      "findRoot",
+      "giliranJatuh",
+      "gitCommit",
+      "hitungBudget",
+      "jalurAman",
+      "kandidatInterpreter",
+      "kartuBehavior",
+      "kartuGiliran",
+      "kutipSatuBocor",
+      "loadCtx",
+      "log",
+      "main",
+      "masalahBehavior",
+      "mcpEntry",
+      "mcpHandle",
+      "mcpServerName",
+      "mcpSnippet",
+      "mcpUniversal",
+      "metricProblems",
+      "missingNpmScripts",
+      "mulaiSesi",
+      "nextTask",
+      "npmScriptNama",
+      "parseArgs",
+      "parseLighthouse",
+      "perintahVerifikasi",
+      "pinInterpreter",
+      "planCoreFromPlan",
+      "planFingerprintPlan",
+      "potretKotor",
+      "presetAgen",
+      "prosesNode",
+      "pruneUnavailableGates",
+      "refreshConnector",
+      "resolveRoot",
+      "ringkasBehavior",
+      "ringkasVerifikasi",
+      "runBehavior",
+      "runFullGates",
+      "runHardGates",
+      "runOne",
+      "runVerification",
+      "saveCtx",
+      "setupEnv",
+      "sisaBudget",
+      "sisaMilestone",
+      "specBehavior",
+      "syncCtx",
+      "taskCard",
+      "taskMuat",
+      "taskUi"
+    ],
+    "signatures": {
+      "AGENT_ADAPTERS": {
+        "type": "object",
+        "length": null
+      },
+      "AGENT_ALIAS": {
+        "type": "object",
+        "length": null
+      },
+      "AGENT_PRESETS": {
+        "type": "object",
+        "length": null
+      },
+      "BEH_DILEWATI": {
+        "type": "object",
+        "length": null
+      },
+      "BROWSER_CALON": {
+        "type": "object",
+        "length": null
+      },
+      "CHECK_BROWSER": {
+        "type": "object",
+        "length": 11
+      },
+      "FULL_GATES": {
+        "type": "object",
+        "length": 5
+      },
+      "HARD_CHECKS": {
+        "type": "object",
+        "length": 5
+      },
+      "LIGHT_REVIEW": {
+        "type": "string",
+        "length": 473
+      },
+      "MCP_TOOLS": {
+        "type": "object",
+        "length": 8
+      },
+      "VERIF_DILEWATI": {
+        "type": "object",
+        "length": null
+      },
+      "absolutkanScript": {
+        "type": "function",
+        "length": 2
+      },
+      "auditPlan": {
+        "type": "function",
+        "length": 2
+      },
+      "bannerBuildLama": {
+        "type": "function",
+        "length": 0
+      },
+      "budgetRencana": {
+        "type": "function",
+        "length": 1
+      },
+      "buildFixPrompt": {
+        "type": "function",
+        "length": 3
+      },
+      "buildLama": {
+        "type": "function",
+        "length": 0
+      },
+      "buildTaskPrompt": {
+        "type": "function",
+        "length": 2
+      },
+      "bukanPerintah": {
+        "type": "function",
+        "length": 1
+      },
+      "buktiGiliran": {
+        "type": "function",
+        "length": 3
+      },
+      "buktiSelesai": {
+        "type": "function",
+        "length": 4
+      },
+      "callAgent": {
+        "type": "function",
+        "length": 3
+      },
+      "canonPlan": {
+        "type": "function",
+        "length": 1
+      },
+      "cariBrowser": {
+        "type": "function",
+        "length": 0
+      },
+      "catatBiaya": {
+        "type": "function",
+        "length": 3
+      },
+      "cetakFile": {
+        "type": "function",
+        "length": 1
+      },
+      "changedFiles": {
+        "type": "function",
+        "length": 2
+      },
+      "connectAgent": {
+        "type": "function",
+        "length": 2
+      },
+      "crc32": {
+        "type": "function",
+        "length": 1
+      },
+      "defaultGates": {
+        "type": "function",
+        "length": 1
+      },
+      "doctorMcp": {
+        "type": "function",
+        "length": 2
+      },
+      "environmentReadiness": {
+        "type": "function",
+        "length": 1
+      },
+      "extractVerdict": {
+        "type": "function",
+        "length": 1
+      },
+      "findRoot": {
+        "type": "function",
+        "length": 1
+      },
+      "giliranJatuh": {
+        "type": "function",
+        "length": 2
+      },
+      "gitCommit": {
+        "type": "function",
+        "length": 4
+      },
+      "hitungBudget": {
+        "type": "function",
+        "length": 3
+      },
+      "jalurAman": {
+        "type": "function",
+        "length": 1
+      },
+      "kandidatInterpreter": {
+        "type": "function",
+        "length": 1
+      },
+      "kartuBehavior": {
+        "type": "function",
+        "length": 1
+      },
+      "kartuGiliran": {
+        "type": "function",
+        "length": 2
+      },
+      "kutipSatuBocor": {
+        "type": "function",
+        "length": 1
+      },
+      "loadCtx": {
+        "type": "function",
+        "length": 1
+      },
+      "log": {
+        "type": "function",
+        "length": 2
+      },
+      "main": {
+        "type": "function",
+        "length": 1
+      },
+      "masalahBehavior": {
+        "type": "function",
+        "length": 1
+      },
+      "mcpEntry": {
+        "type": "function",
+        "length": 2
+      },
+      "mcpHandle": {
+        "type": "function",
+        "length": 3
+      },
+      "mcpServerName": {
+        "type": "function",
+        "length": 1
+      },
+      "mcpSnippet": {
+        "type": "function",
+        "length": 2
+      },
+      "mcpUniversal": {
+        "type": "function",
+        "length": 1
+      },
+      "metricProblems": {
+        "type": "function",
+        "length": 2
+      },
+      "missingNpmScripts": {
+        "type": "function",
+        "length": 2
+      },
+      "mulaiSesi": {
+        "type": "function",
+        "length": 1
+      },
+      "nextTask": {
+        "type": "function",
+        "length": 2
+      },
+      "npmScriptNama": {
+        "type": "function",
+        "length": 1
+      },
+      "parseArgs": {
+        "type": "function",
+        "length": 1
+      },
+      "parseLighthouse": {
+        "type": "function",
+        "length": 1
+      },
+      "perintahVerifikasi": {
+        "type": "function",
+        "length": 1
+      },
+      "pinInterpreter": {
+        "type": "function",
+        "length": 3
+      },
+      "planCoreFromPlan": {
+        "type": "function",
+        "length": 1
+      },
+      "planFingerprintPlan": {
+        "type": "function",
+        "length": 1
+      },
+      "potretKotor": {
+        "type": "function",
+        "length": 1
+      },
+      "presetAgen": {
+        "type": "function",
+        "length": 1
+      },
+      "prosesNode": {
+        "type": "function",
+        "length": 0
+      },
+      "pruneUnavailableGates": {
+        "type": "function",
+        "length": 2
+      },
+      "refreshConnector": {
+        "type": "function",
+        "length": 2
+      },
+      "resolveRoot": {
+        "type": "function",
+        "length": 1
+      },
+      "ringkasBehavior": {
+        "type": "function",
+        "length": 1
+      },
+      "ringkasVerifikasi": {
+        "type": "function",
+        "length": 1
+      },
+      "runBehavior": {
+        "type": "function",
+        "length": 4
+      },
+      "runFullGates": {
+        "type": "function",
+        "length": 3
+      },
+      "runHardGates": {
+        "type": "function",
+        "length": 3
+      },
+      "runOne": {
+        "type": "function",
+        "length": 3
+      },
+      "runVerification": {
+        "type": "function",
+        "length": 4
+      },
+      "saveCtx": {
+        "type": "function",
+        "length": 1
+      },
+      "setupEnv": {
+        "type": "function",
+        "length": 1
+      },
+      "sisaBudget": {
+        "type": "function",
+        "length": 1
+      },
+      "sisaMilestone": {
+        "type": "function",
+        "length": 3
+      },
+      "specBehavior": {
+        "type": "function",
+        "length": 1
+      },
+      "syncCtx": {
+        "type": "function",
+        "length": 1
+      },
+      "taskCard": {
+        "type": "function",
+        "length": 2
+      },
+      "taskMuat": {
+        "type": "function",
+        "length": 3
+      },
+      "taskUi": {
+        "type": "function",
+        "length": 1
+      }
+    },
+    "MCP_TOOLS": [
+      {
+        "name": "plan_status",
+        "description": "Ringkasan progress: task selesai/gagal/tersisa dan posisi sekarang.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "next_task",
+        "description": "Ambil task berikutnya yang siap dikerjakan (dependensinya sudah selesai). Tidak mengubah apa pun. Menolak menyerahkan task baru kalau budget sesi ini atau plafon biaya sudah habis. Tiap beberapa task (dan di akhir milestone) yang diserahkan adalah GILIRAN-n: audit, perbaikan, refactor, performa — wajib ditutup lewat mark_done sebelum task baru keluar.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "get_task",
+        "description": "Kartu tugas lengkap (judul, deskripsi, acceptance criteria, verifikasi, ref).",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      {
+        "name": "mark_done",
+        "description": "Tandai task selesai. Worker menjalankan gerbang keras DAN perintah verification task itu SENDIRI, lalu menolak kalau masih merah / verification-nya cuma kalimat / nggak ada file yang berubah — jadi tulis perintah yang beneran kamu jalankan plus output aslinya, bukan kata 'selesai'.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "verification": {
+              "type": "string",
+              "description": "contoh: `npm test` -> 25 passed in 0.96s"
+            }
+          },
+          "required": [
+            "id",
+            "verification"
+          ]
+        }
+      },
+      {
+        "name": "mark_failed",
+        "description": "Tandai task gagal beserta alasan supaya runner tidak memutar di situ.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "reason": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "reason"
+          ]
+        }
+      },
+      {
+        "name": "mark_blocked",
+        "description": "Laporkan task TERKENDALA (bukan gagal): kartu task butuh file/data yang tidak ada, dan membuatnya di luar cakupan task. Tercatat di ledger, tidak dihitung gagal, dan task tidak diserahkan lagi sampai manusia memperbaiki syaratnya. Jangan pakai ini untuk gerbang merah (itu mark_failed).",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "reason": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "reason"
+          ]
+        }
+      },
+      {
+        "name": "gate_list",
+        "description": "Daftar gerbang kualitas aktif (watchlist 1-5) dan ritmenya.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "audit_plan",
+        "description": "Periksa apakah verification tiap task benar-benar bisa dijalankan di mesin ini (perintah shell? biner ada? file ada? angkanya nabrak?). Panggil ini SEBELUM mulai mengerjakan task mana pun.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      }
+    ]
+  },
+  "html": {
+    "scripts": [
+      {
+        "src": null,
+        "type": null,
+        "id": null
+      },
+      {
+        "src": null,
+        "type": "application/json",
+        "id": "pf-worker-src"
+      }
+    ],
+    "dependencyLinks": [],
+    "cssImports": [],
+    "externalCssUrls": []
+  },
+  "samples": [
+    {
+      "name": "CLI positional arguments and boolean/value flags",
+      "target": "worker",
+      "method": "parseArgs",
+      "args": [
+        [
+          "run",
+          "T-002",
+          "--dir",
+          "/contract/project",
+          "--max-cost",
+          "0",
+          "--dry-run"
+        ]
+      ],
+      "result": {
+        "_": [
+          "run",
+          "T-002"
+        ],
+        "dir": "/contract/project",
+        "max-cost": "0",
+        "dry-run": true
+      }
+    },
+    {
+      "name": "default gates for the no-agent preset",
+      "target": "worker",
+      "method": "defaultGates",
+      "args": [
+        "none"
+      ],
+      "result": {
+        "v": 1,
+        "agent": {
+          "name": "none",
+          "label": "tidak ada agen (dry-run)",
+          "cmd": "",
+          "args": [
+            "{PROMPT}"
+          ],
+          "contArgs": null,
+          "timeoutMin": 20
+        },
+        "limits": {
+          "maxCalls": 60,
+          "maxCallsPerRun": 40,
+          "maxCostUsd": 0,
+          "maxTokens": null,
+          "maxConsecutiveFails": 3,
+          "fullEvery": 6,
+          "fullAtMilestoneEnd": true,
+          "fixRounds": 2,
+          "autoCommit": true
+        },
+        "hard": [
+          {
+            "id": "build",
+            "label": "Build + type-check",
+            "cmd": "npm run build",
+            "enabled": true,
+            "blocking": true,
+            "tier": "hard"
+          },
+          {
+            "id": "tsc",
+            "label": "Type-check saja",
+            "cmd": "npx tsc --noEmit",
+            "enabled": false,
+            "blocking": true,
+            "tier": "hard"
+          },
+          {
+            "id": "test",
+            "label": "Test otomatis",
+            "cmd": "npm test",
+            "enabled": true,
+            "blocking": true,
+            "tier": "hard"
+          },
+          {
+            "id": "lint",
+            "label": "Lint & kode mati",
+            "cmd": "npm run lint",
+            "enabled": true,
+            "blocking": false,
+            "tier": "hard"
+          },
+          {
+            "id": "perf",
+            "label": "Lighthouse (HP lambat)",
+            "cmd": "npx lighthouse http://localhost:3000 --output=json --only-categories=performance --quiet --chrome-flags=\"--headless\"",
+            "enabled": false,
+            "blocking": false,
+            "tier": "hard",
+            "metrics": {
+              "firstContentfulPaint_ms": 1500,
+              "interactive_ms": 3500,
+              "totalByteWeight_kb": 600
+            }
+          }
+        ],
+        "reviews": [
+          {
+            "id": "light",
+            "label": "Review ringan tiap task",
+            "tier": "light",
+            "enabled": true,
+            "prompt": "Kamu reviewer, bukan penulis. Nilai HANYA task di atas, jangan yang lain.\nCek: (1) semua acceptance criteria terpenuhi, (2) verification bisa dijalankan dan benar-benar dijalankan,\n(3) tidak ada file/fungsi mati atau duplikasi yang baru saja kamu tambah, (4) tidak ada fitur di luar task,\n(5) tidak ada TODO sementara yang tertinggal.\nBalas HANYA JSON: {\"pass\": true|false, \"issues\": [\"<temuan singkat + file:line>\"], \"fix\": \"<kalau pass=false: apa yang harus dibetulkan>\"}"
+          },
+          {
+            "id": "audit",
+            "label": "Audit menyeluruh",
+            "tier": "full",
+            "enabled": true,
+            "prompt": "Audit kualitas kode dari task {FROM} sampai {TO} tanpa menambah fitur. Cari: bug batas (empty/null/0/negatif), state yang tidak konsisten, error yang ditelan diam-diam, akses data tanpa validasi, celah keamanan dasar. Jangan perbaiki dulu. Balas HANYA JSON: {\"issues\":[{\"file\":\"\",\"line\":0,\"severity\":\"high|med|low\",\"what\":\"\",\"why\":\"\"}]}"
+          },
+          {
+            "id": "fixbug",
+            "label": "Perbaiki bug hasil audit",
+            "tier": "full",
+            "enabled": true,
+            "prompt": "Perbaiki HANYA temuan severity high dan med dari audit barusan, satu per satu, tanpa mengubah perilaku tampilan dan tanpa menambah fitur. Setelah selesai balas HANYA JSON: {\"fixed\":[\"...\"],\"skipped\":[\"...\"],\"reason_skipped\":\"...\"}"
+          },
+          {
+            "id": "refactor",
+            "label": "Rapikan & buang kode mati",
+            "tier": "full",
+            "enabled": true,
+            "prompt": "Refactor tanpa mengubah perilaku: hapus kode mati/unused export/duplikasi, kecilkan fungsi yang lebih dari 40 baris, beri nama yang jelas. Tampilan dan hasil verifikasi WAJIB sama. Jangan naikkan versi dependency. Balas HANYA JSON: {\"changed\":[\"...\"],\"removed\":[\"...\"]}"
+          },
+          {
+            "id": "perf",
+            "label": "Performa (target HP kentang)",
+            "tier": "full",
+            "enabled": true,
+            "prompt": "Optimalkan performa untuk HP rendah dan jaringan lambat: kurangi render ulang, tunda muat aset besar, hindari loop sinkron berat di thread utama, kecilkan bundle. Tidak boleh mengubah fitur. Ukur sebelum/sesudah kalau ada alatnya. Balas HANYA JSON: {\"changes\":[\"...\"],\"measured\":\"<angka atau 'tidak terukur'>\"}"
+          },
+          {
+            "id": "watch",
+            "label": "Watchlist tambahanmu",
+            "tier": "full",
+            "enabled": false,
+            "prompt": ""
+          }
+        ]
+      }
+    },
+    {
+      "name": "plan core removes status and retains task content",
+      "target": "worker",
+      "method": "planCoreFromPlan",
+      "args": [
+        {
+          "brief": {
+            "project_name": "Contract"
+          },
+          "prd": {
+            "requirements": []
+          },
+          "roadmap": {
+            "milestones": []
+          },
+          "tasks": {
+            "tasks": [
+              {
+                "id": "T-001",
+                "title": "Scaffold",
+                "status": "done",
+                "depends_on": []
+              },
+              {
+                "id": "T-002",
+                "title": "Feature",
+                "status": "todo",
+                "depends_on": [
+                  "T-001"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "result": {
+        "brief": {
+          "project_name": "Contract"
+        },
+        "prd": {
+          "requirements": []
+        },
+        "roadmap": {
+          "milestones": []
+        },
+        "tasks": {
+          "tasks": [
+            {
+              "id": "T-001",
+              "title": "Scaffold",
+              "depends_on": []
+            },
+            {
+              "id": "T-002",
+              "title": "Feature",
+              "depends_on": [
+                "T-001"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "next task with satisfied dependencies",
+      "target": "worker",
+      "method": "nextTask",
+      "args": [
+        {
+          "brief": {
+            "project_name": "Contract"
+          },
+          "prd": {
+            "requirements": []
+          },
+          "roadmap": {
+            "milestones": []
+          },
+          "tasks": {
+            "tasks": [
+              {
+                "id": "T-001",
+                "title": "Scaffold",
+                "status": "done",
+                "depends_on": []
+              },
+              {
+                "id": "T-002",
+                "title": "Feature",
+                "status": "todo",
+                "depends_on": [
+                  "T-001"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "tasks": {
+            "T-001": {
+              "status": "selesai"
+            }
+          }
+        }
+      ],
+      "result": {
+        "id": "T-002",
+        "title": "Feature",
+        "status": "todo",
+        "depends_on": [
+          "T-001"
+        ]
+      }
+    },
+    {
+      "name": "next task with unresolved dependencies",
+      "target": "worker",
+      "method": "nextTask",
+      "args": [
+        {
+          "tasks": {
+            "tasks": [
+              {
+                "id": "T-002",
+                "depends_on": [
+                  "T-001"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "tasks": {}
+        }
+      ],
+      "result": {
+        "id": "T-002",
+        "__blocked": true,
+        "needs": [
+          "T-001"
+        ]
+      }
+    },
+    {
+      "name": "next task when all work is complete",
+      "target": "worker",
+      "method": "nextTask",
+      "args": [
+        {
+          "brief": {
+            "project_name": "Contract"
+          },
+          "prd": {
+            "requirements": []
+          },
+          "roadmap": {
+            "milestones": []
+          },
+          "tasks": {
+            "tasks": [
+              {
+                "id": "T-001",
+                "title": "Scaffold",
+                "status": "done",
+                "depends_on": []
+              },
+              {
+                "id": "T-002",
+                "title": "Feature",
+                "status": "todo",
+                "depends_on": [
+                  "T-001"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "tasks": {
+            "T-001": {
+              "status": "selesai"
+            },
+            "T-002": {
+              "status": "selesai"
+            }
+          }
+        }
+      ],
+      "result": null
+    },
+    {
+      "name": "last JSON verdict in agent output",
+      "target": "worker",
+      "method": "extractVerdict",
+      "args": [
+        "progress\n{\"done\":false}\n{\"done\":true,\"files\":[\"app.js\"]}"
+      ],
+      "result": {
+        "done": true,
+        "files": [
+          "app.js"
+        ]
+      }
+    },
+    {
+      "name": "non-JSON verdict remains null",
+      "target": "worker",
+      "method": "extractVerdict",
+      "args": [
+        "not a verdict"
+      ],
+      "result": null
+    },
+    {
+      "name": "budget result and reserve rounding",
+      "target": "worker",
+      "method": "hitungBudget",
+      "args": [
+        7,
+        {
+          "reviews": [
+            {
+              "enabled": true,
+              "tier": "light"
+            },
+            {
+              "enabled": true,
+              "tier": "full"
+            }
+          ],
+          "limits": {
+            "fullEvery": 6,
+            "fullAtMilestoneEnd": true
+          }
+        },
+        2
+      ],
+      "result": {
+        "task": 7,
+        "kerja": 14,
+        "putaran": 4,
+        "penuh": 4,
+        "cadangan": 6,
+        "total": 24
+      }
+    },
+    {
+      "name": "missing npm scripts include behavior server commands",
+      "target": "worker",
+      "method": "missingNpmScripts",
+      "args": [
+        [
+          {
+            "id": "T-001",
+            "verification": "npm test",
+            "behavior": {
+              "server": {
+                "cmd": "npm run missing"
+              }
+            }
+          }
+        ],
+        {
+          "scripts": {
+            "test": "node --test"
+          }
+        }
+      ],
+      "result": [
+        {
+          "id": "T-001",
+          "msg": "script npm 'missing' tidak ada di package.json; tersedia: test. Pakai nama asli atau rencanakan penambahan script + package.json secara eksplisit."
+        }
+      ]
+    },
+    {
+      "name": "MCP initialization envelope",
+      "target": "worker",
+      "method": "mcpHandle",
+      "args": [
+        {
+          "jsonrpc": "2.0",
+          "id": 1,
+          "method": "initialize"
+        },
+        null
+      ],
+      "result": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {
+          "protocolVersion": "2024-11-05",
+          "capabilities": {
+            "tools": {}
+          },
+          "serverInfo": {
+            "name": "planforge-worker",
+            "version": "1.0"
+          }
+        }
+      }
+    },
+    {
+      "name": "MCP initialization notification returns null",
+      "target": "worker",
+      "method": "mcpHandle",
+      "args": [
+        {
+          "jsonrpc": "2.0",
+          "method": "notifications/initialized"
+        },
+        null
+      ],
+      "result": null
+    },
+    {
+      "name": "MCP unsupported method error envelope",
+      "target": "worker",
+      "method": "mcpHandle",
+      "args": [
+        {
+          "jsonrpc": "2.0",
+          "id": 2,
+          "method": "unsupported"
+        },
+        null
+      ],
+      "result": {
+        "jsonrpc": "2.0",
+        "id": 2,
+        "error": {
+          "code": -32601,
+          "message": "method tidak didukung: unsupported"
+        }
+      }
+    },
+    {
+      "name": "core JSON extraction preserves nested values",
+      "target": "core",
+      "method": "extractJson",
+      "args": [
+        "Answer:\n```json\n{\"a\":[1,null,{\"text\":\"brace }\"}]}\n```"
+      ],
+      "result": {
+        "a": [
+          1,
+          null,
+          {
+            "text": "brace }"
+          }
+        ]
+      }
+    },
+    {
+      "name": "exported plan JSON envelope",
+      "target": "core",
+      "method": "planBundleJson",
+      "args": [
+        {
+          "clarify": {
+            "project_name": "Contract"
+          },
+          "prd": {
+            "requirements": []
+          },
+          "roadmap": {
+            "milestones": []
+          },
+          "tasks": {
+            "tasks": [
+              {
+                "id": "T-001",
+                "title": "Scaffold",
+                "status": "done",
+                "depends_on": []
+              },
+              {
+                "id": "T-002",
+                "title": "Feature",
+                "status": "todo",
+                "depends_on": [
+                  "T-001"
+                ]
+              }
+            ]
+          }
+        },
+        [
+          "example issue"
+        ]
+      ],
+      "parseJson": true,
+      "normalize": {
+        "generatedAt": "iso-timestamp"
+      },
+      "result": {
+        "generatedAt": "<iso-timestamp>",
+        "planFingerprint": "fd0bd2af",
+        "brief": {
+          "project_name": "Contract"
+        },
+        "prd": {
+          "requirements": []
+        },
+        "roadmap": {
+          "milestones": []
+        },
+        "tasks": {
+          "tasks": [
+            {
+              "id": "T-001",
+              "title": "Scaffold",
+              "status": "done",
+              "depends_on": []
+            },
+            {
+              "id": "T-002",
+              "title": "Feature",
+              "status": "todo",
+              "depends_on": [
+                "T-001"
+              ]
+            }
+          ]
+        },
+        "issues": [
+          "example issue"
+        ]
+      }
+    },
+    {
+      "name": "fresh ledger JSON defaults and normalized statuses",
+      "target": "core",
+      "method": "freshStateJson",
+      "args": [
+        {
+          "clarify": {
+            "project_name": "Contract"
+          },
+          "prd": {
+            "requirements": []
+          },
+          "roadmap": {
+            "milestones": []
+          },
+          "tasks": {
+            "tasks": [
+              {
+                "id": "T-001",
+                "title": "Scaffold",
+                "status": "done",
+                "depends_on": []
+              },
+              {
+                "id": "T-002",
+                "title": "Feature",
+                "status": "todo",
+                "depends_on": [
+                  "T-001"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "normalize": {
+        "runId": "date",
+        "startedAt": "iso-timestamp"
+      },
+      "result": {
+        "runId": "<date>",
+        "startedAt": "<iso-timestamp>",
+        "planFingerprint": "fd0bd2af",
+        "rev": 0,
+        "calls": 0,
+        "spentNotes": [],
+        "tasks": {
+          "T-001": {
+            "status": "selesai",
+            "tries": 0,
+            "gate": null,
+            "note": ""
+          },
+          "T-002": {
+            "status": "belum mulai",
+            "tries": 0,
+            "gate": null,
+            "note": ""
+          }
+        },
+        "history": [],
+        "doneTasks": 0,
+        "sinceFull": 0,
+        "consecFails": 0,
+        "lastTask": null
+      }
+    },
+    {
+      "name": "progress rows preserve blocked status and missing ledger entries",
+      "target": "core",
+      "method": "progresDariState",
+      "args": [
+        {
+          "tasks": {
+            "T-001": {
+              "status": "terkendala",
+              "note": "Missing input"
+            }
+          },
+          "lastTask": "T-001"
+        },
+        {
+          "clarify": {
+            "project_name": "Contract"
+          },
+          "prd": {
+            "requirements": []
+          },
+          "roadmap": {
+            "milestones": []
+          },
+          "tasks": {
+            "tasks": [
+              {
+                "id": "T-001",
+                "title": "Scaffold",
+                "status": "done",
+                "depends_on": []
+              },
+              {
+                "id": "T-002",
+                "title": "Feature",
+                "status": "todo",
+                "depends_on": [
+                  "T-001"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "result": {
+        "rows": [
+          {
+            "id": "T-001",
+            "title": "Scaffold",
+            "status": "terkendala",
+            "finishedAt": null,
+            "note": "Missing input"
+          },
+          {
+            "id": "T-002",
+            "title": "Feature",
+            "status": "belum mulai",
+            "finishedAt": null,
+            "note": null
+          }
+        ],
+        "done": 0,
+        "total": 2,
+        "doneTasks": 0,
+        "lastTask": "T-001"
+      }
+    },
+    {
+      "name": "empty plan normalization result",
+      "target": "core",
+      "method": "normalizePlan",
+      "args": [
+        {},
+        {},
+        {
+          "tasks": []
+        }
+      ],
+      "result": {
+        "prd": {},
+        "roadmap": {},
+        "tasks": {
+          "tasks": []
+        },
+        "fixes": []
+      }
+    },
+    {
+      "name": "milestone chunk JSON shape and ordering",
+      "target": "core",
+      "method": "taskChunks",
+      "args": [
+        {
+          "milestones": [
+            {
+              "id": "M-002",
+              "title": "Feature",
+              "order": 2,
+              "feature_refs": [
+                "Feature"
+              ],
+              "requirement_refs": [
+                "R-001"
+              ]
+            },
+            {
+              "id": "M-001",
+              "title": "Scaffold",
+              "order": 1
+            }
+          ]
+        },
+        {}
+      ],
+      "result": [
+        {
+          "milestone_ref": "M-001",
+          "title": "Scaffold",
+          "feature_refs": [],
+          "requirement_refs": [],
+          "isFirst": true,
+          "isLast": false
+        },
+        {
+          "milestone_ref": "M-002",
+          "title": "Feature",
+          "feature_refs": [
+            "Feature"
+          ],
+          "requirement_refs": [
+            "R-001"
+          ],
+          "isFirst": false,
+          "isLast": true
+        }
+      ]
+    },
+    {
+      "name": "patch result retains untouched fields",
+      "target": "core",
+      "method": "applyPatches",
+      "args": [
+        {
+          "clarify": {
+            "project_name": "Contract"
+          },
+          "prd": {
+            "requirements": []
+          },
+          "roadmap": {
+            "milestones": []
+          },
+          "tasks": {
+            "tasks": [
+              {
+                "id": "T-001",
+                "title": "Scaffold",
+                "status": "done",
+                "depends_on": []
+              },
+              {
+                "id": "T-002",
+                "title": "Feature",
+                "status": "todo",
+                "depends_on": [
+                  "T-001"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "patches": [
+            {
+              "document": "tasks",
+              "collection": "tasks",
+              "action": "update",
+              "target_id": "T-002",
+              "object": {
+                "title": "Updated"
+              }
+            }
+          ]
+        }
+      ],
+      "result": {
+        "prd": {
+          "requirements": []
+        },
+        "roadmap": {
+          "milestones": []
+        },
+        "tasks": {
+          "tasks": [
+            {
+              "id": "T-001",
+              "title": "Scaffold",
+              "status": "done",
+              "depends_on": []
+            },
+            {
+              "id": "T-002",
+              "title": "Updated",
+              "status": "todo",
+              "depends_on": [
+                "T-001"
+              ]
+            }
+          ]
+        },
+        "applied": 1,
+        "skipped": []
+      }
+    }
+  ]
+}

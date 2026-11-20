@@ -1,0 +1,1 @@
+export const COOKIE = "pf_session";

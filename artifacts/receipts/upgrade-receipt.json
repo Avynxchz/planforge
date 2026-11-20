@@ -1,0 +1,37 @@
+{
+ "waktu": "2026-11-15T16:20:00.000Z",
+ "judul": "Upgrade PlanForge Batch 0-4 sesuai draf yang disetujui pengguna",
+ "file_diubah": [
+  "D:/PROJECTS/planforge/index.html",
+  "D:/PROJECTS/planforge/worker.mjs",
+  "D:/PROJECTS/planforge/HANDOFF.md",
+  "D:/PROJECTS/planforge/test/core.test.mjs",
+  "D:/PROJECTS/planforge/test/worker.test.mjs",
+  "D:/PROJECTS/planforge/test/ui-probe.mjs"
+ ],
+ "batch_0": "IndexedDB simpan handle+path+app+fingerprint; lampu perluSinkron; tombol Sinkron 1 klik menulis ulang worker.mjs + plan.json + state.json (+cadangan ledger), tidak menyentuh gates/rules/config MCP; rem saat doneTasks>0; Connect dikunci saat pipeline jalan / rencana belum siap",
+ "batch_1": "jam per tahap, timeout 120 detik per panggilan AI, tombol Cek sisa kredit (GET /api/v1/key, gratis), tahap 5 tambal jadi opsional (checkbox autoTambal), estimasi jumlah panggilan di costGuess, pesan 401/402/403/429 diperjelas",
+ "batch_2": "rubrikRencana + masalahStrukturRencana (wajib T-001 scaffold), normalisasiAliasBehavior (alias jujur saja; css/style/file/hover/focus tidak ditukar diam-diam), Connect/Sinkron ditahan bila rencana cacat, auditPlan worker menolak folder kosong + task pertama bukan scaffold + build, tool ke-8 mark_blocked (status terkendala, bukan gagal; next_task berhenti; plan_status melaporkan)",
+ "batch_3_4": "tab Panduan (coba gratis, BYOK, Connect, Sinkron, tabel 401/402/403/429, registrasi global kelas B), HANDOFF diperbarui: VS Code terbukti nyambung, 8 tool, 315 uji",
+ "verifikasi": {
+  "core": "126 lulus, 0 gagal",
+  "worker": "118 lulus, 0 gagal",
+  "connect": "17 lulus, 0 gagal",
+  "browser": "33 lulus, 0 gagal",
+  "ui-probe": "23 lulus, 0 gagal",
+  "total": "315 lulus, 0 gagal",
+  "embed": "sudah terbaru; blob tertanam == worker.mjs (158369 byte)",
+  "no_cjk": "index.html dan worker.mjs bebas CJK",
+  "adapter_equality": "dijamin uji core 'worker dan web memakai peta aplikasi yang sama persis'",
+  "pipeline_demo_nyata": "DEMO PIPELINE OK — 4 dokumen, 9 task, 0 error console (D:/TOOLS/pf-probe/demo-smoke-receipt.json)",
+  "sinkron_1_klik_nyata": "SINKRON 1 KLIK OK — hanya worker.mjs, .planforge/plan.json, .planforge/state.json yang ditulis; gates/config utuh; fingerprint diperbarui (D:/TOOLS/pf-probe/sync-probe-receipt.json)"
+ },
+ "belum": [
+  "Eksekusi task sampai gerbang hijau + commit lewat VS Code / Cursor",
+  "#31/#33/#38/#39/#26",
+  "Uji satu orang baru dari nol tanpa ditemani",
+  "Publikasi",
+  "Tampilan/UI (sengaja ditunda sampai pengguna bilang oke)"
+ ],
+ "catatan": "Tidak ada panggilan AI berbayar, tidak ada perubahan setting global aplikasi, tidak ada suntingan state.json manual."
+}

@@ -1,0 +1,1010 @@
+{
+  "version": 1,
+  "baselineSha256": "b4a81fed2f941f069f39b8e54d7f5864e07c184f3e85079f5bdc562971fa07ec",
+  "markupSha256": "51ecbdfe76f89096ba80705bde3e3224a741dc0b319545d3422dbe329e10a707",
+  "stylesSha256": "2cefde129586da3260355904ea1701b77116b5455a3830157001cbfaafdc0440",
+  "core": [
+    {
+      "name": "STARTER_FILES",
+      "kind": "const",
+      "arity": null
+    },
+    {
+      "name": "starterMeta",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "starterAktif",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "starterLockLines",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "starterContractLines",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "saranLingkungan",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "starterFileEntries",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "SCHEMAS",
+      "kind": "const",
+      "arity": null
+    },
+    {
+      "name": "STAGES",
+      "kind": "const",
+      "arity": null
+    },
+    {
+      "name": "buildSystemPrompt",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "briefBlock",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "buildStageMessages",
+      "kind": "function",
+      "arity": 4
+    },
+    {
+      "name": "extractJson",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "ids",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "normId",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "featKey",
+      "kind": "const",
+      "arity": 1
+    },
+    {
+      "name": "DASH",
+      "kind": "const",
+      "arity": null
+    },
+    {
+      "name": "featTail",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "featMatch",
+      "kind": "function",
+      "arity": 2
+    },
+    {
+      "name": "STATUS_MAP",
+      "kind": "const",
+      "arity": null
+    },
+    {
+      "name": "normStatus",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "normalizePlan",
+      "kind": "function",
+      "arity": 3
+    },
+    {
+      "name": "CHECK_BROWSER",
+      "kind": "const",
+      "arity": null
+    },
+    {
+      "name": "PERLU_SELECTOR",
+      "kind": "const",
+      "arity": null
+    },
+    {
+      "name": "CONTOH_BEHAVIOR",
+      "kind": "const",
+      "arity": null
+    },
+    {
+      "name": "UI_FILE",
+      "kind": "const",
+      "arity": null
+    },
+    {
+      "name": "UI_KATA",
+      "kind": "const",
+      "arity": null
+    },
+    {
+      "name": "taskUi",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "specBehavior",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "masalahBehavior",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "behaviorBaris",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "validatePlan",
+      "kind": "function",
+      "arity": 3
+    },
+    {
+      "name": "cycleOf",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "taskChunks",
+      "kind": "function",
+      "arity": 2
+    },
+    {
+      "name": "mergeTaskChunk",
+      "kind": "function",
+      "arity": 2
+    },
+    {
+      "name": "terapkanJawabanClarify",
+      "kind": "function",
+      "arity": 2
+    },
+    {
+      "name": "applyPatches",
+      "kind": "function",
+      "arity": 2
+    },
+    {
+      "name": "_pfSvgUid",
+      "kind": "let",
+      "arity": null
+    },
+    {
+      "name": "svgEsc",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "svgTrunc",
+      "kind": "function",
+      "arity": 2
+    },
+    {
+      "name": "svgWrap",
+      "kind": "function",
+      "arity": 2
+    },
+    {
+      "name": "svgLines",
+      "kind": "function",
+      "arity": 3
+    },
+    {
+      "name": "parseField",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "erDiagramSvg",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "sequenceDiagramSvg",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "renderMarkdown",
+      "kind": "function",
+      "arity": 3
+    },
+    {
+      "name": "tasksToMd",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "prdToMd",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "featuresToMd",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "roadmapToMd",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "buildAgentPrompt",
+      "kind": "function",
+      "arity": 2
+    },
+    {
+      "name": "crc32",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "canonPlan",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "planCoreFromPlan",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "planFingerprintPlan",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "planFingerprint",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "makeZip",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "DEMO",
+      "kind": "const",
+      "arity": null
+    },
+    {
+      "name": "AGENT_PRESETS",
+      "kind": "const",
+      "arity": null
+    },
+    {
+      "name": "LIGHT_REVIEW",
+      "kind": "const",
+      "arity": null
+    },
+    {
+      "name": "FULL_GATES",
+      "kind": "const",
+      "arity": null
+    },
+    {
+      "name": "HARD_CHECKS",
+      "kind": "const",
+      "arity": null
+    },
+    {
+      "name": "defaultGates",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "planTaskList",
+      "kind": "const",
+      "arity": 1
+    },
+    {
+      "name": "planBundleJson",
+      "kind": "function",
+      "arity": 2
+    },
+    {
+      "name": "freshStateJson",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "progresDariState",
+      "kind": "function",
+      "arity": 2
+    },
+    {
+      "name": "AGENT_ADAPTERS",
+      "kind": "const",
+      "arity": null
+    },
+    {
+      "name": "connNama",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "connPrompt",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "connEntry",
+      "kind": "function",
+      "arity": 2
+    },
+    {
+      "name": "connConfigJson",
+      "kind": "function",
+      "arity": 2
+    },
+    {
+      "name": "connUniversal",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "rencanaTulis",
+      "kind": "function",
+      "arity": 3
+    },
+    {
+      "name": "gateCounts",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "hitungBudget",
+      "kind": "function",
+      "arity": 3
+    },
+    {
+      "name": "taskMuat",
+      "kind": "function",
+      "arity": 3
+    },
+    {
+      "name": "sisaMilestone",
+      "kind": "function",
+      "arity": 3
+    },
+    {
+      "name": "shellQ",
+      "kind": "const",
+      "arity": 1
+    },
+    {
+      "name": "runnerCommand",
+      "kind": "function",
+      "arity": 2
+    },
+    {
+      "name": "agentsMd",
+      "kind": "function",
+      "arity": 3
+    },
+    {
+      "name": "runnerBundle",
+      "kind": "function",
+      "arity": 4
+    },
+    {
+      "name": "githubPushFiles",
+      "kind": "function",
+      "arity": 2
+    },
+    {
+      "name": "githubPush",
+      "kind": "function",
+      "arity": 3
+    },
+    {
+      "name": "ALIAS_CHECK",
+      "kind": "const",
+      "arity": null
+    },
+    {
+      "name": "normalisasiAliasBehavior",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "missingNpmScripts",
+      "kind": "function",
+      "arity": 2
+    },
+    {
+      "name": "KATA_SCAFFOLD",
+      "kind": "const",
+      "arity": null
+    },
+    {
+      "name": "potongTeks",
+      "kind": "const",
+      "arity": 2
+    },
+    {
+      "name": "masalahStrukturRencana",
+      "kind": "function",
+      "arity": 2
+    },
+    {
+      "name": "rubrikRencana",
+      "kind": "function",
+      "arity": 3
+    }
+  ],
+  "app": [
+    {
+      "name": "PROFILES",
+      "kind": "const",
+      "arity": null
+    },
+    {
+      "name": "STAGE_MODEL_DEFAULT",
+      "kind": "const",
+      "arity": null
+    },
+    {
+      "name": "KEY_NAME",
+      "kind": "const",
+      "arity": null
+    },
+    {
+      "name": "CFG_NAME",
+      "kind": "const",
+      "arity": null
+    },
+    {
+      "name": "STATE_NAME",
+      "kind": "const",
+      "arity": null
+    },
+    {
+      "name": "HIST_NAME",
+      "kind": "const",
+      "arity": null
+    },
+    {
+      "name": "GATES_NAME",
+      "kind": "const",
+      "arity": null
+    },
+    {
+      "name": "PKG_NAME",
+      "kind": "const",
+      "arity": null
+    },
+    {
+      "name": "el",
+      "kind": "const",
+      "arity": 1
+    },
+    {
+      "name": "state",
+      "kind": "let",
+      "arity": null
+    },
+    {
+      "name": "num",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "readCfg",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "readStageModels",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "readKeyRecord",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "keyFor",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "persist",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "restore",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "MAIN_STAGES",
+      "kind": "const",
+      "arity": null
+    },
+    {
+      "name": "hasStage",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "doneStages",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "saveDocs",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "ideaFp",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "staleReasons",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "updateSavedLabel",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "readHistory",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "pushHistory",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "restorePrev",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "clearDocs",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "refreshRail",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "seedFor",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "STAGE_KEYS",
+      "kind": "const",
+      "arity": null
+    },
+    {
+      "name": "PRESETS",
+      "kind": "const",
+      "arity": null
+    },
+    {
+      "name": "STAGE_TOKEN_GUESS",
+      "kind": "const",
+      "arity": null
+    },
+    {
+      "name": "IDR",
+      "kind": "const",
+      "arity": null
+    },
+    {
+      "name": "priceOf",
+      "kind": "const",
+      "arity": 1
+    },
+    {
+      "name": "fmtMoney",
+      "kind": "const",
+      "arity": 1
+    },
+    {
+      "name": "escA",
+      "kind": "const",
+      "arity": 1
+    },
+    {
+      "name": "perM",
+      "kind": "const",
+      "arity": 1
+    },
+    {
+      "name": "shortName",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "currentModels",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "renderStageModelInputs",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "setStageModel",
+      "kind": "function",
+      "arity": 3
+    },
+    {
+      "name": "openPicker",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "modelMatches",
+      "kind": "function",
+      "arity": 2
+    },
+    {
+      "name": "renderModelList",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "updateCostGuess",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "cekKredit",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "tabs",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "rail",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "setStage",
+      "kind": "function",
+      "arity": 3
+    },
+    {
+      "name": "jamTahap",
+      "kind": "let",
+      "arity": null
+    },
+    {
+      "name": "mulaiJam",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "hentiJam",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "showView",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "draw",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "simpanBehavior",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "getGatePath",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "tidyPlan",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "outAction",
+      "kind": "function",
+      "arity": 2
+    },
+    {
+      "name": "tambalNow",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "drawActions",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "copyText",
+      "kind": "function",
+      "arity": 2
+    },
+    {
+      "name": "dl",
+      "kind": "function",
+      "arity": 3
+    },
+    {
+      "name": "bundleFiles",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "exportBundle",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "githubPanel",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "githubPushNow",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "loadGates",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "saveGates",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "gates",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "resetGates",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "pkgDir",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "savePkgDir",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "pkgOpts",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "setGatePath",
+      "kind": "function",
+      "arity": 2
+    },
+    {
+      "name": "applyAgentPreset",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "workerPresetGuess",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "esc",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "renderPanduan",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "renderRunner",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "ensureWorkerSource",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "argLines",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "downloadRunnerPackage",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "connectBaca",
+      "kind": "function",
+      "arity": 2
+    },
+    {
+      "name": "connectTulisFile",
+      "kind": "function",
+      "arity": 3
+    },
+    {
+      "name": "connectConn",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "IDB_NAME",
+      "kind": "const",
+      "arity": null
+    },
+    {
+      "name": "IDB_KEY",
+      "kind": "const",
+      "arity": null
+    },
+    {
+      "name": "bukaIdb",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "simpanKoneksi",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "bacaKoneksi",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "perluSinkron",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "connectSinkron",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "connectPilih",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "connectCek",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "connectTulis",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "connectBatal",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "connectPanel",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "bacaProgres",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "progresPanel",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "callModel",
+      "kind": "function",
+      "arity": 4
+    },
+    {
+      "name": "recordUsage",
+      "kind": "function",
+      "arity": 3
+    },
+    {
+      "name": "runStage",
+      "kind": "function",
+      "arity": 3
+    },
+    {
+      "name": "ERROR_HINTS",
+      "kind": "const",
+      "arity": null
+    },
+    {
+      "name": "showError",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "tanyaUser",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "runAll",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "loadModels",
+      "kind": "function",
+      "arity": 0
+    },
+    {
+      "name": "applyManual",
+      "kind": "function",
+      "arity": 1
+    }
+  ]
+}

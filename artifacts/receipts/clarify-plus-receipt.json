@@ -1,0 +1,54 @@
+{
+  "waktu": "2026-11-17T16:46:09.341Z",
+  "fase": "#81 clarify+: pertanyaan bebas AI di luar 5 slot",
+  "suite": {
+    "core": {
+      "lulus": 155,
+      "gagal": 0,
+      "failLines": 0
+    },
+    "worker": {
+      "lulus": 136,
+      "gagal": 0,
+      "failLines": 0
+    },
+    "connect": {
+      "lulus": 19,
+      "gagal": 0,
+      "failLines": 0
+    },
+    "browser": {
+      "lulus": 33,
+      "gagal": 0,
+      "failLines": 0
+    },
+    "ui-probe": {
+      "lulus": 53,
+      "gagal": 0,
+      "failLines": 0
+    }
+  },
+  "totalLulus": 396,
+  "semuaHijau": true,
+  "tanpaCJK": {
+    "index.html": true,
+    "worker.mjs": true
+  },
+  "workerBytes": 168334,
+  "workerTidakDisentuh": true,
+  "embedTidakPerlu": "clarify+ hanya index.html; core.test embedded==worker & adapter equality lulus",
+  "perubahan": [
+    "SCHEMAS.clarify +ai_questions (id/question/why/type/options)",
+    "prompt clarify: ai_questions 0-4 bebas, why wajib, jangan ulang 5 slot, kosong kalau tidak ambigu",
+    "terapkanJawabanClarify: byId gabungan questions+ai_questions sehingga jawaban A- masuk defaults_chosen",
+    "renderMarkdown clarify: seksi Pertanyaan klarifikasi AI (di-escape)",
+    "tanyaUser: gabung 5 slot + ai_questions, pill AI bingung + hint why, counter total gabungan",
+    "runAll: jeda kuesioner juga trigger kalau hanya ai_questions yang ada"
+  ],
+  "ujiBaru": {
+    "core": "+4 (8d) = 155",
+    "ui-probe": "+5 (7b) = 53"
+  },
+  "batasanDiuji": "kuesioner gabungan dibuktikan di Edge headless dengan callModel di-mock; belum dengan model OpenRouter berbayar sungguhan (tidak dipanggil tanpa izin)",
+  "catatan": "DEMO.clarify sengaja tetap 5-slot agar probe 5-slot lama tetap valid; slot bebas diuji lewat clarify buatan di probe 7b"
+}

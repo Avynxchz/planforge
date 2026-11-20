@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PlanForge — ide jadi PRD, roadmap &amp; task</title>
+<style>{{PF_STYLES}}</style>
+</head>
+<body>
+<header>
+  <h1>PlanForge</h1>
+  <div class="tag">ide kasar → brief → PRD → roadmap → task list yang bisa dieksekusi agen coding</div>
+</header>
+<main>
+  <aside>
+    <div class="card">
+      <h2>Koneksi model</h2>
+      <label>Provider</label>
+      <select id="provider">
+        <option value="openrouter">OpenRouter (BYOK)</option>
+        <option value="custom">Endpoint OpenAI-compatible lain</option>
+        <option value="ollama">Ollama lokal (tanpa biaya API)</option>
+        <option value="demo">Demo offline (tanpa key, hasil contoh)</option>
+      </select>
+      <label>Base URL</label>
+      <input type="text" id="baseUrl">
+      <label>API key</label>
+      <input type="password" id="apiKey" placeholder="sk-or-..." autocomplete="off">
+      <div class="check">
+        <input type="checkbox" id="saveKey"><label for="saveKey" style="margin:0">simpan key di browser ini (localStorage)</label>
+      </div>
+      <div class="row tight" style="margin-top:10px">
+        <button class="sm" id="loadModels">Muat katalog model</button>
+        <span class="cost" id="modelStat">katalog belum dimuat</span>
+      </div>
+      <div class="row tight" style="margin-top:6px">
+        <button class="sm" id="cekKredit">Cek sisa kredit</button>
+        <span class="cost" id="kreditStat">gratis, tidak memanggil AI</span>
+      </div>
+      <label>Model per tahap</label>
+      <div class="seg" id="presets">
+        <button class="sm" data-preset="hemat">Hemat</button>
+        <button class="sm" data-preset="seimbang">Seimbang</button>
+        <button class="sm" data-preset="kualitas">Kualitas</button>
+      </div>
+      <div id="stageModels"></div>
+      <div class="picker" id="picker" hidden>
+        <div class="row tight">
+          <input type="text" id="modelSearch" placeholder="cari: deepseek, flash, coder, vision…">
+          <select id="modelSort" style="flex:0 0 116px">
+            <option value="price">termurah</option>
+            <option value="ctx">context terbesar</option>
+            <option value="name">nama</option>
+          </select>
+        </div>
+        <div class="check" style="margin-top:7px">
+          <input type="checkbox" id="freeOnly"><label for="freeOnly" style="margin:0"> hanya model gratis</label>
+        </div>
+        <div class="mlist" id="modelList"></div>
+        <div class="mstat" id="pickerStat"></div>
+        <div class="row tight" style="margin-top:8px">
+          <input type="text" id="manualModel" placeholder="atau tempel ID manual, mis. google/gemini-2.5-flash-lite">
+          <button class="sm" id="applyOne" style="flex:0 0 auto">pasang</button>
+          <button class="sm" id="applyAll" style="flex:0 0 auto">pakai di semua tahap</button>
+        </div>
+      </div>
+      <div class="row">
+        <div style="flex:0 0 46%">
+          <label>Temperature</label>
+          <input type="text" id="temperature" placeholder="kosong = default provider">
+        </div>
+        <div>
+          <label>Maks output / tahap</label>
+          <input type="text" id="maxTokens" placeholder="kosong = tanpa batas">
+        </div>
+      </div>
+      <div class="hint" id="costGuess"></div>
+      <div class="check">
+        <input type="checkbox" id="jsonMode"><label for="jsonMode" style="margin:0">paksa response_format json_object (butuh model yang mendukung)</label>
+      </div>
+      <div class="check">
+        <input type="checkbox" id="seedMode" checked><label for="seedMode" style="margin:0">kirim seed tetap supaya hasil tidak acak-acakan antar run (dihormati sebagian provider)</label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Ide kamu</h2>
+      <label>Nama proyek (kosongkan = model yang bikin)</label>
+      <input type="text" id="projectName" placeholder="Aplikasi kasir warung">
+      <label>Deskripsi mentah — pakai bahasa santai, tidak perlu rapi</label>
+      <textarea id="idea" placeholder="gua mau web buat nyatet pesanan warung, kasir tinggal klik-klik, otomatis rekap harian, bisa dibuka di HP."></textarea>
+      <div class="row">
+        <div>
+          <label>Bahasa hasil</label>
+          <select id="language"><option value="Bahasa Indonesia">Indonesia</option><option value="English">English</option></select>
+        </div>
+        <div>
+          <label>Agen eksekutor</label>
+          <select id="targetAgent">
+            <option>Claude Code</option><option>Cursor</option><option>Qoder</option><option>Codex</option><option>umum</option>
+          </select>
+        </div>
+      </div>
+      <label>Batasan &amp; preferensi teknologi (opsional)</label>
+      <textarea id="constraints" style="min-height:60px" placeholder="tanpa backend, cukup localStorage; hosting GitHub Pages; jangan pakai library berbayar"></textarea>
+      <label>Penonton / pengguna utama (opsional)</label>
+      <input type="text" id="audience" placeholder="pemilik warung 1 orang, 1 kasir">
+      <label>Fondasi awal / starter (opsional)</label>
+      <select id="starterPilih">
+        <option value="">Tidak ada — model mengusulkan stack sendiri</option>
+        <option value="nextjs-fullstack">Next.js full-stack siap jalan (Next 15 + React 19 + PostgreSQL + auth sesi + Docker)</option>
+      </select>
+      <div class="hint">Kalau starter dipilih, stack DIKUNCI ke starter dan task hanya menambah fitur di atas kode fondasi yang disediakan; dependency dan DB target masih perlu disiapkan — bukan membangun ulang auth/DB/kerangka/docker/test.</div>
+      <div class="check" style="margin-top:11px">
+        <input type="checkbox" id="reuse" checked><label for="reuse" style="margin:0">pakai lagi hasil tahap yang sudah jadi — hanya jalankan yang belum</label>
+      </div>
+      <div class="check" style="margin-top:6px">
+        <input type="checkbox" id="autoTambal"><label for="autoTambal" style="margin:0">tambal otomatis lewat AI di tahap 5 (matikan = lebih cepat &amp; hemat; tombol tambal tetap tersedia)</label>
+      </div>
+      <div class="check" style="margin-top:6px">
+        <input type="checkbox" id="clarifyInteraktif" checked><label for="clarifyInteraktif" style="margin:0">tanya saya dulu: 5 pertanyaan discovery sebelum PRD (matikan = langsung pakai tebakan model, lebih cepat)</label>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button class="go" id="runAll">Jalankan pipeline</button>
+        <button id="stop" disabled>Stop</button>
+      </div>
+      <div class="row tight" style="margin-top:6px">
+        <button class="sm" id="rerunAll">ulang dari nol</button>
+        <button class="sm" id="restorePrev" disabled>pulihkan versi sebelumnya</button>
+        <button class="sm" id="clearDocs">hapus hasil</button>
+      </div>
+      <div class="hint" id="savedAt"></div>
+      <div class="hint">Default baru: tanpa batas token &amp; tanpa temperature paksa — model berhenti sendiri saat selesai. Hasil tiap tahap langsung tersimpan di browser, jadi “Jalankan pipeline” tinggal melanjutkan tahap yang belum. Satu run penuh ≈ 8–20 ribu token output.</div>
+    </div>
+
+    <div class="card">
+      <h2>Pipeline</h2>
+      <div class="rail" id="rail"></div>
+    </div>
+  </aside>
+
+  <section>
+    <div class="bar">
+      <div class="tabs" id="tabs"></div>
+      <span class="cost" id="costStat"></span>
+    </div>
+    <div class="out" id="out"></div>
+  </section>
+</main>
+
+<script>{{PF_SCRIPT}}</script>
+<!-- PF-WORKER-BEGIN -->{{PF_WORKER}}<!-- PF-WORKER-END -->
+</body>
+</html>

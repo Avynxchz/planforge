@@ -1,0 +1,65 @@
+{
+  "waktu": "2026-11-15T21:30:28.883Z",
+  "tujuan": "Bikin PlanForge beneran universal: (a) lantai universal buat app asing (generic multi-format), (b) opencode jadi adapter resmi yang auto-tulis config proyek. Pilihan pengguna: 'a' (dua-duanya).",
+  "akarMasalah": "Connect cuma ngerti 2 dialect MCP (mcpServers, servers). opencode butuh dialect ke-3 (mcp.servers + type:local + command array + environment). Karena opencode bukan adapter, dia jatuh ke generic dan dikasih blok mcpServers yang SALAH bentuk -> connector tidak terdaftar -> agen opencode STOP (rem identitas bekerja BENAR, bukan bug).",
+  "schemaOpencode": {
+    "sumber": ["https://opencode.ai/config.json (schema resmi)", "https://opencode.ai/docs/mcp-servers/", "https://opencode.ai/docs/config/"],
+    "bentuk": { "mcp": { "servers": { "<nama>": { "type": "local", "command": ["node", "<worker>", "mcp", "--dir", "<folder>"], "environment": {}, "enabled": true } } } },
+    "fileProyek": "opencode.json / opencode.jsonc (dicari dari cwd ke root)",
+    "fileGlobal": "~/.config/opencode/opencode.json",
+    "status": "SESUAI DOKUMENTASI RESMI (terverifikasi via schema + docs). BELUM terbukti end-to-end di opencode nyata (opencode membaca config -> agen plan_status cocok -> eksekusi task sampai gerbang hijau + commit). Jangan klaim 'terbukti' sebelum run nyata."
+  },
+  "perubahan": {
+    "index.html": [
+      "AGENT_ADAPTERS: tambah entri opencode (file:opencode.json, shape:mcp, rules:AGENTS.md) sebelum generic; adapter lama TIDAK diubah",
+      "connEntry: cabang shape 'mcp' -> {type:local, command:[node,...args], environment:{}, enabled:true}",
+      "connConfigJson: cabang shape 'mcp' -> {$schema, mcp:{servers:entry}}",
+      "connUniversal(opts): fungsi CORE baru -> {nama, perintah, blok:{mcpServers,servers,mcp}} (reuse connConfigJson generic/vscode/opencode)",
+      "rencanaTulis: merge sekarang kenal mcp.servers (server lain utuh), selain mcpServers/servers",
+      "panel Connect: blok 'Jalur universal' khusus generic (perintah + 3 dialect + langkah tempel)",
+      "outAction: handler cSalinUniversal (salin perintah universal)"
+    ],
+    "worker.mjs": [
+      "AGENT_ADAPTERS: entri opencode IDENTIK dengan web (urutan sama, deep-equal uji hijau)",
+      "mcpEntry: cabang shape 'mcp'",
+      "mcpSnippet: cabang shape 'mcp' (output identik dengan connConfigJson web)",
+      "mcpUniversal(root): export baru -> {nama, perintah, blok:{mcpServers,servers,mcp}}",
+      "writeFileChecked: merge kenal mcp.servers",
+      "CLI connect: output jalur universal untuk key generic"
+    ],
+    "test/core.test.mjs": [
+      "PF export list: tambah connUniversal",
+      "loop 'paket mengikuti aplikasi': blok & command jadi shape-aware (mcp -> cfg.mcp.servers, command[0]==node)",
+      "+4 uji: dialect opencode, connUniversal 3 dialect + perintah, universal tanpa path, merge opencode.json"
+    ],
+    "test/connect.test.mjs": ["+2 uji: opencode auto-tulis opencode.json (mcp.servers) + merge server lain utuh"],
+    "test/worker.test.mjs": ["+3 uji: mcpSnippet opencode, mcpUniversal, connectAgent opencode merge"],
+    "test/ui-probe.mjs": ["+5 probe browser nyata: panel universal generic (judul, perintah, 3 dialect, tombol salin)"]
+  },
+  "tidakDisentuh": [
+    "field file/shape/rules adapter LAMA (workbuddy/agy/claude/cursor/vscode/cline/windsurf/qoder/codex/generic) - terkunci uji",
+    ".planforge/mcp-universal.json tetap bentuk mcpServers (connect.test:209 hijau)",
+    "gates.json, .planforge/state.json (tidak disunting manual)",
+    "config GLOBAL app mana pun (tidak ada penulisan global; opencode auto-tulis file PROYEK saja)",
+    "styling/tampilan umum (cuma tambah panel fungsional generic, bukan redesign)",
+    "tidak memanggil AI berbayar; tidak commit/deploy"
+  ],
+  "verifikasi": {
+    "suite": { "core": 130, "worker": 121, "connect": 19, "browser": 33, "uiProbe": 32, "totalLulus": 335, "gagal": 0 },
+    "baselineSebelum": 321,
+    "embed": "node worker.mjs embed dijalankan; uji round-trip 'blok tertanam == worker.mjs' hijau (core.test:733)",
+    "adapterEquality": "uji deep-equal AGENT_ADAPTERS web==worker + urutan Object.keys hijau (core.test:559-562)",
+    "noCJK": { "index.html": 0, "worker.mjs": 0 },
+    "buktiBrowserNyata": "ui-probe di Edge headless: panel universal generic render judul + perintah + 3 dialect + tombol cSalinUniversal; connect.test opencode auto-tulis + merge di browser nyata",
+    "catatanByte": "worker.mjs di disk 161237 byte vs embed lapor 160768 = artefak CRLF (round-trip membandingkan teks ternormalisasi, hijau). Bukan mismatch."
+  },
+  "batasJujur": [
+    "Universal != nol-klik. App yang cuma baca config GLOBAL (WorkBuddy/Antigravity/Cline/Qoder) tetap butuh 1x daftar manual + persetujuan pengguna - dinding pihak ketiga, bukan bug PlanForge.",
+    "Lantai universal menyediakan 3 dialect umum (mcpServers/servers/mcp.servers) + SATU perintah. App dengan dialect lain tetap bisa pakai: yang wajib sama = perintah 'node worker.mjs mcp --dir <folder>' + nama connector.",
+    "opencode adapter auto-tulis opencode.json PROYEK menurut docs; belum dibuktikan opencode nyata membacanya sampai agen eksekusi task + commit."
+  ],
+  "belum": [
+    "Run nyata pengguna: Connect pilih opencode -> tulis opencode.json -> buka opencode di folder itu -> tempel trigger prompt -> plan_status folder cocok -> eksekusi T-001 sampai gerbang hijau + commit.",
+    "Reload index.html dulu supaya worker tertanam + adapter opencode terbaru kepakai."
+  ]
+}

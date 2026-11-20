@@ -1,0 +1,47 @@
+{
+  "waktu": "2026-11-15T20:52:12.370Z",
+  "judul": "Fix tahap 4 (Task list) & tahap 5 (Cek konsistensi/audit): keluaran terpotong di model gratis OpenRouter",
+  "keluhan_pengguna": "Pakai API key gratisan OpenRouter (bukan Demo). Tahap 1-3 lolos, tahap 4 Task list lama dan gagal terus, pesan merah 'terpotong'. Tahap 5 dikhawatirkan ikut error.",
+  "akar_masalah": [
+    "Tahap 4: prompt meminta 25-90 task lengkap sekaligus (8-18 per fitur), tiap task belasan field termasuk objek behavior. Keluaran sebesar itu melebihi batas output model gratis -> finish_reason 'length' -> 'keluaran terpotong'. Retry lama mengulang permintaan segede itu juga (2x) -> lambat dan gagal lagi.",
+    "Tahap 5 (audit): menelan SELURUH task list + PRD + roadmap. Kalau task list gede, input audit membengkak. Selain itu pemulihan terpotong awalnya cuma dipasang untuk tasks, belum untuk audit."
+  ],
+  "fix_tahap_4": [
+    "Prompt task list dikecilkan: 1-3 task per fitur, total 8-20 task MVP; satu task boleh menutup beberapa sub_features; instruksi keluaran TETAP RINGKAS (description 1-2 kalimat, acceptance_criteria 1-3 butir, agent_hint satu kalimat, behavior.checks 2-4). Cakupan tetap wajib: tiap fitur >=1 task dan tiap requirement mvp tercakup (validator hanya menuntut itu, bukan 25-90).",
+    "callModel: error terpotong diberi flag err.terpotong (pesan teks tetap sama).",
+    "runStage: terpotong di tasks (non-demo) -> ulang SEKALI dengan instruksi LEBIH RINGKAS (maks 12 task)."
+  ],
+  "fix_tahap_5": [
+    "runStage: pemulihan terpotong diperluas ke stage audit juga -> ulang SEKALI dengan instruksi LEBIH RINGKAS khusus patch (prioritaskan celah penting, object secukupnya).",
+    "Input audit otomatis lebih ringan karena task list tahap 4 sekarang lebih kecil (akar masalah sama).",
+    "Catatan aman: tahap 5 hanya menambal celah; kalau gagal, rencana tahap 1-4 TIDAK hilang (tambalNow/runAll menahan error, dokumen lama tetap tersimpan). Validator struktur sendiri gratis + lokal, selalu jalan, terbukti sehat (demo 0 celah, rubrik skor 100). Tambal AI default MATI (autoTambal tidak dicentang)."
+  ],
+  "file_diubah": [
+    "D:/PROJECTS/planforge/index.html (prompt tasks ~383; callModel finish_reason length ~2788; runStage retry terpotong tasks+audit ~2812)",
+    "D:/PROJECTS/planforge/test/core.test.mjs (assert prompt tasks: 8-20, bukan 25-90, ada RINGKAS)",
+    "D:/PROJECTS/planforge/test/ui-probe.mjs (section 6: probe terpotong->ulang ringkas untuk tasks DAN audit, monkeypatch callModel di Edge headless)"
+  ],
+  "tidak_disentuh": [
+    "worker.mjs (tidak diubah; embed 'sudah terbaru')",
+    "AGENT_ADAPTERS / field file/shape/rules (terkunci uji, identik web<->worker)",
+    "Tampilan/UI (sengaja ditunda sampai pengguna bilang oke)",
+    "gates.json, .planforge/state.json, setting global aplikasi apa pun"
+  ],
+  "verifikasi": {
+    "core": "126 lulus, 0 gagal",
+    "worker": "118 lulus, 0 gagal",
+    "connect": "17 lulus, 0 gagal",
+    "browser": "33 lulus, 0 gagal",
+    "ui-probe": "27 lulus, 0 gagal (naik dari 23; +2 probe tasks, +2 probe audit)",
+    "total": "321 lulus, 0 gagal",
+    "embed": "sudah terbaru; blok tertanam == worker.mjs",
+    "no_cjk": "index.html CJK=0, worker.mjs CJK=0",
+    "probe_retry_nyata": "Edge headless: callModel disimulasikan terpotong sekali lalu JSON valid. tasks -> runStage pulih (ok=true, n=2, err kosong), panggilan ke-2 ringkas=true. audit -> runStage pulih (ok=true, n=2, err kosong), panggilan ke-2 ringkas=true. Tidak ada error console.",
+    "receipt_ui": "D:/PROJECTS/planforge/ui-receipt.json"
+  },
+  "catatan": "Tidak memanggil AI berbayar maupun kunci gratis milik pengguna. Simulasi terpotong lewat monkeypatch di browser headless, bukan panggilan model sungguhan.",
+  "belum": [
+    "Pengguna tes ulang NYATA dengan key gratis OpenRouter-nya (muat ulang halaman dulu) untuk konfirmasi di model yang dia pakai.",
+    "Kalau masih terpotong di model yang sangat kecil, sebut nama modelnya -> bisa dipilihkan model :free dengan batas output lebih besar."
+  ]
+}

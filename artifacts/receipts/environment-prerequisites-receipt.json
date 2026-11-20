@@ -1,0 +1,109 @@
+{
+  "checkedAt": "2026-11-18T14:38:38.409Z",
+  "phase": "Environment advisories and real starter contract",
+  "root": "D:/PROJECTS/planforge",
+  "node": "v24.18.0",
+  "browser": "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
+  "executionOrder": ["core", "worker", "connect", "browser", "ui-probe"],
+  "suites": {
+    "core": {
+      "passed": 204,
+      "failed": 0,
+      "exit": 0,
+      "log": "D:/PROJECTS/planforge/environment-core.suite-run.log",
+      "sha256": "f3a208198cd1275185b7f0cbcc04e7ce926e9c38d4eec9b5a524175656f0bf71"
+    },
+    "worker": {
+      "passed": 147,
+      "failed": 0,
+      "exit": 0,
+      "log": "D:/PROJECTS/planforge/environment-worker.suite-run.log",
+      "sha256": "2f6ef75d7d086800bd9617ac3769847ef2a6bc698a9297ef3bffd90757914a83"
+    },
+    "connect": {
+      "passed": 19,
+      "failed": 0,
+      "exit": 0,
+      "log": "D:/PROJECTS/planforge/environment-connect.suite-run.log",
+      "sha256": "90506e63995c2adea9ad1f9e16e091e8a4ddc9166dcd8bbd4b3bba0e78fb84b2"
+    },
+    "browser": {
+      "passed": 34,
+      "failed": 0,
+      "exit": 0,
+      "log": "D:/PROJECTS/planforge/environment-browser.suite-run.log",
+      "sha256": "d60c60ed1c26ad4f9c3b4d57ff4312e08d57468a968a79dd5e7cd2d9e15fc305"
+    },
+    "ui-probe": {
+      "passed": 76,
+      "failed": 0,
+      "exit": 0,
+      "log": "D:/PROJECTS/planforge/environment-ui-probe.suite-run.log",
+      "sha256": "4f13ed3352d7a7caca56e13f8aac1181ac3955aa6bb0ab201b2e3775a067610a"
+    }
+  },
+  "totalPassed": 480,
+  "allGreen": true,
+  "checks": {
+    "workerEmbeddedExact": true,
+    "starterEmbeddedExact": true,
+    "adaptersEqual": true,
+    "noCJK": true,
+    "realEdgeFileProtocolUiTest": true,
+    "environmentWarningDoesNotHoldNextTask": true,
+    "failedVerificationStillRejectsMarkDone": true,
+    "tcpOpenDoesNotClaimDatabaseAuthentication": true,
+    "setupPreservesExistingConfiguration": true,
+    "setupFailsClosedWhenGitIgnoreCannotBeConfirmed": true
+  },
+  "hashes": {
+    "index": "b4a81fed2f941f069f39b8e54d7f5864e07c184f3e85079f5bdc562971fa07ec",
+    "worker": "938434297b6d4c11a0976ff3c3e848b0fb631267f1cca4ba1ce8d8fce95799b3",
+    "pilotState": "e24544ef20dfd1fd7a364fcebad301742af0bd14255dcda3868f13ae1f0566d4",
+    "pilotPlan": "79d50f1d599ce659a30544ef256a6987e71d8f062683f44b129001921f72fbd3"
+  },
+  "changedSourceFiles": [
+    "index.html",
+    "worker.mjs",
+    "test/core.test.mjs",
+    "test/worker.test.mjs",
+    "test/browser.test.mjs",
+    "test/ui-probe.mjs"
+  ],
+  "implemented": [
+    "Real starter package.json scripts and file tree are included in PRD, roadmap, tasks, audit, and generated agent instructions.",
+    "Starter code availability is no longer represented as proof that the target runtime is already running.",
+    "Connect and Cek rencana show actionable environment advice separately from structural errors; environmental advice does not lower the plan score.",
+    "Unknown npm run script names remain structural errors unless explicitly planned in package.json by the current task or its dependencies. Web and worker share regression-tested behavior.",
+    "Worker audit reports missing dependencies, environment configuration, executables and browser runtime as warnings; actual verification and mark_done remain strict.",
+    "doctor --environment inspects prerequisites without loading or writing the ledger, running gates, installing packages, invoking Docker or migrating a database. Optional TCP diagnostics explicitly do not prove authentication or schema correctness.",
+    "setup-env explicitly copies .env.example to .env.local only when no supported existing configuration is present, the destination is ignored, and exclusive creation succeeds. It never installs dependencies or starts a DB.",
+    "Existing docker-compose.yml is referenced for optional user-approved local DB startup; npm install, migration and optional demo seeding are explained separately. No new database provider is selected."
+  ],
+  "pilot": {
+    "root": "D:/PROJECTS/testing-planforge/vscodeee-lgi",
+    "task001Status": "terkendala",
+    "verification": "npm run db:migrate && node --test tests/schema.test.js",
+    "environmentFindings": ["dependencies", "env-file", "database-url", "database-start"],
+    "newAuditErrors": [
+      {"id": "T-001", "issue": "db:migrate does not exist; starter script is migrate"},
+      {"id": "T-002", "issue": "db:seed does not exist; starter script is seed"}
+    ],
+    "newAuditWarnings": 22,
+    "otherObservedPlanGaps": [
+      "T-001 refers to lib/db.ts, but starter supplies lib/db.js.",
+      "T-001 refers to db/migrations/002_expenses.sql, but the supplied runner only executes db/schema.sql.",
+      "T-001 refers to tests/schema.test.js; starter tests are under test/. New test files may be valid delta work but must be created explicitly."
+    ],
+    "planAndStateUnchangedDuringReadOnlyVerification": true,
+    "canonicalFixNotCopiedIntoPilot": true,
+    "databaseAuthenticatedOrMigrated": false,
+    "task001Completed": false
+  },
+  "limitations": [
+    "No paid model or coding-agent run was performed. Real-model planning quality and end-to-end VS Code task completion remain unverified.",
+    "No Docker installation, dependency installation, service startup, cloud provisioning, pilot modification, deployment or source commit was performed.",
+    "The existing pilot still needs explicit plan reconciliation, a confirmed database target and local preparation; its blocked status was not bypassed or reset.",
+    "Static contract checks are not a full shell parser or a semantic proof of the plan. Real task verification is still required."
+  ]
+}

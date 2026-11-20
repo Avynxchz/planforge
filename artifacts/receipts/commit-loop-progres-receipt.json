@@ -1,0 +1,111 @@
+{
+  "fase": "commit nested-repo + auto-loop + progres live GUI",
+  "tanggal": "2026-11-16",
+  "persetujuanUser": [
+    "Ya, dua-duanya (fix commit nested-repo di worker.mjs + auto-loop, bukan tampilan)",
+    "Ya, bikin progres live (unfreeze tampilan KHUSUS fitur progres ini)"
+  ],
+  "masalahYangDiperbaiki": {
+    "A_commitNestedRepo": {
+      "gejala": "T-001 selesai tapi commit GAGAL: pathspec '.planforge/state.json' did not match any file(s) known to git. Folder opencodeee nested di dalam repo induk D:/PROJECTS/testing-planforge.",
+      "akar": "git status --porcelain SELALU mengembalikan path relatif ROOT repo (opencodeee/...), bukan cwd. gitCommit mengumpankannya sebagai pathspec dari cwd target -> git mencari opencodeee/opencodeee/... -> gagal.",
+      "fix": "potretKotor (worker.mjs:1285) strip prefix root via `git rev-parse --show-prefix`, filter hanya subtree target, baca file dari path.join(cwd, kunciRelatifTarget). gitCommit TIDAK diubah (pathspec-nya kini relatif-target, dijalankan dari cwd -> benar untuk root maupun nested).",
+      "bukti": "2 uji regresi nested-repo di worker.test.mjs (repoNested: repo induk pf-induk- + subfolder opencodeee + tetangga vscodeee). commit berhasil, hanya subtree target yang tersapu, induk+tetangga tetap kotor tidak ikut."
+    },
+    "B_autoLoop": {
+      "gejala": "Agen berhenti setelah T-001; user harus trigger manual lagi tiap task. User mau: satu trigger = semua task jalan otomatis.",
+      "akar": "mark_done task biasa tidak menyuruh lanjut; tidak ada instruksi LOOP eksplisit di prompt. (Ditambah commit gagal bikin agen ragu.)",
+      "fix": [
+        "worker.mjs mark_done normal (else branch): tambah nudge 'LANJUT OTOMATIS: panggil next_task lagi sekarang ... sampai next_task menjawab BERHENTI ... atau \"tidak ada task\" (semua selesai).'",
+        "worker.mjs rulesText: aturan 12 LOOP OTOMATIS (dipakai CLI connectAgent -> AGENTS.md).",
+        "index.html connPrompt: tambah kalimat LOOP OTOMATIS (trigger prompt yang disalin user).",
+        "index.html agentsMd: aturan 13 LOOP OTOMATIS (AGENTS.md yang ditulis GUI Connect)."
+      ],
+      "batasJujur": "GUI/worker TIDAK bisa memaksa agen lanjut. Agen (opencode) yang menyetir loop. Auto-loop = instruksi jelas + nudge tiap mark_done, DIBATASI budget (maxCalls/maxCallsPerRun/maxCostUsd). next_task tetap menjawab BERHENTI saat budget habis / terkendala / giliran gagal; 'tidak ada task' saat semua selesai.",
+      "bukti": "worker.test.mjs: mark_done biasa memuat LANJUT OTOMATIS + BERHENTI + 'tidak ada task'; connectAgent AGENTS.md memuat LOOP OTOMATIS. core.test.mjs: connPrompt + agentsMd memuat LOOP OTOMATIS + next_task lagi + BERHENTI + mark_blocked."
+    },
+    "C_progresLiveGUI": {
+      "gejala": "User tidak bisa lihat task mana yang sudah selesai dari tampilan PlanForge; cuma teks di chat agen. Mau checklist live seperti ngodingpakeai.com.",
+      "fix": [
+        "CORE progresDariState(sj, docs) (index.html:1217): fungsi murni, baca status dari state.json, urutan+judul dari plan. Pertahankan 'terkendala' (normStatus tidak mengenalnya). Return {rows,done,total,doneTasks,lastTask}.",
+        "UI bacaProgres() (async): baca .planforge/state.json + plan.json dari folder via handle Connect (izin read), parse, progresDariState, set state.progres/progresAt, draw. Error jujur kalau folder/state.json tidak ada.",
+        "UI progresPanel(): checklist berwarna (✓ selesai hijau, ✗ gagal merah, ⚠ terkendala oranye, … sedang biru, ○ belum mulai abu) + bar progres + tombol 'Refresh progres' (data-act=cProgres) + timestamp dibaca.",
+        "renderRunner: progresPanel disisipkan sesudah panel Connect. outAction: handler cProgres. state: progres/progresError/progresAt.",
+        "Sumber daftar task = plan.json di FOLDER (yang dikerjakan agen), fallback ke rencana browser. Bukan tebakan."
+      ],
+      "batasJujur": "Refresh MANUAL lewat tombol (v1). Tidak auto-poll supaya tidak minta izin diam-diam. GUI membaca progres yang ditulis worker; GUI tidak mengeksekusi task.",
+      "bukti": "core.test.mjs: 3 uji progresDariState (status/urutan/judul, terkendala dipertahankan, sinonim+ledger kosong). ui-probe.mjs (Edge headless sungguhan): 6 probe — baca state.json folder 4 task 1 selesai, status per task benar, judul dari plan.json FOLDER bukan browser, checklist+tombol Refresh tampil, terkendala tampil dengan alasan, folder tanpa state.json -> error jujur bukan checklist palsu.",
+      "buktiFolderNyata": "progresDariState dijalankan READ-ONLY pada D:/PROJECTS/testing-planforge/opencodeee/.planforge/{plan,state}.json asli: done/total=1/10, doneTasks=1, lastTask=T-001. T-001 'Buat kerangka index.html...' selesai [12:49:39], T-002..T-010 belum mulai."
+    }
+  },
+  "uji": {
+    "core": 134,
+    "connect": 19,
+    "browser": 33,
+    "ui_probe": 38,
+    "worker": 128,
+    "total": 352,
+    "sebelumFaseIni": 338,
+    "tambahan": 14,
+    "gagal": 0,
+    "perintah": "node test/core.test.mjs; node test/connect.test.mjs; node test/browser.test.mjs; node test/ui-probe.mjs; node test/worker.test.mjs"
+  },
+  "integritas": {
+    "CJK_worker_mjs": 0,
+    "CJK_index_html": 0,
+    "rangeCJKDiuji": "[\\u3400-\\u9fff\\u3040-\\u30ff] (worker.test.mjs:901)",
+    "simbolProgresNonCJK": "✓ U+2713, ✗ U+2717, ⚠ U+26A0, ○ U+25CB, … U+2026 — semua di bawah range CJK",
+    "embedBlobSamaDenganWorker": true,
+    "adapterEqualityWebWorker": "lulus (core.test.mjs deep-equal + urutan Object.keys)",
+    "worker_mjs_byte": 163619,
+    "worker_mjs_char": 163148,
+    "index_html_byte": 399110
+  },
+  "fileDiubah": {
+    "worker.mjs": ["potretKotor (strip prefix root)", "mark_done normal: nudge LANJUT OTOMATIS", "rulesText: aturan 12 LOOP OTOMATIS"],
+    "index.html": ["CORE progresDariState", "state: progres/progresError/progresAt", "outAction: cProgres", "renderRunner: progresPanel", "bacaProgres + progresPanel", "connPrompt: LOOP", "agentsMd: aturan 13 LOOP", "embed blob disinkron"],
+    "test/worker.test.mjs": ["repoNested + isiKommitInduk", "2 uji commit nested", "2 uji auto-loop"],
+    "test/core.test.mjs": ["export progresDariState", "3 uji progresDariState", "1 uji LOOP connPrompt/agentsMd"],
+    "test/ui-probe.mjs": ["seksi 5c: 6 probe progres live"]
+  },
+  "folderUserBasi": {
+    "path": "D:/PROJECTS/testing-planforge/opencodeee",
+    "worker_mjs_byte": 161960,
+    "punyaFixSegmen": true,
+    "punyaFixPotretKotor": false,
+    "punyaNudgeLanjutOtomatis": false,
+    "AGENTS_md_punyaLOOP": false,
+    "kesimpulan": "Folder user masih pakai worker.mjs LAMA (sebelum fix commit + auto-loop). WAJIB di-refresh lewat Connect supaya fix A+B sampai. state.json (T-001 selesai) TIDAK boleh direset."
+  },
+  "mekanismeRefreshConnect": {
+    "worker.mjs": "timpa SELALU (rencanaTulis:1356) -> dapat fix potretKotor + nudge LANJUT OTOMATIS",
+    "opencode.json": "gabung (server entry di-refresh, server lain utuh)",
+    ".planforge/plan.json": "timpa (rencana browser; kalau sama, fingerprint sama)",
+    ".planforge/state.json": "lewati kalau fingerprint sama -> T-001 selesai DIPERTAHANKAN",
+    ".planforge/gates.json": "lewati (gerbang suntingan user utuh)",
+    "AGENTS.md": "lewati kalau sudah menyebut PlanForge -> TIDAK auto-refresh. LOOP tetap sampai ke agen lewat trigger prompt (connPrompt baru) + nudge mark_done worker. Kalau mau AGENTS.md ikut baru: hapus AGENTS.md lalu Connect ulang (pilihan user, bukan otomatis)."
+  },
+  "langkahUserGUI": [
+    "1. Muat ulang (reload) index.html PlanForge di browser. Ini memuat worker.mjs tertanam yang SUDAH difix + connPrompt/agentsMd baru.",
+    "2. Pastikan rencana 10 task yang sama masih terload di kiri (jangan jalankan pipeline baru / ganti ide).",
+    "3. Tab Eksekusi/Runner -> Connect -> pilih aplikasi 'opencode' -> klik 'Connect ke folder proyek' -> pilih folder D:/PROJECTS/testing-planforge/opencodeee (folder yang SAMA).",
+    "4. Di panel konfirmasi: worker.mjs = DITIMPA, opencode.json = DIGABUNG, state.json = DILEWATI (progres T-001 aman), AGENTS.md = DILEWATI. Klik 'Ya, tulis sekarang'.",
+    "5. Salin trigger prompt yang BARU (tombol 'Salin trigger prompt'). Prompt ini sekarang memuat LOOP OTOMATIS.",
+    "6. Di terminal folder opencodeee, jalankan: opencode service restart  (WAJIB sesudah Connect, supaya connector anak membaca worker.mjs yang baru. Kalau tidak, doctor bilang KODE LAMA dan agen berhenti.)",
+    "7. Tempel trigger prompt ke agen opencode. Agen: plan_status (cocokkan folder) -> doctor (harus bersih, pid baru) -> audit_plan (0 error) -> next_task T-002 -> kerja -> mark_done.",
+    "8. mark_done T-002: commit sekarang BERHASIL (fix nested-repo). Balasan worker menyuruh 'LANJUT OTOMATIS: panggil next_task lagi'. Agen lanjut T-003, T-004, ... otomatis sampai semua selesai atau next_task menjawab BERHENTI (budget).",
+    "9. Kembali ke PlanForge, klik 'Refresh progres' (panel Progres live). Checklist menampilkan task yang sudah selesai (✓ hijau) secara live, dibaca dari state.json folder. Klik Refresh lagi kapan saja untuk melihat kemajuan terbaru."
+  ],
+  "catatanKejujuran": [
+    "Auto-loop bukan 'nol klik': agen tetap harus menyetir next_task->mark_done. Worker memberi nudge + instruksi, budget yang membatasi. Kalau agen berhenti sendiri di tengah (di luar BERHENTI), itu perilaku agen, bukan worker.",
+    "Progres live = pembaca state.json, bukan eksekusi. Refresh manual v1 (belum auto-poll).",
+    "Commit fix dibuktikan di repo nested TEMPORER (uji regresi), bukan dengan mengkommit folder user asli (constraint: jangan commit tanpa diminta).",
+    "Hint adapter opencode di AGENT_ADAPTERS masih 'tutup-buka lagi opencode' (field terkunci uji, user belum approve ubah hint). Cara reload yang BENAR untuk opencode Desktop = 'opencode service restart' (dipakai di langkah user). Perubahan hint = follow-up terpisah, belum dikerjakan.",
+    "AGENTS.md folder user tidak auto-refresh (dilewati kalau sudah ada PlanForge). LOOP tetap sampai lewat trigger prompt + nudge worker."
+  ],
+  "followUpBelumDikerjakan": [
+    "Perbaiki hint adapter opencode: 'tutup-buka lagi opencode' -> 'opencode service restart' (perlu approve user; field file/shape/rules TIDAK boleh berubah).",
+    "Auto-poll progres (opsional, v2) — sekarang manual Refresh.",
+    "Task tertunda lama: 26/31/33/38/39; publikasi; uji pengguna tanpa didampingi."
+  ]
+}

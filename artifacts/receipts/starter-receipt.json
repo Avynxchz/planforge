@@ -1,0 +1,91 @@
+{
+  "waktu": "2026-11-17T17:22:47.604Z",
+  "fase": "#82 Starter template original + wiring PlanForge",
+  "suite": {
+    "core": {
+      "lulus": 167,
+      "gagal": 0,
+      "failLines": 0,
+      "exit": 0
+    },
+    "worker": {
+      "lulus": 136,
+      "gagal": 0,
+      "failLines": 0,
+      "exit": 0
+    },
+    "connect": {
+      "lulus": 19,
+      "gagal": 0,
+      "failLines": 0,
+      "exit": 0
+    },
+    "browser": {
+      "lulus": 33,
+      "gagal": 0,
+      "failLines": 0,
+      "exit": 0
+    },
+    "ui-probe": {
+      "lulus": 58,
+      "gagal": 0,
+      "failLines": 0,
+      "exit": 0
+    }
+  },
+  "totalLulus": 413,
+  "semuaHijau": true,
+  "tanpaCJK": {
+    "index.html": true,
+    "worker.mjs": true
+  },
+  "indexBytes": 446454,
+  "workerBytes": 168334,
+  "workerTidakDisentuh": true,
+  "embedWorkerTidakPerlu": "starter hanya index.html CORE+DOM; core.test section 12 embedded==worker & adapter equality lulus",
+  "starter": {
+    "dir": "D:/PROJECTS/planforge/starter",
+    "jumlahFile": 28,
+    "blobChars": 17654,
+    "stack": "Next.js 15.5.4 App Router + React 19.1.0 + PostgreSQL(pg 8.13.1) + auth sesi scrypt + Docker + node --test",
+    "embedScript": "scripts/embed-starter.mjs",
+    "roundTrip": "core 8e: STARTER_FILES blob == folder starter/ di disk (skip node_modules/.next/.git/package-lock/.starter-smoke.log)",
+    "smoke": {
+      "install": "npm install: 33 packages (4m), node_modules siap",
+      "test": "npm test: 9/9 pass (auth 5 + validate 4), node --test discovery default",
+      "build": "npm run build: Compiled successfully, 10 route (/, /login, /dashboard, 4 api, _not-found) + Middleware 33.9 kB",
+      "envFix": "migrate/seed pakai @next/env loadEnvConfig: dibuktikan baca .env.local (ECONNREFUSED di port bogus 59999, BUKAN \"DATABASE_URL belum diset\"); .env.local temp dihapus, tidak bocor ke blob"
+    },
+    "belumDiuji": [
+      "dev server + migrasi/seed ke PostgreSQL nyata (butuh DB hidup)",
+      "docker compose up --build (butuh Docker)",
+      "alur login/logout/dashboard end-to-end di browser dengan DB"
+    ]
+  },
+  "bugDitemukanDiperbaiki": [
+    "app/api/items/route.js: import ../../../../lib (4 tingkat) salah untuk kedalaman 3 -> ../../../lib; build webpack Module not_FOUND",
+    "middleware.js menarik node:crypto dari lib/auth ke bundle Edge -> pisah lib/cookie.js (edge-safe), auth re-export COOKIE",
+    "lib/auth.js impor ./cookie tanpa ekstensi gagal di node --test (ESM butuh .js) -> ./cookie.js",
+    "package.json test \"node --test test/\" gagal resolve folder di Node ini -> \"node --test\" discovery default",
+    "scripts/migrate.mjs & seed.mjs baca process.env langsung, tidak auto-load .env.local -> @next/env loadEnvConfig(process.cwd()) + declare @next/env 15.5.4"
+  ],
+  "perubahan": [
+    "starter/ 28 file ORIGINAL (Next.js fullstack: app router, lib auth/db/session/validate/cookie, db schema, scripts migrate/seed, middleware, test, Docker, manifest, README)",
+    "index.html CORE: blob STARTER_FILES + starterMeta/starterAktif/starterLockLines/starterFileEntries",
+    "prompt prd: parts.push(...starterLockLines(cfg)) -> stack DIKUNCI ke starter, template_note wajib, rencana = DELTA",
+    "prompt tasks: skeleton-first jadi starter-aware (task pertama menyesuaikan starter, bukan dari nol) + push STARTER DIPAKAI/DELTA/larangan bangun ulang fondasi",
+    "runnerBundle: sertakan starterFileEntries() bertanda starter:true kalau opts.starter",
+    "rencanaTulis: file f.starter yang sudah ada -> lewati (tidak menimpa kerja agen), belum ada -> baru",
+    "bundleFiles (ZIP): starter di bawah starter/ kalau readCfg().starter",
+    "agentsMd: seksi Fondasi starter (stack lock + perintah install/migrate/seed/dev + larangan bangun ulang)",
+    "connPrompt: klausa FONDASI STARTER (hidupkan dulu lalu kerjakan delta)",
+    "GUI: select #starterPilih + hint; readCfg.starter; restore cfg.starter",
+    "3 call site Connect (2698/2793/2858): opts.starter = readCfg().starter"
+  ],
+  "ujiBaru": {
+    "core": "+12 (8e: 155->167)",
+    "ui-probe": "+5 (7c: 53->58)"
+  },
+  "batasanDiuji": "kunci stack/delta prompt diuji via buildStageMessages (tanpa OpenRouter berbayar); bundel/Connect/ZIP diuji di Edge headless; starter DB runtime belum diuji dengan PostgreSQL nyata (tidak spin up DB/Docker tanpa izin)",
+  "catatan": "worker.mjs TIDAK disentuh (168334 byte, no CJK); AGENT_ADAPTERS tetap identik web<->worker; starter opt-in (default kosong = model usulkan stack sendiri, perilaku lama tidak berubah)"
+}

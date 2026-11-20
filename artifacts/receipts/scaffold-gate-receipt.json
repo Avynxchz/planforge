@@ -1,0 +1,72 @@
+{
+  "waktu": "2026-11-17T19:44:11.939Z",
+  "fase": "#85 Fix gerbang scaffold buta-starter + tab Cek rencana jujur",
+  "suite": {
+    "core": {
+      "lulus": 196,
+      "gagal": 0,
+      "failLines": 0,
+      "exit": 0
+    },
+    "worker": {
+      "lulus": 136,
+      "gagal": 0,
+      "failLines": 0,
+      "exit": 0
+    },
+    "connect": {
+      "lulus": 19,
+      "gagal": 0,
+      "failLines": 0,
+      "exit": 0
+    },
+    "browser": {
+      "lulus": 33,
+      "gagal": 0,
+      "failLines": 0,
+      "exit": 0
+    },
+    "ui-probe": {
+      "lulus": 73,
+      "gagal": 0,
+      "failLines": 0,
+      "exit": 0
+    }
+  },
+  "totalLulus": 457,
+  "semuaHijau": true,
+  "tanpaCJK": {
+    "index.html": true,
+    "worker.mjs": true
+  },
+  "indexBytes": 464359,
+  "workerBytes": 168334,
+  "workerTidakDisentuh": true,
+  "embedWorkerTidakPerlu": "fix hanya index.html CORE+DOM (web-side); worker.mjs tidak disentuh; core section 12 embedded==worker & adapter equality lulus",
+  "bug": {
+    "gejala": "Agus: starter nextjs-fullstack aktif, task pertama 'Buat migrasi tabel categories dan expenses di at...' (T-001). Tab Cek rencana bilang aman, tapi Runner: 'Sinkron DITAHAN ... bukan scaffold ... Kualitas rencana Perlu diperbaiki (skor 80)'. Connect ditahan.",
+    "akar": "masalahStrukturRencana(index.html) selalu menuntut kata KATA_SCAFFOLD di task pertama, buta terhadap starter. Padahal buildStageMessages tasks (starterAktif) menyuruh migrasi/delta-first BUKAN skeleton, dan worker.auditPlan cuma error kalau folder kosong + butuh build + file hilang. Rubrik web lebih ketat/bodoh -> false positive menahan rencana yang benar.",
+    "skor80": "100 - 1*20 = 80 -> tepat 1 error (kata scaffold); cek ID T-001 sudah lolos. Jadi fix minimal = skip error kata-scaffold saat starter aktif."
+  },
+  "fix": {
+    "rubrik": "masalahStrukturRencana(docs, starter) + rubrikRencana(docs, issues, starter): error 'bukan scaffold' di-skip kalau starter aktif; cek ID T-001 tetap. Argumen ke-3 opsional -> panggilan 2-argumen lama == starter mati (backward-compat, uji lama tetap hijau).",
+    "caller": "4 caller (renderRunner ~2812, connectSinkron ~3060, connectPilih ~3108, connectCek ~3133) pass starterAktif(readCfg()).",
+    "tabJujur": "draw('issues') kirim ctx.struktur = masalahStrukturRencana(docs, starterAktif(readCfg())); renderMarkdown issues menampilkan blok 'Masalah struktur - gerbang Connect' yang SAMA dengan yang menahan Connect. List kosong tapi struktur ada -> tidak lagi klaim 'Lolos cek struktur'. Starter aktif -> struktur kosong -> tab bersih (cocok dengan gerbang)."
+  },
+  "buktiCore": "13b (8 uji): starterAktif nextjs-fullstack=true/kosong=false; starter aktif migrasi-first T-001 -> tanpa error scaffold, rubrik siap skor 100; starter aktif tetap menuntut T-001 (T-002 ditolak); tanpa starter migrasi-first tetap ditolak scaffold skor 80 (regresi); 2-argumen == starter mati (deepEqual); tab issues list-kosong+struktur -> tampil 'Masalah struktur' & tidak klaim lolos; starter aktif -> tab bersih; validator+struktur tampil bersama.",
+  "buktiBrowser": "7f (4 catat) Edge headless: sgOn {aktif:true,siap:true,skor:100,error:[],tabBersih:true,tabAdaMasalah:false} = kasus Agus sekarang lolos; sgOff {aktif:false,siap:false,skor:80,adaScaffold:true,tabAdaMasalah:true,tabKlaimLolos:false} = tanpa starter tetap ditahan DAN tab Cek rencana jujur menampilkan masalah yang sama. 0 error console.",
+  "perubahan": [
+    "index.html CORE: masalahStrukturRencana(docs, starter) - skip error kata-scaffold kalau starter aktif (samakan intent dgn worker.auditPlan); cek T-001 tetap",
+    "index.html CORE: rubrikRencana(docs, issues, starter) - thread argumen starter opsional ke masalahStrukturRencana",
+    "index.html DOM: 4 caller rubrik (renderRunner, connectSinkron, connectPilih, connectCek) pass starterAktif(readCfg())",
+    "index.html DOM: draw('issues') kirim ctx.struktur; renderMarkdown issues tampilkan blok 'Masalah struktur - gerbang Connect' + cabang list-kosong-tapi-struktur-ada (tidak klaim Lolos cek struktur)",
+    "test/core.test.mjs: section 13b (8 uji sadar-starter + tab jujur + backward-compat)",
+    "test/ui-probe.mjs: section 7f (4 catat) kasus Agus starter-on lolos + starter-off ditahan jujur di Edge"
+  ],
+  "ujiBaru": {
+    "core": "+8 (13b: 188->196)",
+    "ui-probe": "+4 (7f: 69->73)"
+  },
+  "batasanDiuji": "fix diuji unit (core) + render GUI Edge headless dengan rencana migrasi-first buatan & DEMO; belum dengan rencana dari OpenRouter berbayar sungguhan (tidak dipanggil tanpa izin). worker.mjs tidak disentuh - auditPlan sudah folder-aware, jadi gerbang eksekusi (mandor) tetap independen.",
+  "catatan": "worker.mjs TIDAK disentuh (168334 byte, no CJK); AGENT_ADAPTERS identik web<->worker; scope ketat 2 hal (rubrik sadar-starter + tab Cek rencana jujur), tanpa fitur tambahan; index.html & worker.mjs bebas CJK"
+}

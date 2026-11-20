@@ -1,0 +1,76 @@
+{
+  "fitur": "node worker.mjs refresh — perintah universal: matikan connector basi proyek ini + cek apakah app melahirkannya lagi dengan kode baru",
+  "tanggal": "2026-11-16",
+  "permintaanUser": "Bikin 'opencode service restart' jadi universal: satu perintah sama diketik di terminal app agentic coding apa pun untuk refresh connector yang baca kode lama.",
+  "batasJujur": {
+    "kenapaTidakBisa100Persen": "Connector MCP adalah proses ANAK yang dilahirkan app (atau service latar belakangnya). Terminal bisa menemukan + mematikan + memeriksa, tapi TIDAK bisa memaksa app menghidupkan kembali anaknya. Respawn tergantung app.",
+    "yangUniversal": "Nama perintah (node worker.mjs refresh), deteksi connector basi (doctorMcp), pembunuhan (taskkill/process.kill), dan pemeriksaan ulang (scan). Sama di semua app.",
+    "yangAppSpecific": "Apakah app auto-respawn setelah anaknya mati. opencode Desktop terbukti via 'opencode service restart' (bukan via bunuh anak). App lain belum diuji perilaku respawn-nya.",
+    "janji": "Tidak pernah mengklaim sukses tanpa proses baru yang terbukti segar (kodeLama=false). Kalau mati/gagal, dilaporkan apa adanya + langkah reconnect manual."
+  },
+  "yangDibangun": {
+    "worker.mjs": [
+      "refreshConnector(root, opts) — exported, logika murni dengan scan/kill/tidur yang bisa di-inject untuk uji",
+      "killPid(pid) — taskkill /pid /T /F (win) atau process.kill SIGKILL (posix)",
+      "tidurSync(ms) — Atomics.wait supaya main() tetap sinkron",
+      "CLI: if(cmd === 'refresh') — panggil refreshConnector, cetak pesan, exit code fail-closed",
+      "doctor: pesan stale sekarang menunjuk ke 'node worker.mjs refresh'",
+      "usage line: tambah refresh + --tunggu MS"
+    ],
+    "hasilRefresh": ["fresh", "udah-baru", "mati", "gagal-bunuh", "tidak-ada", "dry-run"],
+    "exitCode": "0 untuk fresh/udah-baru/dry-run; 1 untuk mati/gagal-bunuh/tidak-ada (fail-closed: jangan lanjut ambil task sebelum connector terbukti segar)",
+    "targetAman": "Hanya connector dengan proyek='sesuai' DAN (kodeLama||kartuLama). Connector segar tidak disentuh. Connector proyek lain tidak disentuh.",
+    "dryRun": "node worker.mjs refresh --dry-run = preview pid yang AKAN dimatikan, tanpa membunuh."
+  },
+  "uji": {
+    "ujiBaruWorker": 8,
+    "daftar": [
+      "refresh mematikan connector basi lalu lapor fresh kalau app respawn",
+      "refresh jujur bilang mati kalau app tidak respawn (bukan pura-pura sukses)",
+      "refresh tidak mengklaim sukses kalau connector basi gagal dibunuh",
+      "refresh tidak menyentuh connector yang sudah kode baru",
+      "refresh tanpa connector proyek ini = tidak-ada",
+      "refresh --dry-run cuma preview, tidak mematikan",
+      "refresh hanya menarget connector proyek ini, bukan proyek lain",
+      "refresh CLI tanpa connector keluar 1 dan tidak membunuh apa pun"
+    ],
+    "metode": "scan/kill/tidur di-inject (daftar proses palsu) — tidak ada proses nyata yang dibunuh saat uji."
+  },
+  "bukti": {
+    "suite": { "core": 134, "connect": 19, "browser": 33, "ui-probe": 38, "worker": 136, "total": 360, "gagal": 0 },
+    "cjk": { "worker.mjs": 0, "index.html": 0 },
+    "embedRoundTrip": true,
+    "workerChars": 167855,
+    "workerBytes": 168334,
+    "indexBytes": 403995,
+    "adapterEquality": "lulus di core.test.mjs (AGENT_ADAPTERS tidak diubah)"
+  },
+  "folderNyata": {
+    "path": "D:/PROJECTS/testing-planforge/opencodeee",
+    "workerBytes": 161960,
+    "punyaRefresh": false,
+    "punyaLoopOtomatis": false,
+    "status": "STALE — harus re-Connect supaya worker.mjs baru (168334 byte, ada refresh+loop+nested-commit fix) ditulis ke folder ini. state.json progres tetap dipertahankan (rencanaTulis: lewati kalau fingerprint sama)."
+  },
+  "langkahUser": [
+    "1. Buka index.html PlanForge di browser, Connect lagi: app=opencode, folder=D:/PROJECTS/testing-planforge/opencodeee. Konfirmasi worker.mjs DITIMPA, state.json DILEWATI.",
+    "2. Di terminal folder itu, preview dulu: node worker.mjs refresh --dry-run --no-gates (lihat pid connector basi yang AKAN dimatikan, belum dibunuh).",
+    "3. Jalankan sungguhan: node worker.mjs refresh (saat agen lagi DIAM, bukan tengah task).",
+    "4. Kalau hasilnya 'mati' (app tidak respawn): opencode service restart. Kalau 'fresh': langsung lanjut.",
+    "5. Cek: node worker.mjs doctor --no-gates. Pastikan tidak ada KODE LAMA / KARTU LAMA.",
+    "6. Kirim trigger baru di opencode. Agen loop T-002..T-010 (satu trigger = semua task, dibatasi budget 60/40).",
+    "7. Klik Refresh progres di GUI PlanForge untuk lihat checklist."
+  ],
+  "artiPerintah": {
+    "node worker.mjs refresh": "node = jalankan pakai Node.js; worker.mjs = mandor tanpa AI; refresh = mode matikan connector basi + cek respawn. Membaca worker.mjs BARU di disk (jadi jalan walau connector yang hidup masih kode lama).",
+    "--dry-run": "preview saja, tidak membunuh apa pun.",
+    "--no-gates": "lewati gerbang build/test (refresh tidak menjalankan gerbang; flag ini warisan CLI, aman dipakai).",
+    "--tunggu MS": "berapa milidetik menunggu app respawn sebelum scan ulang (bawaan 4000)."
+  },
+  "risikoDanBatal": {
+    "risiko": "Mematikan connector proyek ini yang terbukti basi. Kalau agen lagi tengah task, panggilan itu terputus — makanya jalankan saat agen diam. Tidak mengubah state.json/plan.json, tidak commit, tidak memanggil AI berbayar. Hanya connector proyek ini, bukan app, bukan proyek lain.",
+    "caraBatal": "Preview dengan --dry-run dulu. Kalau terlanjur dibunuh dan app tidak respawn, hidupkan lagi lewat reconnect manual di app (opencode: opencode service restart). Tidak ada file/progres yang hilang."
+  },
+  "belumDiuji": "Perilaku respawn asli tiap app (WorkBuddy/Antigravity/Cursor/Qoder/Cursor/VS Code/Windsurf/Claude) belum diuji di app nyata. Logika refresh teruji unit; opencode terbukti via service restart. Jangan klaim 'semua app auto-refresh' — untuk sebagian app, setelah refresh tetap perlu satu reconnect manual.",
+  "catatanKejujuran": "Hint adapter opencode di kode masih 'tutup-buka lagi opencode' (salah untuk Desktop). Belum diperbaiki karena field adapter kekunci dan user belum approve. Perintah refresh menyebut 'opencode service restart' di pesannya, jadi user tetap dapat langkah yang benar."
+}

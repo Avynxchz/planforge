@@ -1,0 +1,37 @@
+{
+  "id": "nextjs-fullstack",
+  "nama": "Starter Next.js Fullstack (PlanForge original)",
+  "versi": "0.1.0",
+  "stack": {
+    "frontend": "Next.js 15 (App Router) + React 19",
+    "backend": "Next.js Route Handlers (Node.js)",
+    "database": "PostgreSQL (pg)",
+    "auth": "session cookie + scrypt",
+    "deployment": "Docker + docker-compose",
+    "test": "node --test"
+  },
+  "sudahAda": [
+    "kerangka App Router (layout, halaman publik, login, dashboard)",
+    "koneksi PostgreSQL + migrasi schema (users, sessions, items)",
+    "auth login/logout/session + middleware proteksi rute",
+    "contoh CRUD items terlindungi session",
+    "Dockerfile + docker-compose (app + db)",
+    "test lib murni (auth, validate) lewat node --test",
+    "README install + perintah"
+  ],
+  "janganBangunUlang": [
+    "fondasi auth/login/session",
+    "koneksi DB + migrasi schema",
+    "kerangka app/layout/routing",
+    "Dockerfile + compose",
+    "setup test"
+  ],
+  "perintah": {
+    "install": "npm install",
+    "migrasi": "npm run migrate",
+    "seed": "npm run seed",
+    "dev": "npm run dev",
+    "test": "npm test",
+    "docker": "docker compose up --build"
+  }
+}

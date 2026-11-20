@@ -1,0 +1,71 @@
+{
+  "waktu": "2026-11-17T17:45:45.209Z",
+  "fase": "#83 Diagram ER + sequence dari prd.data[]/flows[]",
+  "suite": {
+    "core": {
+      "lulus": 179,
+      "gagal": 0,
+      "failLines": 0,
+      "exit": 0
+    },
+    "worker": {
+      "lulus": 136,
+      "gagal": 0,
+      "failLines": 0,
+      "exit": 0
+    },
+    "connect": {
+      "lulus": 19,
+      "gagal": 0,
+      "failLines": 0,
+      "exit": 0
+    },
+    "browser": {
+      "lulus": 33,
+      "gagal": 0,
+      "failLines": 0,
+      "exit": 0
+    },
+    "ui-probe": {
+      "lulus": 63,
+      "gagal": 0,
+      "failLines": 0,
+      "exit": 0
+    }
+  },
+  "totalLulus": 430,
+  "semuaHijau": true,
+  "tanpaCJK": {
+    "index.html": true,
+    "worker.mjs": true
+  },
+  "indexBytes": 456738,
+  "workerBytes": 168334,
+  "workerTidakDisentuh": true,
+  "embedWorkerTidakPerlu": "diagram hanya index.html CORE (web-side); worker.mjs tidak disentuh; core section 12 embedded==worker & adapter equality lulus",
+  "diagram": {
+    "er": "erDiagramSvg(prd.data): kotak tabel + field + tag PK/FK; relasi DITEBAK dari nama field (itemId / *_id / *_ref) atau tipe yang menyebut tabel lain (TxLine[]); garis panah biru antar kotak, label nama field",
+    "sequence": "sequenceDiagramSvg(prd.flows): satu lajur per alur, langkah bernomor terhubung panah turun di lifeline; pelaku tidak dipisah karena skema hanya menyimpan steps[]",
+    "inline": "SVG murni inline tanpa dependensi eksternal (CDN/gambar/font); viewBox + style width:100% responsif; warna mengikuti tema gelap app",
+    "escape": "svgEsc men-escape semua string model (entity/field/note/nama alur/langkah) sebelum masuk SVG; <title> memberi tooltip teks penuh yang terpotong",
+    "lokasi": "renderMarkdown prd: seksi 4 User Flow (sequence) + 6 Database Schema (ER); daftar teks lama tetap ada di bawah diagram",
+    "optIn": "data/flows kosong atau null -> SVG '' sehingga perilaku lama tidak berubah",
+    "buktiBrowser": "Edge headless: ER 3 tabel/2 PK/2 FK/2 garis, sequence 9 node/7 panah, viewBox 0 0 824 162, lebar terukur 653px & 564px; payload <img onerror>/<script> di-escape, window.__pwn tetap 0, 0 img/script hidup",
+    "preview": "diagram-preview.png — render DEMO (ER + sequence) di Edge headless, diperiksa visual: kotak tabel rapi, tag PK/FK, panah relasi berlabel, lajur langkah bernomor, tanpa tumpang-tindih"
+  },
+  "perubahan": [
+    "index.html CORE: _pfSvgUid + svgEsc/svgTrunc/svgWrap/svgLines/parseField (murni, tanpa DOM)",
+    "index.html CORE: erDiagramSvg(data) — parse field, tebak FK, layout grid 3 kolom, kotak+header+field+PK/FK, garis relasi rectEdge+marker panah",
+    "index.html CORE: sequenceDiagramSvg(flows) — lajur per alur, wrap langkah, node bernomor+circle, lifeline putus-putus, panah antar langkah",
+    "renderMarkdown prd seksi 4: sisip sequenceDiagramSvg + hint jujur (pelaku tidak dipisah)",
+    "renderMarkdown prd seksi 6: sisip erDiagramSvg + hint jujur (FK DITEBAK, bukan eksplisit)",
+    "test/core.test.mjs: export parseField/svgWrap/erDiagramSvg/sequenceDiagramSvg + section 8f (12 uji)",
+    "test/ui-probe.mjs: section 7d (5 catat) render DEMO + payload jahat di Edge, ukur layout & escape"
+  ],
+  "ujiBaru": {
+    "core": "+12 (8f: 167->179)",
+    "ui-probe": "+5 (7d: 58->63)"
+  },
+  "batasanDiuji": "FK ditebak heuristik dari penamaan field/tipe — skema prd.data TIDAK punya field FK eksplisit, jadi garis relasi adalah tebakan bukan fakta model; diagram diuji render+ukur di Edge headless dengan DEMO & payload jahat, belum dengan rencana dari OpenRouter berbayar sungguhan (tidak dipanggil tanpa izin)",
+  "catatan": "worker.mjs TIDAK disentuh (168334 byte, no CJK); AGENT_ADAPTERS tetap identik web<->worker; diagram GUI-only (tidak masuk PRD.md/bundel ZIP); index.html & worker.mjs bebas CJK"
+}

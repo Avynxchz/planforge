@@ -1,0 +1,70 @@
+{
+  "waktu": "2026-11-17T18:09:17.215Z",
+  "fase": "#84 Handoff GitHub opsional (push plan + bundel ke repo)",
+  "suite": {
+    "core": {
+      "lulus": 188,
+      "gagal": 0,
+      "failLines": 0,
+      "exit": 0
+    },
+    "worker": {
+      "lulus": 136,
+      "gagal": 0,
+      "failLines": 0,
+      "exit": 0
+    },
+    "connect": {
+      "lulus": 19,
+      "gagal": 0,
+      "failLines": 0,
+      "exit": 0
+    },
+    "browser": {
+      "lulus": 33,
+      "gagal": 0,
+      "failLines": 0,
+      "exit": 0
+    },
+    "ui-probe": {
+      "lulus": 69,
+      "gagal": 0,
+      "failLines": 0,
+      "exit": 0
+    }
+  },
+  "totalLulus": 445,
+  "semuaHijau": true,
+  "tanpaCJK": {
+    "index.html": true,
+    "worker.mjs": true
+  },
+  "indexBytes": 463381,
+  "workerBytes": 168334,
+  "workerTidakDisentuh": true,
+  "embedWorkerTidakPerlu": "GitHub hanya index.html CORE+DOM (web-side); worker.mjs tidak disentuh; core section 12 embedded==worker & adapter equality lulus",
+  "github": {
+    "jalur": "OPSIONAL, tambahan di atas MCP/Connect yang tetap jalur utama; panel 'Handoff GitHub (opsional)' di renderRunner sesudah Connect",
+    "api": "GitHub Git Data API: GET ref/heads/{branch} -> (200) GET commits/{base} ambil base_tree / (404) repo kosong -> POST blobs utf-8 per file -> POST trees (base_tree pertahankan file repo lain) -> POST commits (parents=[base] atau []) -> PATCH refs/heads/{branch} force:false (repo ada) / POST refs (repo kosong)",
+    "bundel": "githubPushFiles(docs,opts): PRD.md/FEATURES.md/ROADMAP.md/TASKS.md/AGENT_PROMPT.txt/plan.json + runnerBundle (.planforge/plan.json,gates.json,state.json, worker.mjs, starter/ bila aktif)",
+    "token": "token HANYA di header Authorization fetch DOM (closure githubPushNow); tidak masuk core/readCfg/localStorage/bundel/log; input type=password autocomplete=off; field dibersihkan (value='') sesudah push baik sukses maupun gagal",
+    "keamanan": "repo divalidasi owner/nama, branch divalidasi, files wajib array berisi; force:false tidak menimpa riwayat; base_tree menjaga file repo yang sudah ada; gagal di langkah mana pun (blob/tree/commit/ref) lapor {ok:false,step,status,error} jujur, bukan klaim sukses",
+    "buktiCore": "9 uji 8g: githubPushFiles DEMO (10 path wajib, tanpa token, tanpa duplikat) + starter (package.json/lib/cookie.js); urutan branch-ada (base_tree=baseTREE, parents=[baseSHA], PATCH sha/force false); repo kosong ref404 (tanpa base-commit, tree tanpa base_tree, parents [], POST refs); blob 401 berhenti sebelum tree; update-ref 409 gagal jujur; repo/branch/files tidak sah -> 0 request; tanpa ghp_/github_pat_/Authorization di calls+result; local git init+add+commit -> ls-files == jumlah file bundel",
+    "buktiBrowser": "Edge headless 7e: panel ghRepo/ghBranch(main)/ghToken(password,autocomplete off)/tombol ghPush/ghMsg + hint 'MCP/Connect ... jalur utama' & 'tidak disimpan'; mock window.fetch -> 17 request semua ke https://api.github.com + Authorization Bearer token; 12 blob -> tree(base_tree=baseTREE) -> commit(parents=[baseSHA],tree=newTREE) -> PATCH(sha=newCOMMIT,force=false); token field kosong sesudah push, tidak bocor ke localStorage/readCfg/bundel; ghMsg 'Terpush newCOMM' + tautan github.com/o/r/commit/newCOMMIT; 0 error console",
+    "batasanDiuji": "push diuji dengan mock fetch + local git sungguhan, BUKAN push nyata ke GitHub (tidak ada token/repo nyata; tidak dipanggil tanpa izin); token+repo diisi user saat runtime (BYOK-style), tidak disimpan diam-diam; diagram/GitHub diuji di Edge headless, belum dengan rencana dari OpenRouter berbayar sungguhan"
+  },
+  "perubahan": [
+    "index.html CORE: githubPushFiles(docs,opts) — susun daftar file plan+bundel (dokumen md, plan.json, runnerBundle) tanpa token",
+    "index.html CORE: githubPush(files,opts,http) — async, urutan Git Data API via http abstraction (tanpa fetch/token di core), validasi repo/branch/files, base_tree, parents, force:false, lapor gagal jujur per langkah",
+    "index.html DOM: githubPanel() — input repo/branch/token(password) + tombol push + hint jujur (MCP/Connect utama, token tidak disimpan)",
+    "index.html DOM: githubPushNow() — baca input, ensureWorkerSource, githubPushFiles, http closure fetch api.github.com dengan Authorization Bearer token, bersihkan token sesudah push, render hasil/gagal ke ghMsg",
+    "renderRunner: sisip githubPanel() sesudah panel Connect; outAction: tangani data-act ghPush -> githubPushNow (catch bersihkan token + lapor)",
+    "test/core.test.mjs: export githubPushFiles/githubPush + helper ta (async) + section 8g (9 uji, mockHttp + local git)",
+    "test/ui-probe.mjs: section 7e (6 catat) panel + mock fetch push + hygiene token di Edge"
+  ],
+  "ujiBaru": {
+    "core": "+9 (8g: 179->188)",
+    "ui-probe": "+6 (7e: 63->69)"
+  },
+  "catatan": "worker.mjs TIDAK disentuh (168334 byte, no CJK); AGENT_ADAPTERS tetap identik web<->worker; GitHub opsional tidak mengubah jalur utama MCP/Connect maupun bundel ZIP/Connect yang sudah ada; index.html & worker.mjs bebas CJK"
+}
