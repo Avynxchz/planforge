@@ -28,6 +28,11 @@ export function gitCommit(ctx, cwd, t, awal){
   hasil.ok = c.status === 0;
   if(hasil.ok) log(ctx, "  commit " + t.id + ": " + short(String(c.stdout).split("\n")[0], 70) + " · " + ikut.length + " file"
     + (ditinggal.length ? " · tidak ikut: " + short(ditinggal.join(", "), 160) : ""));
-  else log(ctx, "  commit gagal: " + short(String(c.stderr || c.stdout), 120));
+  else {
+    const detail = String(c.stderr || c.stdout);
+    if(/author identity unknown|unable to auto-detect email address|empty ident name|please tell me who you are/i.test(detail))
+      log(ctx, "  peringatan: auto-commit gagal karena identitas Git belum dikonfigurasi. Jalankan `git config user.name \"Nama Anda\"` dan `git config user.email \"email@anda\"` di repo proyek. Tambahkan `--global` hanya jika ingin pengaturan berlaku untuk semua repo.");
+    log(ctx, "  commit gagal: " + short(detail, 120));
+  }
   return hasil;
 }

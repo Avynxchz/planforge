@@ -46,6 +46,47 @@ t("normalisasi behavior memetakan text.expected ke contains dan menghapus alias"
   assert.ok(normalized.fixes.some(x=>x.includes("expected dinormalisasi")));
   assert.deepEqual(PF.masalahBehavior(normalized.tasks.tasks[0]), []);
 });
+t("roadmap berupa satu milestone dinormalisasi menjadi array milestones", ()=>{
+  const roadmap = {id:"M-001", title:"Fondasi aplikasi", outcome:"Aplikasi berjalan"};
+  const normalized = PF.normalizePlan(PF.DEMO.prd, roadmap, PF.DEMO.tasks);
+  assert.deepEqual(normalized.roadmap.milestones, [roadmap]);
+  assert.ok(normalized.fixes.some(x=>x.includes("milestone tunggal")));
+});
+t("requirements yang hilang disintesis dari requirement_refs task", ()=>{
+  const prd = structuredClone(PF.DEMO.prd);
+  const tasks = structuredClone(PF.DEMO.tasks);
+  prd.requirements = [];
+  const normalized = PF.normalizePlan(prd, PF.DEMO.roadmap, tasks);
+  const ids = normalized.prd.requirements.map(requirement=>requirement.id);
+  assert.ok(ids.includes("R-001"), JSON.stringify(ids));
+  assert.ok(normalized.prd.requirements.every(requirement=>
+    requirement.title && requirement.description && requirement.acceptance_criteria.length));
+  assert.ok(!PF.validatePlan(normalized.prd, normalized.roadmap, normalized.tasks)
+    .some(issue=>issue.includes("prd: requirements kosong atau tidak ada")));
+});
+t("verification kosong diisi fallback sesuai target file", ()=>{
+  const tasks = structuredClone(PF.DEMO.tasks);
+  tasks.tasks[0].files_or_areas = ["src/server.mjs"];
+  tasks.tasks[0].verification = "  ";
+  tasks.tasks[1].files_or_areas = ["index.html"];
+  tasks.tasks[1].verification = "";
+  const normalized = PF.normalizePlan(PF.DEMO.prd, PF.DEMO.roadmap, tasks);
+  assert.equal(normalized.tasks.tasks[0].verification, 'node --check "src/server.mjs"');
+  assert.match(normalized.tasks.tasks[1].verification, /node -e .*accessSync/);
+  assert.ok(normalized.fixes.filter(x=>x.includes("verification kosong")).length >= 2);
+});
+t("behavior text dengan assertion kosong diubah menjadi check visible", ()=>{
+  const tasks = structuredClone(PF.DEMO.tasks);
+  tasks.tasks[0].behavior.checks = [{type:"text", selector:"input", contains:""}];
+  const normalized = PF.normalizePlan(PF.DEMO.prd, PF.DEMO.roadmap, tasks);
+  assert.deepEqual(normalized.tasks.tasks[0].behavior.checks, [{type:"visible", selector:"input"}]);
+  assert.deepEqual(PF.masalahBehavior(normalized.tasks.tasks[0]), []);
+});
+t("task backend server tidak jadi UI hanya karena deskripsi menyebut frontend", ()=>{
+  const task = {title:"Siapkan server", description:"Sambungkan backend ke frontend", files_or_areas:["lib/server.js","src/web.js"]};
+  assert.equal(PF.taskUi(task), false);
+  assert.deepEqual(PF.masalahBehavior(task), []);
+});
 t("bahasa Inggris dan target agent umum ikut terpakai", ()=>{
   const p = PF.buildSystemPrompt({language:"English", targetAgent:"umum"});
   assert.ok(p.includes("English") && p.includes("agen mana pun"));
@@ -58,6 +99,12 @@ t("prompt tasks dan audit menetapkan skema behavior serta verifikasi berbasis ex
     assert.match(text, /exit code/);
     assert.match(text, /regex BRE/);
   }
+});
+t("prompt tasks mewajibkan verification non-kosong dan endpoint ekspor web", ()=>{
+  const text = PF.buildStageMessages("tasks", {language:"Bahasa Indonesia", idea:"web + ekspor"}, PF.DEMO)[1].content;
+  assert.match(text, /verification WAJIB diisi pada SETIAP task/);
+  assert.match(text, /perintah shell non-kosong/);
+  assert.match(text, /endpoint ekspor web/);
 });
 t("brief tidak meng-escape & jadi entity mentah", ()=>{
   const bl = PF.briefBlock({idea:"x", constraints:"y", audience:"z"});

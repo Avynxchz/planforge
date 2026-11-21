@@ -13,6 +13,11 @@ export const UI_KATA = /\b(browser|halaman|layar|viewport|responsif|mobile|tombo
 export function taskUi(t){
   if(!t) return false;
   const targets = (Array.isArray(t.files_or_areas) ? t.files_or_areas : []).join(" ").replace(/\\/g, "/");
+  const files = (Array.isArray(t.files_or_areas) ? t.files_or_areas : [])
+    .map(file=>String(file || "").replace(/\\/g, "/")).filter(Boolean);
+  const backendTarget = (file)=>/(^|\/)(routes|controllers|models|lib|api)(\/|$)/i.test(file) || /(^|\/)(server|web)\.js$/i.test(file);
+  const uiTarget = (file)=>UI_FILE.test(file) || /(^|\/)(public|views)\//i.test(file);
+  if(files.length && files.every(backendTarget) && !files.some(uiTarget)) return false;
   if(UI_FILE.test(targets) || /(^|\/)(web|frontend|client|components|pages|views|ui)(\/|$)/i.test(targets)) return true;
   if(/(^|\/)(?:src\/)?(?:utils|data|cli|api|server|backend|worker|shared|database|db)(?:\/|(?:\.[^/]+)?$)|(^|\/)(?:bin|scripts)\//i.test(targets)) return false;
   return UI_KATA.test([t.title, t.description, ...(t.acceptance_criteria || [])].join(" "));

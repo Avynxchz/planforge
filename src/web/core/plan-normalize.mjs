@@ -67,8 +67,46 @@ export function normStatus(s){
 }
 export function normalizePlan(prd, roadmap, tasks){
   const clone = (o)=>o==null?o:(typeof structuredClone==="function"?structuredClone(o):JSON.parse(JSON.stringify(o)));
-  const P = clone(prd), R = clone(roadmap), T = clone(tasks), fixes = [];
-  if(!P || !Array.isArray(P.requirements)) return {prd:P, roadmap:R, tasks:T, fixes};
+  const P = clone(prd), T = clone(tasks), fixes = [];
+  let R = clone(roadmap);
+  if(!P || typeof P !== "object" || Array.isArray(P)) return {prd:P, roadmap:R, tasks:T, fixes};
+  if(R && typeof R === "object" && !Array.isArray(R) && !Array.isArray(R.milestones) && R.id != null && R.title != null){
+    R = {milestones:[R]};
+    fixes.push("roadmap: objek milestone tunggal dibungkus ke milestones");
+  }
+  if(!Array.isArray(P.requirements)) P.requirements = [];
+  const taskList = (T && Array.isArray(T.tasks)) ? T.tasks : [];
+  if(!P.requirements.length){
+    const synthesized = new Map();
+    for(const t of taskList){
+      for(const raw of Array.isArray(t && t.requirement_refs) ? t.requirement_refs : []){
+        const id = normId(raw);
+        if(!/^R-\d{3}$/.test(id) || synthesized.has(id)) continue;
+        const related = taskList.filter(item=>(Array.isArray(item && item.requirement_refs) ? item.requirement_refs : [])
+          .some(ref=>normId(ref) === id));
+        const features = [...new Set(related.flatMap(item=>[
+          item && item.feature,
+          ...(Array.isArray(item && item.feature_refs) ? item.feature_refs : [])
+        ]).map(value=>String(value == null ? "" : value).trim()).filter(Boolean))];
+        const criteria = [...new Set(related.flatMap(item=>
+          Array.isArray(item && item.acceptance_criteria) ? item.acceptance_criteria : []
+        ).map(value=>String(value == null ? "" : value).trim()).filter(Boolean))];
+        const summary = String(P.summary || P.one_liner || (P.problem && P.problem.statement) || P.project_name || "").trim();
+        synthesized.set(id, {
+          id,
+          title: features.length ? "Kebutuhan " + features[0] : "Kebutuhan " + id,
+          description: summary || "Kebutuhan disintesis dari task yang merujuk " + id + ".",
+          acceptance_criteria: criteria.length ? criteria : ["Task yang merujuk " + id + " memenuhi hasil yang direncanakan."],
+          priority:"must",
+          scope:"mvp"
+        });
+      }
+    }
+    if(synthesized.size){
+      P.requirements = [...synthesized.values()].sort((a,b)=>a.id.localeCompare(b.id));
+      fixes.push("prd: " + P.requirements.length + " requirement disintesis dari rujukan task");
+    }
+  }
   const next = {R:1, M:1, T:1};
   const usedIds = {R:new Set(), M:new Set(), T:new Set()};
   const collect = (list, p)=>{ for(const o of (list||[])) if(o && o.id != null && String(o.id).trim()) usedIds[p].add(normId(o.id)); };
@@ -77,6 +115,17 @@ export function normalizePlan(prd, roadmap, tasks){
   const free = (p)=>{ while(usedIds[p].has(slot(p))) next[p]++; };
   (["R","M","T"]).forEach(free);
   const bump = (p)=>{ const id = slot(p); usedIds[p].add(id); next[p]++; free(p); return id; };
+  const verificationFallback = (t)=>{
+    const areas = Array.isArray(t.files_or_areas) ? t.files_or_areas
+      : (typeof t.files_or_areas === "string" ? t.files_or_areas.split(/\s*,\s*/) : []);
+    const files = areas.map(area=>String(area == null ? "" : area).trim()).filter(Boolean);
+    if(!files.length) return "node --test";
+    return files.map(file=>{
+      if(/\.(?:c?js|mjs)$/i.test(file)) return 'node --check "' + file.replace(/"/g, '\\"') + '"';
+      const literal = file.replace(/\\/g, "/").replace(/'/g, "\\'");
+      return 'node -e "require(\'fs\').accessSync(\'' + literal + '\')"';
+    }).join(" && ");
+  };
   const fixId = (obj, p, label)=>{
     if(!obj || obj.id == null || !String(obj.id).trim()) return;
     const raw = String(obj.id).trim(), n = normId(raw);
@@ -90,14 +139,37 @@ export function normalizePlan(prd, roadmap, tasks){
     const mIds = new Set(ids(R && R.milestones));
     const tIds = new Set(ids(T && T.tasks));
     for(const t of (T && T.tasks) || []){
-        for(const check of (t.behavior && Array.isArray(t.behavior.checks) ? t.behavior.checks : [])){
-          if(!check || typeof check !== "object" || check.type !== "text" || !Object.prototype.hasOwnProperty.call(check, "expected")) continue;
-          if(check.contains == null && check.matches == null && check.equals == null){
-            check.contains = check.expected;
-            fixes.push("task " + (t.id||"?") + ": behavior text.expected dinormalisasi menjadi contains");
-          } else fixes.push("task " + (t.id||"?") + ": behavior text.expected dibuang karena assertion sah sudah tersedia");
-          delete check.expected;
+      if(!String(t.verification == null ? "" : t.verification).trim()){
+        t.verification = verificationFallback(t);
+        fixes.push("task " + (t.id||"?") + ": verification kosong diisi fallback berdasarkan files_or_areas");
+      }
+      if(t.behavior && Array.isArray(t.behavior.checks)){
+        const checks = [];
+        for(const check of t.behavior.checks){
+          if(!check || typeof check !== "object" || check.type !== "text"){
+            checks.push(check);
+            continue;
+          }
+          const textFields = ["contains","matches","equals"];
+          const hasText = ()=>textFields.some(key=>check[key] != null && String(check[key]).trim() !== "");
+          if(Object.prototype.hasOwnProperty.call(check, "expected")){
+            if(!hasText() && String(check.expected == null ? "" : check.expected).trim()){
+              check.contains = check.expected;
+              fixes.push("task " + (t.id||"?") + ": behavior text.expected dinormalisasi menjadi contains");
+            } else fixes.push("task " + (t.id||"?") + ": behavior text.expected dibuang karena assertion sah sudah tersedia");
+            delete check.expected;
+          }
+          for(const key of textFields) if(typeof check[key] === "string" && !check[key].trim()) delete check[key];
+          if(!hasText()){
+            if(String(check.selector || "").trim()){
+              check.type = "visible";
+              fixes.push("task " + (t.id||"?") + ": behavior text tanpa nilai diubah menjadi check visible");
+              checks.push(check);
+            } else fixes.push("task " + (t.id||"?") + ": behavior text tanpa selector dan nilai dihapus");
+          } else checks.push(check);
         }
+        t.behavior.checks = checks;
+      }
       if(t.milestone_ref != null && String(t.milestone_ref).trim()){
         const n = normId(t.milestone_ref);
         if(mIds.has(n)){ if(n !== String(t.milestone_ref).trim()) fixes.push("task " + t.id + ": milestone_ref '" + t.milestone_ref + "' → '" + n + "'"); t.milestone_ref = n; }

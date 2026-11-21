@@ -584,6 +584,39 @@ t("auto-commit menjelaskan pemulihan saat folder kerja bukan repo Git", ()=>{
   assert.match(read(dir).log, /bukan repo Git/);
   assert.match(read(dir).log, /git init && git add \. && git commit -m "init"/);
 });
+t("auto-commit memberi langkah setel identitas Git saat commit ditolak", ()=>{
+  const dir = project(quiet);
+  const globalConfig = path.join(dir, "empty.gitconfig");
+  fs.writeFileSync(globalConfig, "");
+  const envKeys = ["GIT_CONFIG_GLOBAL","GIT_CONFIG_NOSYSTEM","GIT_AUTHOR_NAME","GIT_AUTHOR_EMAIL","GIT_COMMITTER_NAME","GIT_COMMITTER_EMAIL"];
+  const oldEnv = Object.fromEntries(envKeys.map(key=>[key, process.env[key]]));
+  process.env.GIT_CONFIG_GLOBAL = globalConfig;
+  process.env.GIT_CONFIG_NOSYSTEM = "1";
+  for(const key of envKeys.slice(2)) delete process.env[key];
+  try{
+    assert.equal(spawnSync("git", ["init","-q"], {cwd:dir, encoding:"utf8"}).status, 0);
+    for(const args of [["config","user.name","uji"],["config","user.email","uji@test"]])
+      assert.equal(spawnSync("git", args, {cwd:dir, encoding:"utf8"}).status, 0);
+    spawnSync("git", ["add","-A"], {cwd:dir, encoding:"utf8"});
+    assert.equal(spawnSync("git", ["commit","-q","-m","awal"], {cwd:dir, encoding:"utf8"}).status, 0);
+    for(const key of ["user.name","user.email"])
+      assert.equal(spawnSync("git", ["config","--unset",key], {cwd:dir, encoding:"utf8"}).status, 0);
+    assert.equal(spawnSync("git", ["config","user.useConfigOnly","true"], {cwd:dir, encoding:"utf8"}).status, 0);
+    fs.writeFileSync(path.join(dir, "hasil.js"), "export const hasil = true;\n");
+    const ctx = W.loadCtx(dir);
+    const result = W.gitCommit(ctx, dir, {id:"T-001", title:"Task uji"}, null);
+    const log = fs.readFileSync(path.join(dir, ".planforge", "RUN_LOG.md"), "utf8");
+    assert.equal(result.ok, false);
+    assert.match(log, /identitas Git belum dikonfigurasi/);
+    assert.match(log, /git config user\.name/);
+    assert.match(log, /git config user\.email/);
+  } finally{
+    for(const key of envKeys){
+      if(oldEnv[key] === undefined) delete process.env[key];
+      else process.env[key] = oldEnv[key];
+    }
+  }
+});
 t("agen yang mengkommit kerjanya sendiri tetap terbaca sebagai perubahan", ()=>{
   const dir = project(Object.assign({}, quiet));
   for(const c of [["init", "-q"], ["config", "user.email", "uji@test"], ["config", "user.name", "uji"]]) spawnSync("git", c, { cwd: dir, encoding:"utf8" });

@@ -16,7 +16,7 @@
     }
   },
   "additionalAssertions": {
-    "core": 10
+    "core": 16
   },
   "normalization": "Only declared top-level generated dates/timestamps are replaced after checking their format. All other JSON values, keys, array ordering, and error text are retained.",
   "worker": {
@@ -1309,7 +1309,9 @@
         }
       ],
       "result": {
-        "prd": {},
+        "prd": {
+          "requirements": []
+        },
         "roadmap": {},
         "tasks": {
           "tasks": []
