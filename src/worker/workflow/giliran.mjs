@@ -1,3 +1,6 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { shouldRunFull } from "./full-review.mjs";
 import { taskList, isDone } from "../ledger/tasks.mjs";
 import { log } from "../ledger/log.mjs";
@@ -43,6 +46,80 @@ export function kartuGiliran(ctx, g){
   ].join("\n");
 }
 
+function statusFiles(root){
+  const dirs = [], files = [], allDirs = [];
+  const walk = (dir, relative)=>{
+    for(const entry of fs.readdirSync(dir, { withFileTypes:true })){
+      if(entry.name === ".planforge" || entry.name === ".git") continue;
+      const rel = relative ? path.join(relative, entry.name) : entry.name;
+      const full = path.join(dir, entry.name);
+      if(entry.isDirectory()){
+        allDirs.push(rel);
+        if(/^(?:data|db|storage)$/i.test(entry.name)){
+          dirs.push(rel);
+          continue;
+        }
+        walk(full, rel);
+      }else if(entry.isFile() && /\.(?:json|csv|db|sqlite|sqlite3)(?:-(?:wal|shm|journal))?$/i.test(entry.name)){
+        files.push(rel);
+      }
+    }
+  };
+  walk(root, "");
+  return { dirs, files, allDirs };
+}
+
+function snapshotApplicationState(root, backup){
+  const entries = statusFiles(root);
+  for(const relative of entries.dirs){
+    const target = path.join(backup, relative);
+    fs.mkdirSync(path.dirname(target), { recursive:true });
+    fs.cpSync(path.join(root, relative), target, { recursive:true });
+  }
+  for(const relative of entries.files){
+    const target = path.join(backup, relative);
+    fs.mkdirSync(path.dirname(target), { recursive:true });
+    fs.copyFileSync(path.join(root, relative), target);
+  }
+  return entries;
+}
+
+function restoreApplicationState(root, backup, before){
+  const current = statusFiles(root);
+  for(const relative of current.dirs) fs.rmSync(path.join(root, relative), { recursive:true, force:true });
+  for(const relative of current.files) fs.rmSync(path.join(root, relative), { force:true });
+  for(const relative of before.dirs){
+    const source = path.join(backup, relative);
+    const target = path.join(root, relative);
+    fs.mkdirSync(path.dirname(target), { recursive:true });
+    fs.cpSync(source, target, { recursive:true });
+  }
+  for(const relative of before.files){
+    const source = path.join(backup, relative);
+    const target = path.join(root, relative);
+    fs.mkdirSync(path.dirname(target), { recursive:true });
+    fs.copyFileSync(source, target);
+  }
+  const existing = new Set(before.allDirs);
+  const after = statusFiles(root).allDirs.sort((a, b)=>b.length - a.length);
+  for(const relative of after){
+    if(existing.has(relative)) continue;
+    const target = path.join(root, relative);
+    if(fs.readdirSync(target).length === 0) fs.rmdirSync(target);
+  }
+}
+
+function runIsolatedState(root, callback){
+  const backup = fs.mkdtempSync(path.join(os.tmpdir(), "planforge-giliran-"));
+  try{
+    const before = snapshotApplicationState(root, backup);
+    try{ return callback(); }
+    finally{ restoreApplicationState(root, backup, before); }
+  }finally{
+    fs.rmSync(backup, { recursive:true, force:true });
+  }
+}
+
 export function buktiGiliran(ctx, root, verification){
   const g = ctx.state.giliran;
   const v = String(verification || "").trim();
@@ -50,14 +127,17 @@ export function buktiGiliran(ctx, root, verification){
   if(v.length < 12) kurang.push("verification terlalu pendek (" + v.length + " karakter) — tulis hasil tiap langkah + perintah tes dan outputnya");
   const absen = g.langkah.filter(id=>!new RegExp("(^|[^\\w-])" + id + "\\s*[:=]", "i").test(v));
   if(absen.length) kurang.push("laporan tidak menyebut hasil langkah: " + absen.join(", ") + " — satu baris per langkah, diawali id-nya");
-  const hard = runHardGates(ctx, root);
+  const hard = runIsolatedState(root, ()=>runHardGates(ctx, root));
   const blok = hard.filter(h=>!h.pass && h.blocking);
   if(blok.length) kurang.push("gerbang keras merah: " + blok.map(b=>b.id + " -> " + short(String(b.out).replace(/\s+/g, " "), 300)).join(" | "));
   const cek = [];
   if(!ctx.lewatiVerifikasi) for(const t of cakupanGiliran(ctx, g)){
-    const ver = runVerification(ctx, root, t);
+    const { ver, beh } = runIsolatedState(root, ()=>{
+      const ver = runVerification(ctx, root, t);
+      const beh = runBehavior(ctx, root, t);
+      return { ver, beh };
+    });
     if(!ver.ok) kurang.push("verification " + t.id + " merah sesudah giliran: " + short(ver.kurang.join(" · "), 300));
-    const beh = runBehavior(ctx, root, t);
     if(!beh.ok) kurang.push("perilaku " + t.id + " merah sesudah giliran: " + short((beh.kurang || []).join(" · "), 300));
     cek.push(t.id + (ver.ok && beh.ok ? "=OK" : "=merah"));
   }

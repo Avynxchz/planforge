@@ -1540,6 +1540,9 @@ function runBehavior(ctx, cwd, t, opsi) {
 }
 
 // src/worker/workflow/giliran.mjs
+import fs10 from "node:fs";
+import os2 from "node:os";
+import path11 from "node:path";
 function giliranJatuh(ctx, t) {
   if (ctx.state.giliran || !shouldRunFull(ctx, t)) return null;
   const list = taskList(ctx.plan);
@@ -1579,6 +1582,79 @@ function kartuGiliran(ctx, g) {
     '- Tidak sanggup setelah 2 ronde perbaikan: mark_failed id "' + g.id + '" beserta alasannya, lalu BERHENTI dan laporkan ke manusia.'
   ].join("\n");
 }
+function statusFiles(root) {
+  const dirs = [], files = [], allDirs = [];
+  const walk = (dir, relative) => {
+    for (const entry of fs10.readdirSync(dir, { withFileTypes: true })) {
+      if (entry.name === ".planforge" || entry.name === ".git") continue;
+      const rel = relative ? path11.join(relative, entry.name) : entry.name;
+      const full = path11.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        allDirs.push(rel);
+        if (/^(?:data|db|storage)$/i.test(entry.name)) {
+          dirs.push(rel);
+          continue;
+        }
+        walk(full, rel);
+      } else if (entry.isFile() && /\.(?:json|csv|db|sqlite|sqlite3)(?:-(?:wal|shm|journal))?$/i.test(entry.name)) {
+        files.push(rel);
+      }
+    }
+  };
+  walk(root, "");
+  return { dirs, files, allDirs };
+}
+function snapshotApplicationState(root, backup) {
+  const entries = statusFiles(root);
+  for (const relative of entries.dirs) {
+    const target = path11.join(backup, relative);
+    fs10.mkdirSync(path11.dirname(target), { recursive: true });
+    fs10.cpSync(path11.join(root, relative), target, { recursive: true });
+  }
+  for (const relative of entries.files) {
+    const target = path11.join(backup, relative);
+    fs10.mkdirSync(path11.dirname(target), { recursive: true });
+    fs10.copyFileSync(path11.join(root, relative), target);
+  }
+  return entries;
+}
+function restoreApplicationState(root, backup, before) {
+  const current = statusFiles(root);
+  for (const relative of current.dirs) fs10.rmSync(path11.join(root, relative), { recursive: true, force: true });
+  for (const relative of current.files) fs10.rmSync(path11.join(root, relative), { force: true });
+  for (const relative of before.dirs) {
+    const source = path11.join(backup, relative);
+    const target = path11.join(root, relative);
+    fs10.mkdirSync(path11.dirname(target), { recursive: true });
+    fs10.cpSync(source, target, { recursive: true });
+  }
+  for (const relative of before.files) {
+    const source = path11.join(backup, relative);
+    const target = path11.join(root, relative);
+    fs10.mkdirSync(path11.dirname(target), { recursive: true });
+    fs10.copyFileSync(source, target);
+  }
+  const existing = new Set(before.allDirs);
+  const after = statusFiles(root).allDirs.sort((a, b) => b.length - a.length);
+  for (const relative of after) {
+    if (existing.has(relative)) continue;
+    const target = path11.join(root, relative);
+    if (fs10.readdirSync(target).length === 0) fs10.rmdirSync(target);
+  }
+}
+function runIsolatedState(root, callback) {
+  const backup = fs10.mkdtempSync(path11.join(os2.tmpdir(), "planforge-giliran-"));
+  try {
+    const before = snapshotApplicationState(root, backup);
+    try {
+      return callback();
+    } finally {
+      restoreApplicationState(root, backup, before);
+    }
+  } finally {
+    fs10.rmSync(backup, { recursive: true, force: true });
+  }
+}
 function buktiGiliran(ctx, root, verification) {
   const g = ctx.state.giliran;
   const v = String(verification || "").trim();
@@ -1586,14 +1662,17 @@ function buktiGiliran(ctx, root, verification) {
   if (v.length < 12) kurang.push("verification terlalu pendek (" + v.length + " karakter) — tulis hasil tiap langkah + perintah tes dan outputnya");
   const absen = g.langkah.filter((id) => !new RegExp("(^|[^\\w-])" + id + "\\s*[:=]", "i").test(v));
   if (absen.length) kurang.push("laporan tidak menyebut hasil langkah: " + absen.join(", ") + " — satu baris per langkah, diawali id-nya");
-  const hard = runHardGates(ctx, root);
+  const hard = runIsolatedState(root, () => runHardGates(ctx, root));
   const blok = hard.filter((h) => !h.pass && h.blocking);
   if (blok.length) kurang.push("gerbang keras merah: " + blok.map((b) => b.id + " -> " + short(String(b.out).replace(/\s+/g, " "), 300)).join(" | "));
   const cek = [];
   if (!ctx.lewatiVerifikasi) for (const t of cakupanGiliran(ctx, g)) {
-    const ver = runVerification(ctx, root, t);
+    const { ver, beh } = runIsolatedState(root, () => {
+      const ver2 = runVerification(ctx, root, t);
+      const beh2 = runBehavior(ctx, root, t);
+      return { ver: ver2, beh: beh2 };
+    });
     if (!ver.ok) kurang.push("verification " + t.id + " merah sesudah giliran: " + short(ver.kurang.join(" · "), 300));
-    const beh = runBehavior(ctx, root, t);
     if (!beh.ok) kurang.push("perilaku " + t.id + " merah sesudah giliran: " + short((beh.kurang || []).join(" · "), 300));
     cek.push(t.id + (ver.ok && beh.ok ? "=OK" : "=merah"));
   }
@@ -1624,8 +1703,8 @@ function ringkasBehavior(beh) {
 }
 
 // src/worker/environment/readiness.mjs
-import fs10 from "node:fs";
-import path11 from "node:path";
+import fs11 from "node:fs";
+import path12 from "node:path";
 import { createRequire } from "node:module";
 import { parseEnv } from "node:util";
 import { spawnSync as spawnSync7 } from "node:child_process";
@@ -1638,31 +1717,31 @@ function environmentReadiness(root, opts = {}) {
   const add = (code, msg) => findings.push({ lvl: "warn", id: "ENV", code, msg });
   let pkg = null;
   try {
-    pkg = JSON.parse(fs10.readFileSync(path11.join(root, "package.json"), "utf8"));
+    pkg = JSON.parse(fs11.readFileSync(path12.join(root, "package.json"), "utf8"));
   } catch (_) {
   }
   if (!pkg) return { findings, checked: false, database: "not-applicable" };
-  const req = createRequire(path11.join(root, "package.json"));
+  const req = createRequire(path12.join(root, "package.json"));
   const missing = Object.keys({ ...pkg.dependencies, ...pkg.devDependencies }).filter((name) => {
     try {
       req.resolve(name);
       return false;
     } catch (_) {
     }
-    return !(req.resolve.paths(name) || []).some((base) => fs10.existsSync(path11.join(base, name, "package.json")));
+    return !(req.resolve.paths(name) || []).some((base) => fs11.existsSync(path12.join(base, name, "package.json")));
   });
   if (missing.length) add("dependencies", "Dependency belum terpasang/terbaca: " + missing.join(", ") + ". Jalankan npm install di folder proyek setelah menyetujui unduhan dan install scripts; bukan alasan menolak Connect atau mengaku task selesai.");
-  const files = envFileNames(env).filter((f) => fs10.existsSync(path11.join(root, f)));
+  const files = envFileNames(env).filter((f) => fs11.existsSync(path12.join(root, f)));
   let url = env.DATABASE_URL;
   for (const f of files) {
     if (url !== void 0) break;
     try {
-      const parsed = parseEnv(fs10.readFileSync(path11.join(root, f), "utf8"));
+      const parsed = parseEnv(fs11.readFileSync(path12.join(root, f), "utf8"));
       if (Object.hasOwn(parsed, "DATABASE_URL")) url = parsed.DATABASE_URL;
     } catch (_) {
     }
   }
-  const hasExample = fs10.existsSync(path11.join(root, ".env.example"));
+  const hasExample = fs11.existsSync(path12.join(root, ".env.example"));
   if (hasExample && !files.length && !url) add("env-file", "Konfigurasi lokal belum ada. node worker.mjs setup-env menyalin .env.example ke .env.local tanpa menimpa file; periksa nilainya sebelum dipakai. Tidak ada rahasia yang dicetak.");
   const pgNeeded = !!(pkg.dependencies && pkg.dependencies.pg || pkg.devDependencies && pkg.devDependencies.pg);
   let database = pgNeeded ? "unverified" : "not-applicable";
@@ -1685,19 +1764,19 @@ function environmentReadiness(root, opts = {}) {
         } else add("database-unverified", "DATABASE_URL tersedia, koneksi DB belum diuji. node worker.mjs doctor --environment memeriksa port (bukan login/schema).");
       }
     }
-    if (fs10.existsSync(path11.join(root, "docker-compose.yml"))) add("database-start", "Ada docker-compose.yml. Untuk starter PlanForge, jika Docker sudah terpasang dan pengguna menyetujui DB lokal: docker compose up -d db (unduh image, buat volume). Hentikan: docker compose stop db; data tetap ada. Alternatif: DATABASE_URL PostgreSQL yang sudah dimiliki. Jangan memasang Docker atau membuat DB cloud tanpa persetujuan.");
+    if (fs11.existsSync(path12.join(root, "docker-compose.yml"))) add("database-start", "Ada docker-compose.yml. Untuk starter PlanForge, jika Docker sudah terpasang dan pengguna menyetujui DB lokal: docker compose up -d db (unduh image, buat volume). Hentikan: docker compose stop db; data tetap ada. Alternatif: DATABASE_URL PostgreSQL yang sudah dimiliki. Jangan memasang Docker atau membuat DB cloud tanpa persetujuan.");
   }
   return { findings, checked: true, database };
 }
 function setupEnv(root, env = process.env) {
   const allEnvFiles = [".env", ".env.local", ...["development", "production", "test"].flatMap((mode) => [".env." + mode, ".env." + mode + ".local"])];
-  const existing = allEnvFiles.find((f) => fs10.existsSync(path11.join(root, f)));
+  const existing = allEnvFiles.find((f) => fs11.existsSync(path12.join(root, f)));
   if (existing || env.DATABASE_URL) return { ok: true, created: false, message: "Konfigurasi sudah ada; tidak ditimpa dan tidak ditampilkan. Periksa DATABASE_URL milikmu sendiri." };
-  const example = path11.join(root, ".env.example"), dest = path11.join(root, ".env.local");
-  if (!fs10.existsSync(example)) return { ok: false, created: false, message: ".env.example tidak ada; tidak menebak konfigurasi." };
+  const example = path12.join(root, ".env.example"), dest = path12.join(root, ".env.local");
+  if (!fs11.existsSync(example)) return { ok: false, created: false, message: ".env.example tidak ada; tidak menebak konfigurasi." };
   let ignore = "";
   try {
-    ignore = fs10.readFileSync(path11.join(root, ".gitignore"), "utf8");
+    ignore = fs11.readFileSync(path12.join(root, ".gitignore"), "utf8");
   } catch (_) {
   }
   const ignored = spawnSync7("git", ["check-ignore", "--no-index", "--quiet", "--", ".env.local"], { cwd: root, encoding: "utf8", timeout: 3e3, windowsHide: true });
@@ -1705,7 +1784,7 @@ function setupEnv(root, env = process.env) {
   if (!(ignored.status === 0 || ignored.status !== 1 && simpleIgnore))
     return { ok: false, created: false, message: "Belum dapat memastikan .env.local diabaikan Git. Pastikan aturan .gitignore tidak membukanya kembali; tidak ada file yang ditulis." };
   try {
-    fs10.copyFileSync(example, dest, fs10.constants.COPYFILE_EXCL);
+    fs11.copyFileSync(example, dest, fs11.constants.COPYFILE_EXCL);
   } catch (e) {
     return { ok: false, created: false, message: ".env.local tidak dibuat (" + e.code + "); tidak ada file lama yang ditimpa." };
   }
@@ -1855,15 +1934,15 @@ function missingNpmScripts(tasks, pkg) {
 }
 
 // src/worker/environment/audit.mjs
-import fs11 from "node:fs";
-import path12 from "node:path";
+import fs12 from "node:fs";
+import path13 from "node:path";
 function auditPlan(ctx, cwd) {
   const temuan = [], st = ctx.state, tasks = taskList(ctx.plan);
   const add = (lvl, id, msg) => temuan.push({ lvl, id, msg });
   temuan.push(...environmentReadiness(cwd).findings);
   let pkg;
   try {
-    pkg = JSON.parse(fs11.readFileSync(path12.join(cwd, "package.json"), "utf8"));
+    pkg = JSON.parse(fs12.readFileSync(path13.join(cwd, "package.json"), "utf8"));
   } catch (_) {
   }
   if (pkg) for (const x of missingNpmScripts(tasks, pkg)) add("error", x.id, x.msg);
@@ -1880,9 +1959,9 @@ function auditPlan(ctx, cwd) {
     const scaffold = /scaffold|kerangka|skeleton|setup|inisial|struktur dasar|bootstrap|bangun dasar/i.test(judul);
     const butuhBuild = /\bnpm run\b|\byarn\b|\bpnpm\b|\bvite\b|next build|\btsc\b/i.test(String(pertama.verification || ""));
     const disebut = (pertama.files_or_areas || []).map((f) => String(f)).filter((f) => !/^(test\/|\.planforge\/)/.test(f));
-    const hilang = disebut.filter((f) => !fs11.existsSync(path12.join(ctx.root, f)));
+    const hilang = disebut.filter((f) => !fs12.existsSync(path13.join(ctx.root, f)));
     const berkasInti = ["index.html", "package.json", "src", "app.js", "main.py", "pyproject.toml", "Cargo.toml", "go.mod"];
-    const adaProyek = berkasInti.some((f) => fs11.existsSync(path12.join(ctx.root, f)));
+    const adaProyek = berkasInti.some((f) => fs12.existsSync(path13.join(ctx.root, f)));
     if (!adaProyek && !scaffold && butuhBuild && hilang.length)
       add("error", pertama.id, "folder proyek masih kosong tapi task pertama ini bukan scaffold dan butuh build; file yang disebut tidak ada: " + short(hilang.join(", "), 180) + ". Tidak ada task yang membuatnya. Tambahkan task T-001 scaffold ke rencana, atau pulihkan file aplikasi — jangan mengarang proyek dasar di luar task.");
     else if (!adaProyek && !scaffold && hilang.length)
@@ -1952,12 +2031,12 @@ function auditPlan(ctx, cwd) {
       add("warn", t.id, "memakai sqlite3 tanpa menutup stdin — kalau dia shim Python, perintahnya menunggu selamanya. Tambahkan ` < /dev/null`.");
     for (const s of segs) {
       const db = (s.match(/[\w.@\/-]*\.db\b/i) || [])[0];
-      if (db && /pragma|insert|update|delete|create|drop|alter|vacuum/i.test(s) && fs11.existsSync(path12.resolve(cwd, db.replace(/^\.\//, ""))))
+      if (db && /pragma|insert|update|delete|create|drop|alter|vacuum/i.test(s) && fs12.existsSync(path13.resolve(cwd, db.replace(/^\.\//, ""))))
         add("warn", t.id, 'menulis ke "' + db + '" yang ada di disk (DB produksi proyek) — salin dulu ke DB sementara, jangan ubah file/PRAGMA milik data live demi gerbang hijau.');
     }
     for (const f of new Set([...v.matchAll(TOKEN_FILE)].map((m) => m[1]))) {
       if (/:\/\//.test(f)) continue;
-      const ada = fs11.existsSync(path12.resolve(cwd, f.replace(/^\.\//, "")));
+      const ada = fs12.existsSync(path13.resolve(cwd, f.replace(/^\.\//, "")));
       if (ada) continue;
       if (isDone(st.tasks[t.id] || {})) add("error", t.id, 'sudah ditandai selesai tapi "' + f + '" tidak ada di proyek');
       else add("warn", t.id, '"' + f + '" belum ada — harusnya file ini yang dibuat task-nya');
@@ -2228,8 +2307,8 @@ function mcpMain(argv) {
 
 // src/worker/connectors/process.mjs
 import { spawnSync as spawnSync11 } from "node:child_process";
-import path13 from "node:path";
-import fs12 from "node:fs";
+import path14 from "node:path";
+import fs13 from "node:fs";
 var EPOCH = 0;
 function jamProsesWindows() {
   const skrip = `Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'node.exe' -and $_.CreationDate } | ForEach-Object { "$($_.ProcessId)|$([Math]::Round((New-TimeSpan -Start ([DateTime]::new(1970,1,1,0,0,0,[DateTimeKind]::Utc)) -End $_.CreationDate.ToUniversalTime()).TotalMilliseconds))|$($_.CommandLine)" }`;
@@ -2251,20 +2330,20 @@ function jamProsesPosix() {
 }
 var prosesNode = () => process.platform === "win32" ? jamProsesWindows() : jamProsesPosix();
 function doctorMcp(root, daftar) {
-  const file = path13.join(root, "worker.mjs");
+  const file = path14.join(root, "worker.mjs");
   let wtulis = 0;
   try {
-    wtulis = fs12.statSync(file).mtimeMs;
+    wtulis = fs13.statSync(file).mtimeMs;
   } catch (_) {
   }
-  const plan = path13.join(root, DIR, F_PLAN);
+  const plan = path14.join(root, DIR, F_PLAN);
   let ptulis = 0;
   try {
-    ptulis = fs12.statSync(plan).mtimeMs;
+    ptulis = fs13.statSync(plan).mtimeMs;
   } catch (_) {
   }
-  const absolute = (s) => /^(?:[a-z]:[\\/]|[\\/]{2})/i.test(s) || path13.posix.isAbsolute(s);
-  const normal = (s) => /^(?:[a-z]:[\\/]|[\\/]{2})/i.test(s) ? path13.win32.normalize(s).replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase() : path13.resolve(s);
+  const absolute = (s) => /^(?:[a-z]:[\\/]|[\\/]{2})/i.test(s) || path14.posix.isAbsolute(s);
+  const normal = (s) => /^(?:[a-z]:[\\/]|[\\/]{2})/i.test(s) ? path14.win32.normalize(s).replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase() : path14.resolve(s);
   const proses = (daftar === void 0 ? prosesNode() : daftar).filter((p) => /worker\.mjs\b/.test(p.cmd || "") && /\bmcp\b/.test(p.cmd || ""));
   return {
     worker: file,
@@ -2280,7 +2359,7 @@ function doctorMcp(root, daftar) {
       let prosesTulis = 0;
       if (worker && absolute(worker)) {
         try {
-          prosesTulis = fs12.statSync(worker).mtimeMs;
+          prosesTulis = fs13.statSync(worker).mtimeMs;
         } catch (_) {
         }
       }
@@ -2299,8 +2378,8 @@ function doctorMcp(root, daftar) {
 
 // src/worker/environment/interpreter.mjs
 import { spawnSync as spawnSync12 } from "node:child_process";
-import fs13 from "node:fs";
-import path14 from "node:path";
+import fs14 from "node:fs";
+import path15 from "node:path";
 function kandidatInterpreter(cwd) {
   const cariPerintah = process.platform === "win32" ? "where" : "which";
   const keluar = [];
@@ -2318,7 +2397,7 @@ function jalurAman(p) {
   if (process.platform !== "win32" || !/\s/.test(mentah)) return mentah;
   const r = spawnSync12('for %A in ("' + mentah + '") do @echo %~sA', { shell: true, encoding: "utf8" });
   const pendek = String(r.stdout || "").trim();
-  return pendek && !/\s/.test(pendek) && fs13.existsSync(pendek) ? pendek : mentah;
+  return pendek && !/\s/.test(pendek) && fs14.existsSync(pendek) ? pendek : mentah;
 }
 function absolutkanScript(pkg, abs) {
   const baru = JSON.parse(JSON.stringify(pkg));
@@ -2337,10 +2416,10 @@ function absolutkanScript(pkg, abs) {
   return baru;
 }
 function pinInterpreter(ctx, cwd, kandidat) {
-  const file = path14.join(cwd, "package.json");
+  const file = path15.join(cwd, "package.json");
   let mentah = "";
   try {
-    mentah = fs13.readFileSync(file, "utf8");
+    mentah = fs14.readFileSync(file, "utf8");
   } catch (_) {
     mentah = "";
   }
@@ -2354,7 +2433,7 @@ function pinInterpreter(ctx, cwd, kandidat) {
   const tulis = (obj) => {
     let teks = JSON.stringify(obj, null, indent) + akhiran;
     if (crlf) teks = teks.replace(/\r?\n/g, "\r\n");
-    fs13.writeFileSync(file, teks);
+    fs14.writeFileSync(file, teks);
   };
   const coba = [];
   for (const abs of daftar) {
@@ -2371,7 +2450,7 @@ function pinInterpreter(ctx, cwd, kandidat) {
       return { ok: true, abs, coba, gate: g };
     }
   }
-  fs13.writeFileSync(file, mentah);
+  fs14.writeFileSync(file, mentah);
   return { ok: false, coba, kenapa: "tidak ada interpreter yang bikin gerbang hijau — package.json kunembalikan seperti semula" };
 }
 
@@ -2493,12 +2572,14 @@ function commandGiliran(ctx, args) {
     return 0;
   }
   if (args.lewati) {
+    const dilewatiSampai = g.to;
     ctx.state.history.push({ at: (/* @__PURE__ */ new Date()).toISOString(), gate: g.id, from: g.from, to: g.to, out: "DILEWATI manusia" + (g.gagal ? " sesudah gagal: " + g.gagal : "") });
     delete ctx.state.giliran;
     delete ctx.state.fullHalt;
     ctx.state.sinceFull = 0;
+    ctx.state.lastFullMark = dilewatiSampai;
     saveCtx(ctx);
-    log(ctx, g.id + " DILEWATI manusia — audit atas " + g.from + ".." + g.to + " TIDAK pernah terjadi; giliran berikutnya mulai lagi dari " + (ctx.state.lastFullMark || g.from));
+    log(ctx, g.id + " DILEWATI manusia — audit atas " + g.from + ".." + dilewatiSampai + " dilewati manusia (tercatat di history); giliran berikutnya dimulai setelah " + dilewatiSampai);
     console.log(g.id + " dilewati dan dicatat di ledger. Task berikutnya bisa diambil.");
     return 0;
   }
@@ -2553,10 +2634,10 @@ function refreshConnector(root, opts) {
 }
 
 // src/worker/connectors/config.mjs
-import path15 from "node:path";
-import fs14 from "node:fs";
+import path16 from "node:path";
+import fs15 from "node:fs";
 function mcpEntry(root, shape) {
-  const workerPath = path15.join(root, "worker.mjs").replace(/\\/g, "/");
+  const workerPath = path16.join(root, "worker.mjs").replace(/\\/g, "/");
   const args = [workerPath, "mcp", "--dir", root.replace(/\\/g, "/")];
   if (shape === "servers") return { type: "stdio", command: "node", args, cwd: "${workspaceFolder}" };
   if (shape === "mcp") return { type: "local", command: ["node"].concat(args), environment: {}, enabled: true };
@@ -2579,7 +2660,7 @@ function mcpSnippet(root, key) {
   return JSON.stringify({ mcpServers: entry }, null, 2);
 }
 function mcpUniversal(root) {
-  const workerPath = path15.join(root, "worker.mjs").replace(/\\/g, "/");
+  const workerPath = path16.join(root, "worker.mjs").replace(/\\/g, "/");
   return {
     nama: mcpServerName(root),
     perintah: "node " + workerPath + " mcp --dir " + root.replace(/\\/g, "/"),
@@ -2610,10 +2691,10 @@ var rulesText = (root) => [
   "Folder proyek: " + root.replace(/\\/g, "/")
 ].join("\n");
 function writeFileChecked(root, rel, text) {
-  const p = path15.join(root, rel);
-  fs14.mkdirSync(path15.dirname(p), { recursive: true });
-  if (fs14.existsSync(p)) {
-    const lama = fs14.readFileSync(p, "utf8");
+  const p = path16.join(root, rel);
+  fs15.mkdirSync(path16.dirname(p), { recursive: true });
+  if (fs15.existsSync(p)) {
+    const lama = fs15.readFileSync(p, "utf8");
     if (rel.endsWith(".json")) {
       let j;
       try {
@@ -2623,20 +2704,20 @@ function writeFileChecked(root, rel, text) {
       }
       if (j.mcp && j.mcp.servers) {
         j.mcp.servers = Object.assign({}, j.mcp.servers, { [mcpServerName(root)]: mcpEntry(root, "mcp") });
-        fs14.writeFileSync(p, JSON.stringify(j, null, 2));
+        fs15.writeFileSync(p, JSON.stringify(j, null, 2));
         return { file: rel, tulis: true, kenapa: "ditempel ke dalam mcp.servers yang sudah ada" };
       }
       const key = j.mcpServers ? "mcpServers" : j.servers ? "servers" : null;
       if (!key) return { file: rel, tulis: false, kenapa: "tidak ada blok mcpServers/servers/mcp.servers yang kukenali" };
       j[key] = Object.assign({}, j[key], { [mcpServerName(root)]: mcpEntry(root, key === "servers" ? "servers" : "mcpServers") });
-      fs14.writeFileSync(p, JSON.stringify(j, null, 2));
+      fs15.writeFileSync(p, JSON.stringify(j, null, 2));
       return { file: rel, tulis: true, kenapa: "ditempel ke dalam " + key + " yang sudah ada" };
     }
     if (/PlanForge/.test(lama)) return { file: rel, tulis: false, kenapa: "sudah menyebut PlanForge, tidak kutumpuk" };
-    fs14.appendFileSync(p, "\n\n" + text);
+    fs15.appendFileSync(p, "\n\n" + text);
     return { file: rel, tulis: true, kenapa: "ditambah di akhir file yang sudah ada" };
   }
-  fs14.writeFileSync(p, text);
+  fs15.writeFileSync(p, text);
   return { file: rel, tulis: true, kenapa: "file baru" };
 }
 function connectAgent(root, key) {
@@ -2701,8 +2782,8 @@ function commandConnect(root, args) {
 
 // src/worker/cli/verification-commands.mjs
 import { spawnSync as spawnSync14 } from "node:child_process";
-import fs15 from "node:fs";
-import path16 from "node:path";
+import fs16 from "node:fs";
+import path17 from "node:path";
 function commandVerify(ctx, cwd, args) {
   const id = args._[1] || args.only;
   if (!id) {
@@ -2785,8 +2866,8 @@ function commandAudit(ctx, cwd) {
   console.log("audit rencana · " + a.tasks + " task · 0 panggilan agen");
   for (const x of a.temuan) console.log("  " + (x.lvl === "error" ? "!! " : "~ ") + (x.id + " ").padEnd(7) + x.msg);
   if (!a.temuan.length) console.log("  bersih: setiap gerbang keliatan bisa dijalankan di mesin ini");
-  fs15.writeFileSync(
-    path16.join(cwd, DIR, "PLAN_AUDIT.md"),
+  fs16.writeFileSync(
+    path17.join(cwd, DIR, "PLAN_AUDIT.md"),
     "# Audit rencana\n\n" + (a.temuan.length ? a.temuan.map((x) => "- **" + x.lvl + "** " + x.id + " — " + x.msg).join("\n") : "Tidak ada temuan.") + "\n\n" + a.error.length + " error · " + a.warn.length + " warning\n"
   );
   console.log("\n" + a.error.length + " error · " + a.warn.length + " warning · laporan: " + DIR + "/PLAN_AUDIT.md");
@@ -3091,7 +3172,7 @@ function commandRun(ctx, cwd, args, cap) {
 }
 
 // src/worker/cli/main.mjs
-import path17 from "node:path";
+import path18 from "node:path";
 function main(argv) {
   const args = parseArgs(argv || process.argv.slice(2));
   const cmd = args._[0];
@@ -3112,7 +3193,7 @@ function main(argv) {
     console.error("tidak ada " + DIR + "/plan.json di cwd maupun di samping worker.mjs. Ekspor dulu dari PlanForge ke folder proyek, atau jalankan `node worker.mjs init`.");
     return 1;
   }
-  const cwd = args.cwd ? path17.resolve(root, args.cwd) : root;
+  const cwd = args.cwd ? path18.resolve(root, args.cwd) : root;
   if (cmd === "setup-env") return commandSetupEnv(cwd);
   if (cmd === "doctor" && args.environment) return commandEnvironment(cwd);
   const ctx = loadCtx(root);
@@ -3182,9 +3263,9 @@ function main(argv) {
 }
 
 // src/worker/entry.mjs
-import path18 from "node:path";
+import path19 from "node:path";
 import { pathToFileURL } from "node:url";
-if (process.argv[1] && import.meta.url === pathToFileURL(path18.resolve(process.argv[1])).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(path19.resolve(process.argv[1])).href) {
   const kode = main();
   if (kode) process.exitCode = kode;
 }

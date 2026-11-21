@@ -1396,7 +1396,34 @@ t("giliran gagal mengunci next_task; hanya manusia yang membuka (--ulang / --lew
   ctx = W.loadCtx(dir);
   assert.match(panggil(ctx, "next_task"), /TASK T-003/);
   assert.ok(ctx.state.history.some(h=>h.gate === "GILIRAN-1" && /DILEWATI/.test(h.out)), "lewati harus tercatat");
-  assert.equal(ctx.state.lastFullMark, undefined, "audit yang dilewati tidak boleh memajukan penanda");
+  assert.equal(ctx.state.lastFullMark, "T-002", "task setelah rentang yang dilewati menjadi titik awal berikutnya");
+  assert.match(fs.readFileSync(path.join(dir, ".planforge", "RUN_LOG.md"), "utf8"), /giliran berikutnya dimulai setelah T-002/);
+  assert.match(selesaikan(ctx, dir, "T-003", "c.js"), /BERIKUTNYA: GILIRAN-2.*T-002\.\.T-003/,
+    "giliran selanjutnya harus melanjutkan dari task setelah rentang yang dilewati");
+});
+
+t("buktiGiliran memulihkan state data setelah tiap task diverifikasi ulang", ()=>{
+  const write = '"' + NODE + '" -e "require(\'fs\').writeFileSync(\'data/value.json\',\'changed\')"';
+  const failAfterWrite = '"' + NODE + '" -e "require(\'fs\').writeFileSync(\'data/value.json\',\'broken\'); process.exit(1)"';
+  const checkOriginal = '"' + NODE + '" -e "process.exit(require(\'fs\').readFileSync(\'data/value.json\',\'utf8\')===\'original\'?0:1)"';
+  const tasks = [
+    { id:"T-001", title:"ubah state", depends_on:[], verification:write, ui:false },
+    { id:"T-002", title:"gagal setelah mengubah state", depends_on:["T-001"], verification:failAfterWrite, ui:false },
+    { id:"T-003", title:"periksa state awal", depends_on:["T-002"], verification:checkOriginal, ui:false }
+  ];
+  const dir = project(quiet, tasks);
+  fs.mkdirSync(path.join(dir, "data"));
+  fs.writeFileSync(path.join(dir, "data", "value.json"), "original");
+  const ctx = W.loadCtx(dir);
+  ctx.state.tasks["T-001"].status = "selesai";
+  ctx.state.tasks["T-002"].status = "selesai";
+  ctx.state.tasks["T-003"].status = "selesai";
+  ctx.state.giliran = { id:"GILIRAN-1", from:"T-001", to:"T-003", langkah:["audit"] };
+  W.saveCtx(ctx);
+  const result = W.buktiGiliran(ctx, dir, "audit: pemeriksaan selesai; seluruh hasil tercatat.");
+  assert.equal(result.ok, false, JSON.stringify(result));
+  assert.deepEqual(result.cek, ["T-001=OK","T-002=merah","T-003=OK"]);
+  assert.equal(fs.readFileSync(path.join(dir, "data", "value.json"), "utf8"), "original");
 });
 
 t("state.json buatan Connect (tanpa history) tidak membuat mark_done GILIRAN crash", ()=>{

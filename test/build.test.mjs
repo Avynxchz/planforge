@@ -407,7 +407,7 @@ export async function buildTests(t, ta) {
       assert.equal(reopened.fullHalt, undefined);
       assert.equal(invoke(["giliran", "--lewati", "--dir", dir]).status, 0);
       const skipped = JSON.parse(fs.readFileSync(stateFile, "utf8"));
-      assert.equal(skipped.giliran, undefined); assert.equal(skipped.lastFullMark, undefined);
+      assert.equal(skipped.giliran, undefined); assert.equal(skipped.lastFullMark, "T-001");
       assert.equal(skipped.history.at(-1).out, "DILEWATI manusia");
       assert.equal(skipped.calls, 7);
     } finally { fs.rmSync(dir, { recursive: true, force: true }); }

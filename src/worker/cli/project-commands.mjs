@@ -40,9 +40,10 @@ export function commandGiliran(ctx, args){
     return 0;
   }
   if(args.lewati){
+    const dilewatiSampai = g.to;
     ctx.state.history.push({ at: new Date().toISOString(), gate: g.id, from: g.from, to: g.to, out: "DILEWATI manusia" + (g.gagal ? " sesudah gagal: " + g.gagal : "") });
-    delete ctx.state.giliran; delete ctx.state.fullHalt; ctx.state.sinceFull = 0; saveCtx(ctx);
-    log(ctx, g.id + " DILEWATI manusia — audit atas " + g.from + ".." + g.to + " TIDAK pernah terjadi; giliran berikutnya mulai lagi dari " + (ctx.state.lastFullMark || g.from));
+    delete ctx.state.giliran; delete ctx.state.fullHalt; ctx.state.sinceFull = 0; ctx.state.lastFullMark = dilewatiSampai; saveCtx(ctx);
+    log(ctx, g.id + " DILEWATI manusia — audit atas " + g.from + ".." + dilewatiSampai + " dilewati manusia (tercatat di history); giliran berikutnya dimulai setelah " + dilewatiSampai);
     console.log(g.id + " dilewati dan dicatat di ledger. Task berikutnya bisa diambil.");
     return 0;
   }

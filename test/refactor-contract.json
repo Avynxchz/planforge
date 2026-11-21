@@ -4,7 +4,7 @@
     "snapshot": "D:/PROJECTS/planforge-refactor-baseline-20261118",
     "sourceSha256": {
       "index.html": "f9593db50aa772baa946ffb5c0eaea8038c1bb5b69e46a4021999346a9ed7463",
-      "worker.mjs": "445d112aecddd23874f02fe9bf90b35b2f34411e1297029dfb9a9b8c4d0c484f",
+      "worker.mjs": "bdfad9972a1f98add8b2d885e845c5ae3cc354a8187537d48922bfdff55b86a2",
       "test/core.test.mjs": "40e335a6b5df2ff7edccd035fad4d2453c019c836736a874ba54ca0d792a15e3"
     },
     "suites": {
@@ -16,7 +16,7 @@
     }
   },
   "additionalAssertions": {
-    "core": 23
+    "core": 28
   },
   "normalization": "Only declared top-level generated dates/timestamps are replaced after checking their format. All other JSON values, keys, array ordering, and error text are retained.",
   "worker": {

@@ -113,6 +113,15 @@ t("sanitizeTaskBehavior memperbaiki equals container dan matches nama file pada 
     {type:"visible", selector:'a[href$=".pdf"]'}
   ]);
 });
+t("sanitizeTaskBehavior mengubah pola ekstensi literal dan escaped pada tautan menjadi visible", ()=>{
+  const task = {id:"T-010", behavior:{checks:[
+    ...[".json", "report.csv", "\\.pdf", "report\\.xlsx", "\\.txt"].map(matches=>({
+      type:"text", selector:"a[href]", matches
+    }))
+  ]}};
+  sanitizeTaskBehavior(task);
+  assert.deepEqual(task.behavior.checks.map(check=>check.type), ["visible","visible","visible","visible","visible"]);
+});
 t("sanitizePlanChecks membersihkan verification dan seluruh checks dalam dokumen", ()=>{
   const docs = {tasks:{tasks:[{
     id:"T-011", verification:"node --test -e \"x\"", behavior:{checks:[{type:"text", selector:"#root", equals:"Siap"}]}
@@ -134,6 +143,49 @@ t("lintPlanVerifications memberi temuan terstruktur untuk pola verification beri
   for(const code of ["unavailable-dependency","dangling-localhost","unsafe-server-kill","hardcoded-ejs-template","stub-application-server","always-zero-verification"])
     assert.ok(issues.some(x=>x.code === code), "missing " + code + ": " + JSON.stringify(issues));
 });
+t("lintPlanVerifications menandai verification require-saja yang exit 0", ()=>{
+  const docs = {tasks:{tasks:[
+    {id:"T-026", verification:'node -e "const fs=require(\'fs\'); process.exit(0)"'},
+    {id:"T-027", verification:'node -e "const assert=require(\'node:assert\'); assert.equal(1,1)"'}
+  ]}};
+  const issues = lintPlanVerifications(docs);
+  assert.ok(issues.some(x=>x.taskId === "T-026" && x.code === "always-zero-verification"), JSON.stringify(issues));
+  assert.ok(!issues.some(x=>x.taskId === "T-027" && x.code === "always-zero-verification"), JSON.stringify(issues));
+});
+t("lintPlanVerifications melarang verification yang menimpa kode sumber", ()=>{
+  const docs = {tasks:{tasks:[
+    {id:"T-028", verification:'node -e "require(\'fs\').writeFileSync(\'app.js\',\'x\')"'},
+    {id:"T-029", verification:'node -e "require(\'fs\').writeFileSync(\'test/app.js\',\'x\')"'},
+    {id:"T-030", verification:'node -e "require(\'fs\').writeFileSync(\'index.html\',\'x\')"'},
+    {id:"T-030a", verification:'node -e "require(\'fs\').writeFileSync(path.join(\'data\',\'app.js\'),\'x\')"'},
+    {id:"T-030b", verification:"echo x > app.js"}
+  ]}};
+  const issues = lintPlanVerifications(docs);
+  assert.ok(issues.some(x=>x.taskId === "T-028" && x.code === "verification-mutates-source"), JSON.stringify(issues));
+  assert.ok(issues.some(x=>x.taskId === "T-030" && x.code === "verification-mutates-source"), JSON.stringify(issues));
+  assert.ok(issues.some(x=>x.taskId === "T-030b" && x.code === "verification-mutates-source"), JSON.stringify(issues));
+  assert.ok(!issues.some(x=>x.taskId === "T-029" && x.code === "verification-mutates-source"), JSON.stringify(issues));
+  assert.ok(!issues.some(x=>x.taskId === "T-030a" && x.code === "verification-mutates-source"), JSON.stringify(issues));
+});
+t("lintPlanVerifications menandai pengecekan data kosong tanpa setup state", ()=>{
+  const docs = {tasks:{tasks:[
+    {id:"T-031", verification:'node -e "console.log(\'Tidak ada barang\')"'},
+    {id:"T-032", verification:'node -e "require(\'fs\').writeFileSync(\'data/items.json\',\'[]\'); console.log(\'empty\')"'}
+  ]}};
+  const issues = lintPlanVerifications(docs);
+  assert.ok(issues.some(x=>x.taskId === "T-031" && x.code === "state-dependent-verification"), JSON.stringify(issues));
+  assert.ok(!issues.some(x=>x.taskId === "T-032" && x.code === "state-dependent-verification"), JSON.stringify(issues));
+});
+t("lintPlanVerifications mensyaratkan behavior localhost bergantung pada task pembuat route", ()=>{
+  const docs = {tasks:{tasks:[
+    {id:"T-033", title:"Cek dashboard", behavior:{url:"http://localhost:3000/"}},
+    {id:"T-034", title:"Buat endpoint dashboard", files_or_areas:["server.js"]}
+  ]}};
+  assert.ok(lintPlanVerifications(docs).some(x=>x.taskId === "T-033" && x.code === "behavior-route-order"));
+  docs.tasks.tasks[0].depends_on = ["T-034"];
+  docs.tasks.tasks.reverse();
+  assert.ok(!lintPlanVerifications(docs).some(x=>x.taskId === "T-033" && x.code === "behavior-route-order"));
+});
 t("bahasa Inggris dan target agent umum ikut terpakai", ()=>{
   const p = PF.buildSystemPrompt({language:"English", targetAgent:"umum"});
   assert.ok(p.includes("English") && p.includes("agen mana pun"));
@@ -145,6 +197,8 @@ t("prompt tasks dan audit menetapkan skema behavior serta verifikasi berbasis ex
     assert.match(text, /[Ff]ield expected TIDAK valid/);
     assert.match(text, /exit code/);
     assert.match(text, /regex BRE/);
+    assert.match(text, /idempotent dan state-independent/);
+    assert.match(text, /jangan (?:pernah )?menulis\/menimpa file sumber proyek/);
   }
 });
 t("prompt tasks dan audit menetapkan kontrak server, anti-vakum, dan urutan behavior", ()=>{

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "baselineSha256": "445d112aecddd23874f02fe9bf90b35b2f34411e1297029dfb9a9b8c4d0c484f",
+  "baselineSha256": "bdfad9972a1f98add8b2d885e845c5ae3cc354a8187537d48922bfdff55b86a2",
   "normalization": "Acorn AST without source offsets, raw literal spelling or comments. Export wrappers are compared separately by the captured public characterization.",
   "declarations": [
     {
@@ -155,7 +155,7 @@
         "buktiGiliran"
       ],
       "kind": "function",
-      "sha256": "afa5d5cf38ad7647ec118bd12735c7decced96844185af91c4b06292bd6e643e"
+      "sha256": "d9388bfc56de7b32b595f88c82105cbebe4831c31bb4bc201a8e2bd031a0c273"
     },
     {
       "names": [
@@ -522,7 +522,7 @@
         "main"
       ],
       "kind": "function",
-      "sha256": "ad6e047f0f480a8bb0df4fed41dce482ff5c45d2ad6aad335cb0ba561e9ff8a3"
+      "sha256": "88608e939e33ab872a9cdaeb7a80904a0b2f45cf968b145a9e069d4628439aee"
     },
     {
       "names": [
@@ -729,6 +729,13 @@
     },
     {
       "names": [
+        "restoreApplicationState"
+      ],
+      "kind": "function",
+      "sha256": "74b06bc4da5f1091c10fd2bb4637600470a66f5be9e1d8edb09521ab56ed1d60"
+    },
+    {
+      "names": [
         "restoreControlFiles"
       ],
       "kind": "function",
@@ -782,6 +789,13 @@
       ],
       "kind": "function",
       "sha256": "9a003cd6dd1ba70a15323bceb42f9e1239cf7e3c7d5e25237c0c7d961341dddb"
+    },
+    {
+      "names": [
+        "runIsolatedState"
+      ],
+      "kind": "function",
+      "sha256": "52d574c9e785cf232bf1353b55122221af11abe0daa4a57ccca74f2e561f4790"
     },
     {
       "names": [
@@ -876,6 +890,13 @@
     },
     {
       "names": [
+        "snapshotApplicationState"
+      ],
+      "kind": "function",
+      "sha256": "94c13ffa015ac36fdb3acb05bf267c451d13262c5e4197f7789f215c296b520d"
+    },
+    {
+      "names": [
         "snapshotControlFiles"
       ],
       "kind": "function",
@@ -901,6 +922,13 @@
       ],
       "kind": "const",
       "sha256": "350b5ec960ab257725cc9be90ed83aa8f89bb4527a36beb43df7bedcf7f3d756"
+    },
+    {
+      "names": [
+        "statusFiles"
+      ],
+      "kind": "function",
+      "sha256": "284a7b79e76dc8d1d180c481a76816fdc29250ebd2591576c04ca99844a4ed5d"
     },
     {
       "names": [
@@ -1076,7 +1104,7 @@
         "args"
       ],
       "mode": "branch",
-      "bodySha256": "0d12b173f526783fbe96f56c3359dd476df0becba7072e65dee316f721d030b6"
+      "bodySha256": "1a455bd80acbfb4615f030e251129387d9adb3fce43423248df3c04fa638231b"
     },
     {
       "name": "commandDoctor",
