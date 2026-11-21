@@ -24,6 +24,8 @@ export function buildSystemPrompt(cfg){
 "11. Urutkan task berdasarkan dependensi. Task hanya boleh bergantung pada ID yang lebih kecil. Tidak ada siklus.",
 "12. Pilih teknologi membosankan yang masih dipakai luas sekarang: dokumentasi bagus, komunitas hidup, versi stabil. Hindari infra eksotis kecuali user memintanya.",
 "13. Kalau user memberi batasan (budget, hosting, tanpa backend, dsb) batasan itu harga mati dan harus terlihat di keputusan teknis.",
+"14. behavior.checks memakai skema yang worker terima. Untuk type \"text\", wajib isi selector dan salah satu dari contains, matches, atau equals. Field expected TIDAK valid.",
+"15. Verification tes harus mengandalkan exit code perintah tes langsung (mis. `node --test test/*.test.mjs`), bukan mencocokkan teks output yang berubah antarversi Node. Jangan membuat task cek versi Node dengan regex BRE rapuh.",
 "",
 "KONTEKS",
 "User: " + (cfg.audience || "tidak disebutkan, tebakpersona yang paling mungkin"),
@@ -106,8 +108,10 @@ export function buildStageMessages(stage, cfg, docs, focus){
       "Jaga keluaran TETAP RINGKAS supaya tidak terpotong di model kecil: description 1-2 kalimat, acceptance_criteria 1-3 butir, agent_hint satu kalimat pendek, files_or_areas yang penting saja. behavior.checks cukup 2-4 check yang benar-benar mengukur angka; jangan menumpuk check atau mengulang penjelasan panjang di tiap task.",
       "Tiap task: satu perubahan perilaku, files_or_areas konkret, depends_on memakai ID task yang sudah ada di daftar ini dan bernomor lebih kecil.",
       "verification WAJIB satu perintah shell yang benar-benar bisa dijalankan di terminal dan menghasilkan exit code (mis. `python -m pytest -q tests/test_x.py`, `npm test`, `node scripts/cek.js`). Worker menjalankannya ulang sendiri sesudah agen selesai: exit code bukan 0 = task GAGAL.",
+      "Untuk tes, jalankan perintah tes langsung dan biarkan exit code menjadi bukti (mis. `node --test test/*.test.mjs`). Jangan grep output seperti `passing`, `passed`, atau `pass N` yang berbeda antarversi Node; jangan membuat task cek versi Node memakai regex BRE seperti `grep -q 'v(18|20|22)'`.",
       "DILARANG menulis verification berupa kalimat atau cek manual ('buka browser', 'klik tab Kasir', 'lihat tampilannya', '<input ...> muncul') — itu tidak bisa dijalankan, jadi task-nya tidak akan pernah terbukti. Untuk perilaku yang cuma bisa dilihat di browser, pakai `behavior` (di bawah), bukan langkah tangan.",
       "behavior WAJIB untuk tiap task yang menyentuh UI: files_or_areas berisi .html/.css/.jsx/.tsx/.vue/.svelte atau folder templates/static/public/assets, ATAU acceptance_criteria bicara soal halaman/tombol/klik/grafik/canvas/viewport/responsif. Worker membuka Edge/Chrome headless dan MENGUKUR SENDIRI checks itu; satu check gagal = task GAGAL walau build/test hijau.",
+      "SKEMA JSON behavior: {\"url\":\"http://localhost:3000/\",\"checks\":[{\"type\":\"text\",\"selector\":\"h1\",\"contains\":\"Judul\"}]}. Untuk check type \"text\", field contains, matches, atau equals wajib dipakai; jangan pernah menulis field expected. Check lain hanya memakai field yang tercantum dalam contoh/skema behavior di bawah.",
       "behavior.checks harus mengukur angka yang bisa salah, bukan kehadiran file. Contoh bagus: {type:'canvasNotBlank',selector:'#grafik',minPixels:500} (grafik benar-benar tergambar), {type:'click',selector:\"input[value='60']\"} lalu {type:'text',selector:'#judul',contains:'60'} (judul ikut filter, bukan basi), {type:'request',urlContains:'/api?window=60'} (fetch benar-benar terkirim), {type:'url',contains:'window=60'} (alamat halaman ikut berubah, bukan cuma isinya), {type:'noConsoleError'} (library yang dipakai benar-benar dimuat), {type:'noHorizontalOverflow'} dengan viewport 360x760.",
       "behavior.url harus alamat http(s) yang bisa dibuka. Kalau butuh server lokal, isi behavior.server.cmd supaya worker menyalakannya sendiri lalu mematikannya lagi — jangan mengandalkan server yang kebetulan hidup. Selector harus cocok dengan markup yang task itu sendiri buat.",
       "Task backend murni (skrip impor, perhitungan, migrasi DB, endpoint tanpa tampilan) TIDAK perlu behavior. Jangan mengarang check browser untuk task yang tidak punya halaman.",
@@ -139,6 +143,8 @@ export function buildStageMessages(stage, cfg, docs, focus){
       "Untuk masalah 'target non-fungsional belum terukur', buat patch update di document prd, collection non_functional dengan target berisi angka.",
       "Untuk masalah 'requirement mvp belum dicakup', tambahkan patch update pada task yang paling dekat (requirement_refs-nya) atau patch add task baru dengan ID T- berikutnya yang belum dipakai.",
       "Untuk masalah 'task UI tanpa behavior' atau 'behavior tidak bisa diukur', kirim patch update di document tasks, collection tasks, target_id task itu, object berisi behavior lengkap (url + checks yang mengukur angka). Jangan menurunkan task-nya jadi non-UI dan jangan menghapus acceptance_criteria-nya supaya lolos.",
+      "SKEMA JSON behavior: {\"url\":\"http://localhost:3000/\",\"checks\":[{\"type\":\"text\",\"selector\":\"h1\",\"contains\":\"Judul\"}]}. Untuk check type \"text\", field contains, matches, atau equals wajib dipakai; field expected TIDAK valid. Jangan kirim patch behavior dengan expected.",
+      "Verification tes harus menjalankan tes langsung dan memakai exit code (mis. `node --test test/*.test.mjs`), bukan grep string output versi Node seperti `passing`, `passed`, atau `pass N`. Jangan membuat task cek versi Node dengan regex BRE rapuh.",
       "Jangan mengirim patch yang isinya sama persis dengan yang sudah ada.",
       "Balas sesuai skema objek: " + JSON.stringify(SCHEMAS.patch));
   }

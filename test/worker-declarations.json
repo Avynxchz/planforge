@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "baselineSha256": "f3235db929267ad61f22075bcd0fa66fd7bf09f9cde465aacfe79f6db92f0d78",
+  "baselineSha256": "445d112aecddd23874f02fe9bf90b35b2f34411e1297029dfb9a9b8c4d0c484f",
   "normalization": "Acorn AST without source offsets, raw literal spelling or comments. Export wrappers are compared separately by the captured public characterization.",
   "declarations": [
     {
@@ -998,7 +998,7 @@
         "ukurPerilaku"
       ],
       "kind": "function",
-      "sha256": "2f056c42d838419b0dc776e3ed60e694af390e0b14d55a82c4be0b7b874158a8"
+      "sha256": "85213bb93b6f8b2590f74582e21b282e7d04f5daceed02fa1760721f62b87487"
     },
     {
       "names": [

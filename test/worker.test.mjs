@@ -794,7 +794,7 @@ t("audit menangkap gerbang yang nggak akan pernah jalan — tanpa panggilan agen
   const tasks = [
     mk({ id:"T-001", verification:"Buka browser, klik radio 60, verifikasi di console Network" }),
     mk({ id:"T-002", verification:'<input type="radio" name="window"> muncul di halaman' }),
-    mk({ id:"T-003", verification:"npx lighthouse http://localhost:3000 | jq .audits" }),
+    mk({ id:"T-003", verification:"npx lighthouse http://localhost:3000 | planforge-nonexistent-bin-xyz .audits" }),
     mk({ id:"T-004", title:"ambang 0,05 persen", description:"arah per window", acceptance_criteria:["Given change_pct 0.02 Then UP"], verification:'"' + NODE + '" -e "console.log(1)"' }),
     mk({ id:"T-005", verification:'"' + NODE + '" scripts/tidak-ada.py' }),
     mk({ id:"T-006", title:"header yang 期望 muncul", verification:'"' + NODE + '" -e "console.log(1)"' }),
@@ -812,7 +812,7 @@ t("audit menangkap gerbang yang nggak akan pernah jalan — tanpa panggilan agen
   assert.match(msg("T-002"), /error:.*bukan perintah shell/, "markup HTML bukan perintah: " + msg("T-002"));
   assert.match(msg("T-003"), /npx/, "npx harus ketahuan bisa menggantung: " + msg("T-003"));
   assert.match(msg("T-003"), /butuh server/, "butuh server hidup: " + msg("T-003"));
-  assert.match(msg("T-003"), /biner "jq"/, "jq tidak ada di PATH harus ketahuan: " + msg("T-003"));
+  assert.match(msg("T-003"), /biner "planforge-nonexistent-bin-xyz"/, "binary fixture yang mustahil tersedia harus ketahuan: " + msg("T-003"));
   assert.match(msg("T-004"), /tidak ada yang cocok/, "0,05 di instruksi vs 0,02 di contoh: " + msg("T-004"));
   assert.match(msg("T-005"), /error:.*tidak ada di proyek/, "task selesai tapi file-nya hilang: " + msg("T-005"));
   assert.match(msg("T-006"), /error:.*aksara Mandarin/, "teks Mandarin nyasar harus ketahuan: " + msg("T-006"));
@@ -883,8 +883,10 @@ t("pin menulis path interpreter absolut ke npm script — gerbang tidak boleh te
   assert.equal(out.scripts.lain, pkg.scripts.lain, "kata python di dalam string bukan interpreter");
   const rangkaian = W.absolutkanScript({ scripts:{ all:"pytest -q && echo OK || echo GAGAL" } }, "/usr/bin/python3");
   assert.equal(rangkaian.scripts.all, '/usr/bin/python3 -m pytest -q && echo OK || echo GAGAL', "hanya awal tiap bagian yang diganti");
-  assert.equal(W.absolutkanScript({ scripts:{ x:"python 'script with space.py'" } }, "C:\\Program Files\\py\\python.exe").scripts.x,
-    '"C:\\Program Files\\py\\python.exe" \'script with space.py\'', "kalau memang masih berspasi, baru dikutip");
+  const winPath = path.win32.normalize("C:\\Program Files\\py\\python.exe");
+  const nativePath = process.platform === "win32" ? winPath : winPath.split(path.win32.sep).join(path.sep);
+  assert.equal(W.absolutkanScript({ scripts:{ x:"python 'script with space.py'" } }, winPath).scripts.x,
+    '"' + nativePath + '" \'script with space.py\'', "path interpreter harus mengikuti separator OS dan dikutip bila berspasi");
   assert.equal(JSON.parse(JSON.stringify(out)).scripts.test, out.scripts.test, "path-nya survived round-trip JSON");
 });
 t("pin mencoba interpreter satu per satu dan mengembalikan package.json kalau semuanya merah", ()=>{

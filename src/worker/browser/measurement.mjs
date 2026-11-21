@@ -31,7 +31,11 @@ export async function ukurPerilaku(payload){
     const bin = cariBrowser();
     if(!bin) throw new Error("browser tidak ditemukan");
     tmp = fs.mkdtempSync(path.join(os.tmpdir(), "pf-browser-"));
-    browser = spawn(bin, ["--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check",
+    const sandboxArgs = process.platform === "linux" &&
+      (process.getuid?.() === 0 || Boolean(process.env.CI || process.env.CONTAINER || process.env.KUBERNETES_SERVICE_HOST ||
+        fs.existsSync("/.dockerenv") || fs.existsSync("/run/.containerenv")))
+      ? ["--no-sandbox", "--disable-setuid-sandbox"] : [];
+    browser = spawn(bin, [...sandboxArgs, "--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check",
       "--remote-debugging-port=0", "--remote-allow-origins=*", "--user-data-dir=" + tmp, "about:blank"],
       { stdio: ["ignore", "pipe", "pipe"] });
     browser.stdout.on("data", ()=>{});

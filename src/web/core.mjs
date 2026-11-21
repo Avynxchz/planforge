@@ -6,7 +6,7 @@ import { SCHEMAS, STAGES } from "./core/plan-schema.mjs";
 import { buildSystemPrompt, briefBlock, buildStageMessages } from "./core/prompts.mjs";
 import { extractJson, ids, normId, featKey, DASH, featTail, featMatch, STATUS_MAP, normStatus, normalizePlan } from "./core/plan-normalize.mjs";
 import { CHECK_BROWSER, PERLU_SELECTOR, CONTOH_BEHAVIOR, UI_FILE, UI_KATA, taskUi, specBehavior, masalahBehavior, behaviorBaris, validatePlan, cycleOf } from "./core/plan-rules.mjs";
-import { taskChunks, mergeTaskChunk, terapkanJawabanClarify, applyPatches } from "./core/plan-ops.mjs";
+import { taskChunks, mergeTaskChunk, terapkanJawabanClarify, applyPatches, applyImprovingPatches } from "./core/plan-ops.mjs";
 import { _pfSvgUid, svgEsc, svgTrunc, svgWrap, svgLines, parseField, erDiagramSvg, sequenceDiagramSvg } from "./core/diagrams.mjs";
 import { renderMarkdown, tasksToMd, prdToMd, featuresToMd, roadmapToMd, buildAgentPrompt } from "./core/render.mjs";
 import { crc32, canonPlan, planCoreFromPlan, planFingerprintPlan } from "../shared/plan-identity.mjs";

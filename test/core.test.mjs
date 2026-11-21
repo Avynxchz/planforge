@@ -13,7 +13,7 @@ const b = html.indexOf("/* ===================== CORE-END ===================== 
 assert.ok(a > -1 && b > a, "penanda CORE tidak ditemukan");
 const core = html.slice(a, b);
 
-const PF = new Function(core + "; return {SCHEMAS, STAGES, buildSystemPrompt, briefBlock, buildStageMessages, extractJson, validatePlan, cycleOf, taskChunks, mergeTaskChunk, terapkanJawabanClarify, applyPatches, normalizePlan, normId, normStatus, featMatch, renderMarkdown, tasksToMd, prdToMd, roadmapToMd, featuresToMd, buildAgentPrompt, crc32, canonPlan, planCoreFromPlan, planFingerprintPlan, planFingerprint, makeZip, DEMO, AGENT_PRESETS, LIGHT_REVIEW, FULL_GATES, HARD_CHECKS, defaultGates, planBundleJson, freshStateJson, progresDariState, connNama, connPrompt, connConfigJson, connEntry, connUniversal, rencanaTulis, AGENT_ADAPTERS, gateCounts, hitungBudget, taskMuat, sisaMilestone, runnerCommand, agentsMd, runnerBundle, planTaskList, taskUi, specBehavior, masalahBehavior, behaviorBaris, CHECK_BROWSER, ALIAS_CHECK, normalisasiAliasBehavior, masalahStrukturRencana, rubrikRencana, starterMeta, starterAktif, starterLockLines, starterContractLines, saranLingkungan, missingNpmScripts, starterFileEntries, STARTER_FILES, parseField, svgWrap, erDiagramSvg, sequenceDiagramSvg, githubPushFiles, githubPush};")();
+const PF = new Function(core + "; return {SCHEMAS, STAGES, buildSystemPrompt, briefBlock, buildStageMessages, extractJson, validatePlan, cycleOf, taskChunks, mergeTaskChunk, terapkanJawabanClarify, applyPatches, applyImprovingPatches, normalizePlan, normId, normStatus, featMatch, renderMarkdown, tasksToMd, prdToMd, roadmapToMd, featuresToMd, buildAgentPrompt, crc32, canonPlan, planCoreFromPlan, planFingerprintPlan, planFingerprint, makeZip, DEMO, AGENT_PRESETS, LIGHT_REVIEW, FULL_GATES, HARD_CHECKS, defaultGates, planBundleJson, freshStateJson, progresDariState, connNama, connPrompt, connConfigJson, connEntry, connUniversal, rencanaTulis, AGENT_ADAPTERS, gateCounts, hitungBudget, taskMuat, sisaMilestone, runnerCommand, agentsMd, runnerBundle, planTaskList, taskUi, specBehavior, masalahBehavior, behaviorBaris, CHECK_BROWSER, ALIAS_CHECK, normalisasiAliasBehavior, masalahStrukturRencana, rubrikRencana, starterMeta, starterAktif, starterLockLines, starterContractLines, saranLingkungan, missingNpmScripts, starterFileEntries, STARTER_FILES, parseField, svgWrap, erDiagramSvg, sequenceDiagramSvg, githubPushFiles, githubPush};")();
 
 let pass = 0, fail = 0;
 const t = (name, fn)=>{
@@ -35,9 +35,29 @@ t("system prompt memuat aturan JSON-only, ID, cakupan, dan bahasa", ()=>{
   for(const s of ["HANYA dengan satu objek JSON", "R-001", "Setiap requirement tercakup", "Bahasa Indonesia", "Claude Code", "satu commit".slice(0,0) || "1-5 file"])
     assert.ok(p.includes(s), "kurang: " + s);
 });
+t("normalisasi behavior memetakan text.expected ke contains dan menghapus alias", ()=>{
+  const tasks = JSON.parse(JSON.stringify(PF.DEMO.tasks));
+  tasks.tasks[0].behavior.checks = [{type:"text",selector:"h1",expected:"Ringkasan"}];
+  assert.ok(PF.masalahBehavior(tasks.tasks[0]).some(x=>x.includes("butuh contains/matches/equals")));
+  const normalized = PF.normalizePlan(PF.DEMO.prd, PF.DEMO.roadmap, tasks);
+  const check = normalized.tasks.tasks[0].behavior.checks[0];
+  assert.equal(check.contains, "Ringkasan");
+  assert.equal(Object.prototype.hasOwnProperty.call(check, "expected"), false);
+  assert.ok(normalized.fixes.some(x=>x.includes("expected dinormalisasi")));
+  assert.deepEqual(PF.masalahBehavior(normalized.tasks.tasks[0]), []);
+});
 t("bahasa Inggris dan target agent umum ikut terpakai", ()=>{
   const p = PF.buildSystemPrompt({language:"English", targetAgent:"umum"});
   assert.ok(p.includes("English") && p.includes("agen mana pun"));
+});
+t("prompt tasks dan audit menetapkan skema behavior serta verifikasi berbasis exit code", ()=>{
+  for(const stage of ["tasks","audit"]){
+    const text = PF.buildStageMessages(stage, {language:"Bahasa Indonesia", idea:"x"}, PF.DEMO).map(x=>x.content).join("\n");
+    assert.match(text, /type.*text.*contains.*matches.*equals/);
+    assert.match(text, /[Ff]ield expected TIDAK valid/);
+    assert.match(text, /exit code/);
+    assert.match(text, /regex BRE/);
+  }
 });
 t("brief tidak meng-escape & jadi entity mentah", ()=>{
   const bl = PF.briefBlock({idea:"x", constraints:"y", audience:"z"});
@@ -217,9 +237,45 @@ t("patch rusak tidak bikin crash", ()=>{
   assert.ok(res.skipped.length >= 2);
 });
 t("hasil tambalan tetap lolos validator", ()=>{
-  const res = PF.applyPatches(PF.DEMO, {patches:[{document:"tasks", collection:"tasks", action:"add", target_id:"NEW", object:{id:"T-010", title:"Impur", milestone_ref:"M-004", requirement_refs:["R-009"], description:"d", files_or_areas:["app.js"], acceptance_criteria:["a"], verification:"v", depends_on:["T-009"], size:"S", agent_hint:""}}]});
+  const res = PF.applyPatches(PF.DEMO, {patches:[{document:"tasks", collection:"tasks", action:"add", target_id:"NEW", object:{id:"T-010", title:"Impur", milestone_ref:"M-004", requirement_refs:["R-009"], description:"d", files_or_areas:["app.js"], acceptance_criteria:["a"], verification:"node --test test/a.test.mjs", depends_on:["T-009"], size:"S", agent_hint:""}}]});
   const i = PF.validatePlan(res.prd, res.roadmap, res.tasks);
   assert.ok(i.every(x=>!x.includes("belum dicakup")), JSON.stringify(i));
+});
+t("patch task tanpa identitas atau verification sah ditolak sebelum diterapkan", ()=>{
+  const result = PF.applyPatches(PF.DEMO, {patches:[
+    {document:"tasks", collection:"tasks", action:"add", object:{title:"task tanpa id", verification:"node --test"}},
+    {document:"tasks", collection:"tasks", action:"add", object:{id:"T-010", title:"verifikasi manual", verification:"buka browser lalu lihat"}}
+  ]});
+  assert.equal(result.applied, 0);
+  assert.equal(result.tasks.tasks.length, PF.DEMO.tasks.tasks.length);
+  assert.equal(result.skipped.length, 2);
+});
+t("patch task baru tidak boleh disisipkan sebelum scaffold pertama", ()=>{
+  const result = PF.applyPatches(PF.DEMO, {patches:[{document:"tasks", collection:"tasks", action:"add",
+    object:{id:"T-000", title:"Task baru", verification:"node --test test/a.test.mjs"}}]});
+  assert.equal(result.applied, 0);
+  assert.match(result.skipped.join(" "), /sebelum scaffold pertama/);
+});
+t("tambal yang menurunkan mutu ditolak tanpa mengubah dokumen sumber", ()=>{
+  const docs = JSON.parse(JSON.stringify(PF.DEMO));
+  const original = docs.tasks.tasks[0].verification;
+  const result = PF.applyImprovingPatches(docs, {patches:[{document:"tasks", collection:"tasks", action:"update",
+    target_id:"T-001", object:{verification:"buka browser lalu lihat"}}]}, false);
+  assert.equal(result.accepted, false);
+  assert.equal(result.applied, 0);
+  assert.equal(result.beforeScore, 100);
+  assert.match(result.skipped.join(" "), /ditolak/);
+  assert.equal(docs.tasks.tasks[0].verification, original);
+});
+t("tambal konvergen menerima patch yang benar-benar mengurangi masalah", ()=>{
+  const docs = JSON.parse(JSON.stringify(PF.DEMO));
+  const behavior = docs.tasks.tasks[0].behavior;
+  delete docs.tasks.tasks[0].behavior;
+  const result = PF.applyImprovingPatches(docs, {patches:[{document:"tasks", collection:"tasks", action:"update",
+    target_id:"T-001", object:{behavior}}]}, false);
+  assert.equal(result.accepted, true);
+  assert.ok(result.afterProblems < result.beforeProblems);
+  assert.ok(result.afterScore >= result.beforeScore);
 });
 
 console.log("\n6) render & ekspor");

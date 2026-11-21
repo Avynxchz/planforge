@@ -1,5 +1,5 @@
 {
-  "waktu": "2026-11-21T08:09:08.944Z",
+  "waktu": "2026-11-21T12:24:23.480Z",
   "index": "D:\\PROJECTS\\planforge\\index.html",
   "lulus": 81,
   "gagal": 0,
@@ -30,9 +30,9 @@
       "detail": "{\"siap\":true,\"skor\":100,\"label\":\"Siap dikirim (lingkungan belum diverifikasi)\",\"error\":[]}"
     },
     {
-      "nama": "skor rubrik dan tab Runner konsisten untuk task backend berkata tombol",
+      "nama": "skor rubrik 60 dan peringatan kesiapan konsisten di tab Runner",
       "lulus": true,
-      "detail": "{\"skor\":80,\"error\":1,\"runnerSkor\":\"80\"}"
+      "detail": "{\"skor\":60,\"error\":2,\"runnerSkor\":\"60\",\"warning\":true,\"readiness\":true}"
     },
     {
       "nama": "preset model terbaru tersimpan sebelum reload",

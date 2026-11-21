@@ -13,7 +13,7 @@ import { simpanBehavior } from "./app/actions.mjs";
 import { getGatePath } from "./app/runner-config.mjs";
 import { tidyPlan } from "./app/state.mjs";
 import { outAction } from "./app/actions.mjs";
-import { tambalNow } from "./app/pipeline.mjs";
+import { tambalNow, tambalKonvergen } from "./app/pipeline.mjs";
 import { drawActions } from "./app/views.mjs";
 import { copyText, dl, bundleFiles, exportBundle, githubPanel, githubPushNow } from "./app/artifacts.mjs";
 import { loadGates, saveGates, gates, resetGates, pkgDir, savePkgDir, pkgOpts, setGatePath, applyAgentPreset, workerPresetGuess } from "./app/runner-config.mjs";

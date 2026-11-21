@@ -190,6 +190,11 @@
       "arity": 2
     },
     {
+      "name": "applyImprovingPatches",
+      "kind": "function",
+      "arity": 3
+    },
+    {
       "name": "_pfSvgUid",
       "kind": "let",
       "arity": null
@@ -758,6 +763,11 @@
     },
     {
       "name": "tambalNow",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "tambalKonvergen",
       "kind": "function",
       "arity": 1
     },

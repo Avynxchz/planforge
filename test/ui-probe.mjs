@@ -83,16 +83,17 @@ try{
   const skorRunner = await nilai(`(()=>{
     const sd=state.docs, si=state.issues;
     try{
-      state.docs={tasks:{tasks:[{id:"T-001",title:"Scaffold CLI untuk data tombol",files_or_areas:["src/utils.js"],
-        verification:"node --test test/utils.test.mjs",acceptance_criteria:["API mengembalikan status tombol"]}]}};
+      state.docs={tasks:{tasks:[{id:"T-001",title:"Buat scaffold CLI untuk data tombol",files_or_areas:["src/utils.js"],
+        verification:"buka halaman lalu lihat",acceptance_criteria:["API mengembalikan status tombol"]}]}};
       state.issues=["prd: requirements kosong"];
       const r=rubrikRencana(state.docs,state.issues,starterAktif(readCfg()));
       const txt=renderRunner();
-      return {skor:r.skor, error:r.error.length, runnerSkor:(txt.match(/Kualitas rencana:[\\s\\S]*?skor (\\d+)/)||[])[1]||""};
+      return {skor:r.skor, error:r.error.length, runnerSkor:(txt.match(/Kualitas rencana:[\\s\\S]*?skor (\\d+)/)||[])[1]||"",
+        warning:txt.includes("Connect ditahan sampai beres"), readiness:txt.includes("Perlu diperbaiki")};
     }finally{state.docs=sd;state.issues=si;}
   })()`);
-  catat("skor rubrik dan tab Runner konsisten untuk task backend berkata tombol",
-    skorRunner.skor===80&&skorRunner.runnerSkor==="80",JSON.stringify(skorRunner));
+  catat("skor rubrik 60 dan peringatan kesiapan konsisten di tab Runner",
+    skorRunner.skor===60&&skorRunner.runnerSkor==="60"&&skorRunner.warning&&skorRunner.readiness,JSON.stringify(skorRunner));
   const preset = await nilai(`(()=>{
     const asli=localStorage.getItem(CFG_NAME), models=JSON.parse(JSON.stringify(state.stageModels||{}));
     try{

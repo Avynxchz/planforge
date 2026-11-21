@@ -1,5 +1,7 @@
 /* PlanForge core: chunk task, gabung chunk, jawaban clarify, dan patch. */
-import { normId } from "./plan-normalize.mjs";
+import { normId, normalizePlan } from "./plan-normalize.mjs";
+import { KATA_SCAFFOLD, masalahStrukturRencana, rubrikRencana } from "./plan-readiness.mjs";
+import { validatePlan } from "./plan-rules.mjs";
 
 /* Pecah pembuatan task per milestone supaya model kecil tidak terpotong: tiap chunk
    kecil, total task tetap natural (tidak dipatok). Tanpa milestone -> satu panggilan penuh. */
@@ -66,10 +68,19 @@ export function terapkanJawabanClarify(clarify, answers){
   return doc;
 }
 
-export function applyPatches(docs, patch){
+export function applyPatches(docs, patch, options = null){
   const clone = (o)=>o == null ? o : (typeof structuredClone === "function" ? structuredClone(o) : JSON.parse(JSON.stringify(o)));
   const res = {prd:clone(docs.prd), roadmap:clone(docs.roadmap), tasks:clone(docs.tasks), applied:0, skipped:[]};
   const list = (patch && patch.patches) || [];
+  const starter = !!(options && options.starter);
+  const taskList = res.tasks && Array.isArray(res.tasks.tasks) ? res.tasks.tasks : [];
+  const scaffold = taskList.find(t=>KATA_SCAFFOLD.test(String(t && (t.title || "") + " " + (t.description || ""))));
+  const validAddedTask = task=>{
+    if(!task || typeof task !== "object" || !String(task.id || "").trim() || !String(task.title || "").trim() || !String(task.verification || "").trim()) return false;
+    const probe = Object.assign({}, task, {id:"T-001", title:"Buat scaffold"});
+    const errors = masalahStrukturRencana({tasks:{tasks:[probe]}}, true);
+    return !errors.some(x=>/^T-001: (?:verification|gerbang ini)/.test(x));
+  };
   for(const p of list){
     if(!p || !p.document || !p.collection || !p.object){ res.skipped.push("patch tidak lengkap"); continue; }
     const root = res[p.document]; if(!root) { res.skipped.push("document " + p.document); continue; }
@@ -79,6 +90,13 @@ export function applyPatches(docs, patch){
       ? coll.findIndex(x => x.id === p.target_id) : -1;
     if(p.action === "update" && idx >= 0){ coll[idx] = Object.assign({}, coll[idx], obj); res.applied++; }
     else if(p.action === "add" || (p.action === "update" && idx < 0)){
+      if(p.document === "tasks" && p.collection === "tasks"){
+        if(!validAddedTask(obj)){ res.skipped.push("task baru harus punya id, title, dan verification yang valid"); continue; }
+        if(!starter && scaffold && String(obj.id).localeCompare(String(scaffold.id)) < 0){
+          res.skipped.push("task baru ditolak karena akan ditempatkan sebelum scaffold pertama " + scaffold.id);
+          continue;
+        }
+      }
       if(coll.some(x => x.id === obj.id)){ res.skipped.push("duplikat " + obj.id); continue; }
       coll.push(obj); res.applied++;
     } else res.skipped.push("aksi tak dikenal " + p.action);
@@ -88,4 +106,31 @@ export function applyPatches(docs, patch){
   if(res.prd && Array.isArray(res.prd.requirements)) res.prd.requirements.sort(sortId);
   if(res.roadmap && Array.isArray(res.roadmap.milestones)) res.roadmap.milestones.sort(sortId);
   return res;
+}
+
+export function applyImprovingPatches(docs, patch, starter){
+  const measurePlan = (plan, isStarter)=>{
+    const normalized = normalizePlan(plan.prd, plan.roadmap, plan.tasks);
+    const candidate = Object.assign({}, plan, normalized);
+    const issues = validatePlan(candidate.prd, candidate.roadmap, candidate.tasks);
+    const rubric = rubrikRencana(candidate, issues, isStarter);
+    return {docs:candidate, issues, problems:issues.length + masalahStrukturRencana(candidate, isStarter).length, score:rubric.skor};
+  };
+  const before = measurePlan(docs, starter);
+  const applied = applyPatches(before.docs, patch, {starter});
+  const after = measurePlan(applied, starter);
+  const accepted = applied.applied > 0 && after.problems < before.problems && after.score >= before.score;
+  return {
+    accepted,
+    prd:accepted ? after.docs.prd : before.docs.prd,
+    roadmap:accepted ? after.docs.roadmap : before.docs.roadmap,
+    tasks:accepted ? after.docs.tasks : before.docs.tasks,
+    issues:accepted ? after.issues : before.issues,
+    applied:accepted ? applied.applied : 0,
+    skipped:applied.skipped.concat(accepted ? [] : ["patch ditolak: jumlah masalah tidak berkurang atau skor rubrik turun"]),
+    beforeProblems:before.problems,
+    afterProblems:accepted ? after.problems : before.problems,
+    beforeScore:before.score,
+    afterScore:accepted ? after.score : before.score
+  };
 }

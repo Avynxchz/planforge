@@ -90,6 +90,14 @@ export function normalizePlan(prd, roadmap, tasks){
     const mIds = new Set(ids(R && R.milestones));
     const tIds = new Set(ids(T && T.tasks));
     for(const t of (T && T.tasks) || []){
+        for(const check of (t.behavior && Array.isArray(t.behavior.checks) ? t.behavior.checks : [])){
+          if(!check || typeof check !== "object" || check.type !== "text" || !Object.prototype.hasOwnProperty.call(check, "expected")) continue;
+          if(check.contains == null && check.matches == null && check.equals == null){
+            check.contains = check.expected;
+            fixes.push("task " + (t.id||"?") + ": behavior text.expected dinormalisasi menjadi contains");
+          } else fixes.push("task " + (t.id||"?") + ": behavior text.expected dibuang karena assertion sah sudah tersedia");
+          delete check.expected;
+        }
       if(t.milestone_ref != null && String(t.milestone_ref).trim()){
         const n = normId(t.milestone_ref);
         if(mIds.has(n)){ if(n !== String(t.milestone_ref).trim()) fixes.push("task " + t.id + ": milestone_ref '" + t.milestone_ref + "' → '" + n + "'"); t.milestone_ref = n; }

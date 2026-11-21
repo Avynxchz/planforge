@@ -4,10 +4,11 @@ import { MAIN_STAGES, PROFILES, hasStage, ideaFp, persist, pushHistory, readCfg,
 import { draw, drawActions, hentiJam, mulaiJam, setStage, showView } from "./views.mjs";
 import { DEMO } from "../core/demo.mjs";
 import { extractJson } from "../core/plan-normalize.mjs";
-import { applyPatches, mergeTaskChunk, taskChunks, terapkanJawabanClarify } from "../core/plan-ops.mjs";
+import { applyImprovingPatches, mergeTaskChunk, taskChunks, terapkanJawabanClarify } from "../core/plan-ops.mjs";
 import { validatePlan } from "../core/plan-rules.mjs";
 import { STAGES } from "../core/plan-schema.mjs";
 import { buildStageMessages } from "../core/prompts.mjs";
+import { starterAktif } from "../core/starter.mjs";
 
 export async function tambalNow(btn){
   const cfg = readCfg();
@@ -19,18 +20,13 @@ export async function tambalNow(btn){
   state.abort = new AbortController();
   setStage("audit", "run", "menambal…");
   pushHistory("sebelum tambal manual");
-  const before = state.issues.length;
   try{
-    state.docs.issues = state.issues;
-    const patch = await runStage("audit", cfg);
-    const res = applyPatches(state.docs, patch);
-    state.docs.prd = res.prd; state.docs.roadmap = res.roadmap; state.docs.tasks = res.tasks;
-    tidyPlan();
-    state.auditNote = "Penambalan " + new Date().toLocaleTimeString("id-ID") + ": " + res.applied + " patch diterapkan"
-      + (res.skipped.length ? ", " + res.skipped.length + " dilewati (" + res.skipped.slice(0,3).join("; ") + ")" : "")
-      + ". Celah " + before + " → " + state.issues.length + "."
+    const total = await tambalKonvergen(cfg);
+    state.auditNote = "Penambalan " + new Date().toLocaleTimeString("id-ID") + ": " + total.applied + " patch diterapkan dalam "
+      + total.rounds + " ronde, celah " + total.beforeProblems + " → " + total.afterProblems + "."
+      + (total.skipped.length ? " " + total.skipped.slice(0,3).join("; ") + "." : "")
       + (state.issues.length ? " Sisanya biasanya butuh koreksi manual di tab PRD/Tasks — atau jalankan ulang tahap roadmap/tasks dengan preset yang lebih mahal." : " Sekarang bersih.");
-    setStage("audit", state.issues.length ? "err" : "done", "tambal " + res.applied + ", sisa " + state.issues.length);
+    setStage("audit", state.issues.length ? "err" : "done", "tambal " + total.applied + ", sisa " + state.issues.length);
   }catch(e){
     if(e && e.name === "AbortError"){ setStage("audit","err","dibatalkan"); state.auditNote = "Penambalan dibatalkan. Hasil sebelum tambal tetap tersimpan."; }
     else { setStage("audit","err","gagal"); state.auditNote = "Penambalan gagal: " + String(e && e.message || e).slice(0,200); }
@@ -39,6 +35,25 @@ export async function tambalNow(btn){
     el("runAll").disabled = false; el("rerunAll").disabled = false; el("stop").disabled = true; state.abort = null;
     draw("issues");
   }
+}
+
+export async function tambalKonvergen(cfg){
+  const starter = starterAktif(cfg);
+  const initial = applyImprovingPatches(state.docs, {patches:[]}, starter);
+  const total = {beforeProblems:initial.beforeProblems, afterProblems:initial.beforeProblems, applied:0, rounds:0, skipped:[]};
+  while(total.afterProblems > 0){
+    state.docs.issues = state.issues;
+    const patch = await runStage("audit", cfg);
+    const result = applyImprovingPatches(state.docs, patch, starter);
+    total.skipped.push(...result.skipped);
+    if(!result.accepted) break;
+    state.docs.prd = result.prd; state.docs.roadmap = result.roadmap; state.docs.tasks = result.tasks;
+    state.issues = result.issues; state.docs.issues = state.issues;
+    total.applied += result.applied; total.rounds++;
+    total.afterProblems = result.afterProblems;
+    saveDocs();
+  }
+  return total;
 }
 
 export async function callModel(messages, stage, cfg, controller){
@@ -370,14 +385,13 @@ export async function runAll(force){
     if(state.issues.length && cfg.provider !== "demo" && el("autoTambal").checked){
       setStage("audit", "run", state.issues.length + " celah");
       state.docs.issues = state.issues;
-      const patch = await runStage("audit", cfg);
-      const res = applyPatches(state.docs, patch);
-      state.docs.prd = res.prd; state.docs.roadmap = res.roadmap; state.docs.tasks = res.tasks;
-      const sisaSebelum = state.issues.length;
+      const total = await tambalKonvergen(cfg);
       tidyPlan();
-      state.auditNote = (nz.fixes.length ? state.auditNote + " " : "") + "Cek rencana: " + res.applied + " patch diterapkan, celah " + sisaSebelum + " → " + state.issues.length + "."
+      state.auditNote = (nz.fixes.length ? state.auditNote + " " : "") + "Cek rencana: " + total.applied + " patch diterapkan dalam "
+        + total.rounds + " ronde, celah " + total.beforeProblems + " → " + state.issues.length + "."
+        + (total.skipped.length ? " " + total.skipped.slice(0,3).join("; ") + "." : "")
         + (state.issues.length ? " Sisanya perlu dilihat manual di tab Cek rencana." : " Sekarang bersih.");
-      setStage("audit", res.applied ? "done" : "err", "tambal " + res.applied + ", sisa " + state.issues.length);
+      setStage("audit", total.applied ? "done" : "err", "tambal " + total.applied + ", sisa " + state.issues.length);
     } else {
       setStage("audit", state.issues.length ? "err" : "done", state.issues.length
         ? state.issues.length + " celah — klik 'Minta AI tambal' di tab Runner/Cek rencana (otomatis dimatikan)"

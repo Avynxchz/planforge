@@ -539,9 +539,11 @@ async function ukurPerilaku(payload) {
     const bin = cariBrowser();
     if (!bin) throw new Error("browser tidak ditemukan");
     tmp = fs3.mkdtempSync(path2.join(os.tmpdir(), "pf-browser-"));
+    const sandboxArgs = process.platform === "linux" && (process.getuid?.() === 0 || Boolean(process.env.CI || process.env.CONTAINER || process.env.KUBERNETES_SERVICE_HOST || fs3.existsSync("/.dockerenv") || fs3.existsSync("/run/.containerenv"))) ? ["--no-sandbox", "--disable-setuid-sandbox"] : [];
     browser = spawn(
       bin,
       [
+        ...sandboxArgs,
         "--headless=new",
         "--disable-gpu",
         "--no-first-run",
