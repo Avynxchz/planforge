@@ -5,7 +5,7 @@ import { mcpMain } from "../mcp/stdio.mjs";
 import { resolveRoot } from "../ledger/root.mjs";
 import { DIR } from "../ledger/files.mjs";
 import { commandSetupEnv, commandEnvironment, commandDoctor, commandPin } from "./environment-commands.mjs";
-import { loadCtx } from "../ledger/state.mjs";
+import { loadCtx, saveCtx } from "../ledger/state.mjs";
 import { presetAgen } from "../agents/defaults.mjs";
 import { budgetRencana } from "../workflow/budget.mjs";
 import { log } from "../ledger/log.mjs";
@@ -19,7 +19,8 @@ export function main(argv){
   const cmd = args._[0];
   if(!cmd){
     console.log("Penggunaan: node worker.mjs <perintah> [opsi]");
-    console.log("Perintah: run, status, doctor, setup-env, refresh, pin, build, verify, audit, connect, giliran, init, mcp, embed");
+    console.log("Perintah: run, status, reset, doctor, setup-env, refresh, pin, build, verify, audit, connect, giliran, init, mcp, embed");
+    console.log("Reset: node worker.mjs reset | node worker.mjs reset <task-id>");
     console.log("Contoh: node worker.mjs run --dry-run");
     console.log("Jalankan `node worker.mjs run` untuk memulai loop runner.");
     return 0;
@@ -56,6 +57,29 @@ export function main(argv){
   const cap = args["max-tasks"] ? Number(args["max-tasks"]) : null;
 
   if(cmd === "status") return commandStatus(ctx, cwd);
+
+  if(cmd === "reset"){
+    const id = args._[1];
+    ctx.state.consecFails = 0;
+    if(id){
+      if(!ctx.plan.tasks.tasks.some(t=>t.id === id)){ console.error("task " + id + " tidak ada"); return 1; }
+      ctx.state.tasks[id] = ctx.state.tasks[id] || { status:"belum mulai", tries:0, gate:null, note:"" };
+      ctx.state.tasks[id].status = "belum mulai";
+      ctx.state.tasks[id].note = "";
+      ctx.state.tasks[id].finishedAt = undefined;
+      delete ctx.state.tasks[id].finishedAt;
+      console.log(id + " di-reset menjadi belum mulai; consecutive failures di-reset menjadi 0");
+    }else{
+      for(const t of ctx.plan.tasks.tasks){
+        const s = ctx.state.tasks[t.id];
+        if(s && s.status === "gagal"){ s.status = "belum mulai"; s.note = ""; s.finishedAt = undefined; delete s.finishedAt; }
+      }
+      console.log("semua task gagal di-reset menjadi belum mulai; consecutive failures di-reset menjadi 0");
+    }
+    saveCtx(ctx);
+    log(ctx, "reset " + (id || "semua") + ": consecFails=0");
+    return 0;
+  }
 
   if(cmd === "build") return commandBuild();
 

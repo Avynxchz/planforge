@@ -3,16 +3,16 @@
   "baseline": {
     "snapshot": "D:/PROJECTS/planforge-refactor-baseline-20261118",
     "sourceSha256": {
-      "index.html": "b4a81fed2f941f069f39b8e54d7f5864e07c184f3e85079f5bdc562971fa07ec",
-      "worker.mjs": "7e7ea45c5ab283c7513145a316132885fc9ad5590e645ce69525097e669b1427",
+      "index.html": "f9593db50aa772baa946ffb5c0eaea8038c1bb5b69e46a4021999346a9ed7463",
+      "worker.mjs": "f3235db929267ad61f22075bcd0fa66fd7bf09f9cde465aacfe79f6db92f0d78",
       "test/core.test.mjs": "40e335a6b5df2ff7edccd035fad4d2453c019c836736a874ba54ca0d792a15e3"
     },
     "suites": {
       "core": 213,
-      "worker": 150,
+      "worker": 154,
       "connect": 19,
-      "browser": 34,
-      "ui-probe": 76
+      "browser": 35,
+      "ui-probe": 81
     }
   },
   "additionalAssertions": {
@@ -51,6 +51,7 @@
       "connectAgent",
       "crc32",
       "defaultGates",
+      "detectRateLimit",
       "doctorMcp",
       "environmentReadiness",
       "extractVerdict",
@@ -89,6 +90,7 @@
       "pruneUnavailableGates",
       "refreshConnector",
       "resolveRoot",
+      "restoreControlFiles",
       "ringkasBehavior",
       "ringkasVerifikasi",
       "runBehavior",
@@ -100,6 +102,7 @@
       "setupEnv",
       "sisaBudget",
       "sisaMilestone",
+      "snapshotControlFiles",
       "specBehavior",
       "syncCtx",
       "taskCard",
@@ -224,6 +227,10 @@
         "length": 1
       },
       "defaultGates": {
+        "type": "function",
+        "length": 1
+      },
+      "detectRateLimit": {
         "type": "function",
         "length": 1
       },
@@ -379,6 +386,10 @@
         "type": "function",
         "length": 1
       },
+      "restoreControlFiles": {
+        "type": "function",
+        "length": 3
+      },
       "ringkasBehavior": {
         "type": "function",
         "length": 1
@@ -422,6 +433,10 @@
       "sisaMilestone": {
         "type": "function",
         "length": 3
+      },
+      "snapshotControlFiles": {
+        "type": "function",
+        "length": 1
       },
       "specBehavior": {
         "type": "function",

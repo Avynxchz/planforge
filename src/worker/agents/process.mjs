@@ -22,14 +22,24 @@ export function callAgent(ctx, promptText, opts){
   const useCont = !!(session && Array.isArray(A.contArgs) && A.contArgs.length);
   let args = (useCont ? A.contArgs : A.args).slice();
   args = args.map(a=>String(a).replace("{PROMPT}", promptText).replace("{SESSION}", session || ""));
-  const r = spawnSync(A.cmd, args, { cwd: ctx.root, encoding: "utf8", timeout: (A.timeoutMin || 20) * 60000, maxBuffer: 40 * 1024 * 1024 });
-  ctx.state.calls++;
-  ctx.state.callsThisRun = (ctx.state.callsThisRun || 0) + 1;
-  const out = ANSI(String(r.stdout || "") + String(r.stderr || ""));
+  let r = null, out = "";
+  let attempts = 0;
+  while(attempts < 2){
+    attempts++;
+    r = spawnSync(A.cmd, args, { cwd: ctx.root, encoding: "utf8", timeout: (A.timeoutMin || 20) * 60000, maxBuffer: 40 * 1024 * 1024 });
+    ctx.state.calls++;
+    ctx.state.callsThisRun = (ctx.state.callsThisRun || 0) + 1;
+    out = ANSI(String(r.stdout || "") + String(r.stderr || ""));
+    if(!detectRateLimit(out) || attempts >= 2) break;
+    log(ctx, "  rate limit HTTP 429 terdeteksi; jeda backoff singkat sebelum retry otomatis");
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 1500);
+  }
   if(r.error && /ENOENT/.test(String(r.error))){
     throw new Error("perintah agen '" + A.cmd + "' tidak ditemukan di PATH. Ganti agent.name di gates.json, atau pakai: " + Object.keys(AGENT_PRESETS).filter(k=>k!=="none").join(", "));
   }
   let sess = null, text = out, kosong = false, agenError = null;
+  const rateLimit = detectRateLimit(out);
+  if(rateLimit) agenError = "HTTP 429 / rate limit: " + short(rateLimit, 260);
   const j = jsonObj(out);
   if(j){
     sess = j.session_id || j.conversationId || j.conversation_id || (j.response && j.response.session_id) || null;
@@ -50,10 +60,15 @@ export function callAgent(ctx, promptText, opts){
     else if(r.status !== 0) kosong = true;
   }
   if(r.status !== 0) log(ctx, "  agen keluar dengan code " + r.status + ": " + short(out, 240));
-  return { ok: r.status === 0 && !kosong && !agenError, text: String(text), session: sess || (useCont ? session : null), code: r.status, kosong, agenError };
+  return { ok: r.status === 0 && !kosong && !agenError, text: String(text), session: sess || (useCont ? session : null), code: r.status, kosong, agenError, rateLimit: !!rateLimit };
 }
 
 export const TOLAK_AGEN = /authentication required|please (use \/)?log ?in|not logged in|unauthori[sz]ed|invalid api key|api key (is )?(missing|invalid)|insufficient (credits|quota|balance)|quota (exceeded|habis)|need at least \d+ ai credits/i;
+
+export function detectRateLimit(out){
+  const text = String(out || "");
+  return /\b429\b|too many requests|rate.?limit/i.test(text) ? text.replace(/\s+/g, " ").trim().slice(0, 300) : "";
+}
 
 /* CLI logs may surround the JSON envelope. */
 export function jsonObj(out){

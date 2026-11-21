@@ -41,6 +41,23 @@ export function auditPlan(ctx, cwd){
       add("error", "PLAN", "task pertama ber-ID " + pertama.id + ", bukan T-001 — periksa apakah task scaffold hilang.");
   }
 
+  const cwdPrefixes = new Map();
+  for(const t of tasks){
+    const raw = String(t.verification || "").trim();
+    let prefix = ".";
+    for(const baris of raw.split(/[\r\n]+/)){
+      const cd = /^\s*(?:cd|pushd)\s+(?:\/d\s+)?["']?([^"&|]+?)["']?\s*(?:&&|&|$)/i.exec(baris);
+      if(cd){ prefix = cd[1].trim().replace(/[\/\\]+$/,"") || "."; break; }
+    }
+    if(!cwdPrefixes.has(prefix)) cwdPrefixes.set(prefix, []);
+    cwdPrefixes.get(prefix).push(t.id);
+  }
+  if(cwdPrefixes.size > 1){
+    const rincian = [...cwdPrefixes].map(([p,ids])=>`"${p}" dipakai ${ids.join(", ")}`).join("; ");
+    add("error", "PLAN", "verification antar-task memakai asumsi cwd/prefix direktori yang tidak konsisten: " + rincian
+      + ". Samakan kerja di root proyek atau tulis cd/prefix yang sama supaya tidak ada MODULE_NOT_FOUND.");
+  }
+
   for(const t of tasks){
     const rusakBeh = masalahBehavior(t);
     if(rusakBeh.length) add("error", t.id, rusakBeh.join(" · "));

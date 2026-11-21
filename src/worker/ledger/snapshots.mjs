@@ -50,3 +50,35 @@ export function headSha(cwd){
   const r = spawnSync("git", ["rev-parse", "--verify", "HEAD"], { cwd, encoding: "utf8" });
   return r.status === 0 ? String(r.stdout || "").trim() : null;
 }
+
+export function snapshotControlFiles(cwd){
+  const out = {};
+  for(const f of [".planforge/plan.json", ".planforge/gates.json"])
+    try{
+      const text = fs.readFileSync(path.join(cwd, f), "utf8");
+      out[f] = { text, hash: crypto.createHash("sha256").update(text).digest("hex") };
+    }
+    catch{ out[f] = { text: null, hash: null }; }
+  return out;
+}
+
+export function restoreControlFiles(ctx, cwd, snapshot){
+  const dir = path.join(cwd, ".planforge");
+  let restored = false;
+  const warnings = [];
+  for(const f of [".planforge/plan.json", ".planforge/gates.json"]){
+    const file = path.join(cwd, f);
+    let hash = null;
+    try{ hash = crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex"); }catch{}
+    if(hash !== snapshot[f].hash){
+      try{
+        fs.mkdirSync(dir, { recursive: true });
+        if(snapshot[f].text == null) fs.rmSync(file, { force: true });
+        else fs.writeFileSync(file, snapshot[f].text);
+        restored = true;
+        warnings.push(f);
+      }catch{}
+    }
+  }
+  return { restored, warnings };
+}

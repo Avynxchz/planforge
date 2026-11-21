@@ -25,6 +25,15 @@ export function loadCtx(root){
   if(state.planFingerprint == null) state.planFingerprint = fp;
   if(state.rev == null) state.rev = 0;
   const planBerubah = state.planFingerprint !== fp ? { dari: state.planFingerprint, ke: fp } : null;
+  if(planBerubah){
+    state.consecFails = 0;
+    state.planFingerprint = fp;
+    fs.mkdirSync(dir, { recursive: true });
+    const stateFile = path.join(dir, F_STATE);
+    const tmp = stateFile + ".tmp-" + process.pid + "-" + Date.now();
+    fs.writeFileSync(tmp, JSON.stringify(state, null, 1));
+    fs.renameSync(tmp, stateFile);
+  }
   return stamp({ root, dir, plan, gates, state, planFingerprint: fp, planBerubah });
 }
 

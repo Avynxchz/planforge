@@ -1925,6 +1925,49 @@ t("task numbering and duplicate IDs stay hard structural errors", ()=>{
   ctx.plan.tasks.tasks.push({...ctx.plan.tasks.tasks[0]});
   assert.ok(W.auditPlan(ctx,dir).error.some(x=>x.msg.includes("duplikat")));
 });
+ t("rate limit output is diagnosed separately from tool denial", ()=>{
+  assert.ok(W.detectRateLimit("HTTP 429 Too Many Requests"));
+  assert.ok(W.detectRateLimit("rate limit exceeded"));
+  assert.equal(W.detectRateLimit("all tools denied"), "");
+});
+t("plan and gates control files are restored after agent mutation", ()=>{
+  const dir = makeTempDir("planforge-control-");
+  fs.mkdirSync(path.join(dir, ".planforge"), { recursive: true });
+  fs.writeFileSync(path.join(dir, ".planforge", "plan.json"), '{"tasks":{"tasks":[]}}');
+  fs.writeFileSync(path.join(dir, ".planforge", "gates.json"), '{"hard":[],"reviews":[],"limits":{}}');
+  const snapshot = W.snapshotControlFiles(dir);
+  fs.writeFileSync(path.join(dir, ".planforge", "plan.json"), '{"tasks":{"tasks":[{"id":"T-BOHONG"}]}}');
+  fs.writeFileSync(path.join(dir, ".planforge", "gates.json"), '{"hard":[{"cmd":"exit 0"}]}');
+  const ctx = W.loadCtx(dir);
+  const restored = W.restoreControlFiles(ctx, dir, snapshot);
+  assert.equal(restored.restored, true);
+  assert.deepEqual(restored.warnings, [".planforge/plan.json", ".planforge/gates.json"]);
+  assert.equal(fs.readFileSync(path.join(dir, ".planforge", "plan.json"), "utf8"), '{"tasks":{"tasks":[]}}');
+});
+t("audit rejects inconsistent verification cwd prefixes across tasks", ()=>{
+  const dir = envProject(), ctx = W.loadCtx(dir);
+  ctx.plan.tasks.tasks = [
+    { id:"T-001", title:"Root", verification:"node -e \"console.log(1)\"", acceptance_criteria:["x"], depends_on:[] },
+    { id:"T-002", title:"Subfolder", verification:"cd src && node -e \"console.log(1)\"", acceptance_criteria:["x"], depends_on:["T-001"] }
+  ];
+  const audit = W.auditPlan(ctx, dir);
+  assert.ok(audit.error.some(x=>x.msg.includes("cwd/prefix")));
+});
+ t("verified exit zero accepts plain text fallback when file changes", ()=>{
+  const dir = makeTempDir("planforge-fallback-");
+  fs.mkdirSync(path.join(dir, ".planforge"), { recursive: true });
+  const run = spawnSync("git", ["init","-q"], { cwd:dir, encoding:"utf8" }); assert.equal(run.status, 0);
+  fs.writeFileSync(path.join(dir,".gitignore"),"");
+  spawnSync("git", ["-c","user.email=a@b.c","-c","user.name=A","add","."], {cwd:dir});
+  spawnSync("git", ["-c","user.email=a@b.c","-c","user.name=A","commit","-qm","base"], {cwd:dir});
+  const agent = path.join(dir, "plain-agent.mjs");
+  fs.writeFileSync(agent, 'import fs from "node:fs"; fs.writeFileSync("app.txt","x"); console.log("task selesai");');
+  fs.writeFileSync(path.join(dir, ".planforge", "plan.json"), JSON.stringify({ tasks:{ tasks:[{ id:"T-001", title:"Buat berkas", description:"buat app.txt", depends_on:[], files_or_areas:["app.txt"], acceptance_areas:["berkas ada"], acceptance_criteria:["berkas ada"], verification:'"'+NODE+'" -e "process.exit(0)"', ui:false }] } }));
+  fs.writeFileSync(path.join(dir, ".planforge", "gates.json"), JSON.stringify({ agent:{name:"plain",cmd:NODE,args:[agent],contArgs:[agent],timeoutMin:1}, hard:[{id:"proof",label:"Proof",cmd:'"'+NODE+'" -e "process.exit(0)"',enabled:true,blocking:true}], reviews:[], limits:{maxCalls:20,maxCallsPerRun:20,maxConsecutiveFails:3,fullEvery:99,fixRounds:0,autoCommit:false} }));
+  assert.equal(W.main(["run","--dir",dir,"--only","T-001"]), 0);
+  const state = JSON.parse(fs.readFileSync(path.join(dir, ".planforge", "state.json"), "utf8"));
+  assert.equal(state.tasks["T-001"].status, "selesai");
+});
 cleanupTempDirs();
 sweepStaleTempDirs();
 console.log("\n" + pass + " lulus, " + fail + " gagal\n");

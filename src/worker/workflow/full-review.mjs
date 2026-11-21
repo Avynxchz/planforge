@@ -38,12 +38,12 @@ export function runFullGates(ctx, cwd, upto){
       : r.agenError
       ? "AGEN MENOLAK BEKERJA (" + short(r.agenError, 100) + ") — gerbang ini tidak membuktikan apa-apa"
       : r.kosong
-      ? "agen balas KOSONG — gerbang ini tidak membuktikan apa-apa"
+      ? (r.rateLimit ? "rate limit HTTP 429 — jeda lalu coba lagi; gerbang ini tidak membuktikan apa-apa" : "agen balas KOSONG — gerbang ini tidak membuktikan apa-apa")
       : v ? short(JSON.stringify(v).replace(/\s+/g," "), 200) : "TIDAK ADA VERDICT — gerbang ini tidak membuktikan apa-apa"));
     ctx.state.history.push({ at: new Date().toISOString(), gate: g.id, out: short(r.agenError ? String(r.agenError) : r.text, 3000) });
     if(r.budget){ kenapa = r.budget; break; }
     if(r.agenError){ kenapa = "agen menolak bekerja di gerbang " + g.id + ": " + short(r.agenError, 140); break; }
-    if(r.kosong){ kenapa = "gerbang " + g.id + " dibalas kosong (semua tool agen di-deny) — tambah --dangerously-skip-permissions di args agen, atau kerjakan lewat chat IDE"; break; }
+    if(r.kosong){ kenapa = r.rateLimit ? "gerbang " + g.id + " terkena rate limit HTTP 429; tunggu jeda backoff lalu coba lagi" : "gerbang " + g.id + " dibalas kosong (semua tool agen di-deny) — tambah --dangerously-skip-permissions di args agen, atau kerjakan lewat chat IDE"; break; }
     if(!v){ kenapa = "gerbang " + g.id + " tidak mengembalikan JSON verdict — tidak ada yang bisa dinilai dari jawabannya"; break; }
     terbukti++;
   }

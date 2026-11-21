@@ -1,6 +1,6 @@
 import { taskCard, buildTaskPrompt, buildFixPrompt } from "../agents/prompts.mjs";
 import { log } from "../ledger/log.mjs";
-import { headSha, potretKotor, changedFiles } from "../ledger/snapshots.mjs";
+import { headSha, potretKotor, changedFiles, snapshotControlFiles, restoreControlFiles } from "../ledger/snapshots.mjs";
 import { saveCtx } from "../ledger/state.mjs";
 import { short } from "../text.mjs";
 import { callAgent } from "../agents/process.mjs";
@@ -21,6 +21,14 @@ export function runOne(ctx, t, cwd){
   ctx.state.calls > 0 && log(ctx, "call terpakai: " + ctx.state.calls + "/" + ctx.gates.limits.maxCalls);
   const headBefore = headSha(cwd);
   const kotorAwal = potretKotor(cwd);
+  const controlSnapshot = snapshotControlFiles(cwd);
+  const lindungiKontrol = ()=>{
+    const restored = restoreControlFiles(ctx, cwd, controlSnapshot);
+    if(restored.restored){
+      const pesan = "peringatan: agen dilarang mengubah berkas penilaian mandor; dikembalikan: " + restored.warnings.join(", ");
+      log(ctx, t.id + " " + pesan);
+    }
+  };
   const statusSebelum = st.status;
   /* Quota/auth refusal leaves the task untried, not failed. */
   const berhenti = (r)=>{
@@ -37,6 +45,7 @@ export function runOne(ctx, t, cwd){
     saveCtx(ctx); return "halt";
   };
   let res = callAgent(ctx, buildTaskPrompt(ctx, t), { tag: t.id });
+  lindungiKontrol();
   /* Dry runs and the none preset must not update task state or commit. */
   if(res.dry) return "dry";
   const h0 = berhenti(res); if(h0) return h0;
@@ -103,30 +112,37 @@ export function runOne(ctx, t, cwd){
         + "\nIni angka hasil pengukuran, bukan tebakan. Perbaiki kodenya sampai check ini hijau; jangan mengubah plan.json." : ""
     ].filter(Boolean).join("\n\n");
     const fx = callAgent(ctx, buildFixPrompt(ctx, t, why), { tag: t.id + "-fix" + rounds, session: sess });
+    lindungiKontrol();
     const hf = berhenti(fx); if(hf) return hf;
     if(fx.session) sess = fx.session;
     cekUlang();
   }
 
   let light = [];
+  const berubah = changedFiles(cwd, headBefore);
+  const fallbackTerverifikasi = !!(ver.ok && beh.ok && !blockingFail.length && berubah && berubah.length > 0);
   if(L("light").length && !blockingFail.length && ver.ok && beh.ok){
     for(const g of L("light")){
       const nilai = ()=>{
         const r = callAgent(ctx, [g.label + " untuk task " + t.id + ":", card, g.prompt].join("\n\n"), { tag: g.id, session: sess });
+        lindungiKontrol();
         const hr = berhenti(r); if(hr) return { halt: hr };
         if(r.session) sess = r.session;
         const raw = extractVerdict(r.text);
         /* A JSON error envelope is not a review verdict. */
         const v = raw && (typeof raw.pass === "boolean" || Array.isArray(raw.issues)) ? raw : null;
         /* No verdict means no evidence, not a clean review. */
-        const issues = v ? (v.issues || []) : ["reviewer tidak mengembalikan JSON verdict"];
-        const pass = !!v && v.pass !== false && !issues.length;
-        log(ctx, "  reviewer " + g.id + ": " + (v ? (pass ? "bersih" : issues.length + " temuan") : "TIDAK ADA VERDICT — dianggap belum lolos"));
+        const issues = v ? (v.issues || []) : (fallbackTerverifikasi ? [] : ["reviewer tidak mengembalikan JSON verdict"]);
+        const pass = v ? (v.pass !== false && !issues.length) : fallbackTerverifikasi;
+        log(ctx, "  reviewer " + g.id + ": " + (!v
+          ? (pass ? "fallback terverifikasi" : "TIDAK ADA VERDICT — dianggap belum lolos")
+          : (pass ? "bersih" : issues.length + " temuan")));
         return { pass, issues, v };
       };
       let rv = nilai(); if(rv.halt) return rv.halt;
       if(!rv.pass && (ctx.gates.limits.fixRounds || 2) > 0){
         const fx = callAgent(ctx, buildFixPrompt(ctx, t, rv.issues.join("\n") + "\n" + ((rv.v && rv.v.fix) || "")), { tag: "fix-" + g.id, session: sess });
+        lindungiKontrol();
         const hfx = berhenti(fx); if(hfx) return hfx;
         if(fx.session) sess = fx.session;
         cekUlang();
@@ -137,7 +153,6 @@ export function runOne(ctx, t, cwd){
     }
   }
 
-  const berubah = changedFiles(cwd, headBefore);
   const alasan = [];
   if(blockingFail.length) alasan.push("gerbang gagal: " + blockingFail.map(b=>b.id).join(", "));
   if(!ver.ok) alasan.push(ver.kurang.join(" · "));
@@ -145,7 +160,7 @@ export function runOne(ctx, t, cwd){
   /* A rejecting reviewer must block completion, not merely leave a note. */
   const lightGagal = light.filter(x=>!x.pass);
   if(lightGagal.length) alasan.push("reviewer ringan menolak: " + lightGagal.map(x=>x.id + " (" + short((x.issues||[]).join("; "), 160) + ")").join(" | "));
-  if(!(verdict && verdict.done === true)) alasan.push('agen tidak melaporkan {"done":true}');
+  if(!(verdict && verdict.done === true) && !fallbackTerverifikasi) alasan.push('agen tidak melaporkan {"done":true}');
   if(berubah && !berubah.length && !ctx.allowNoop) alasan.push("tidak ada file yang berubah");
   const passAll = !alasan.length;
   st.status = passAll ? "selesai" : "gagal";

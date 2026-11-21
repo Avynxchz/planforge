@@ -795,6 +795,15 @@ function loadCtx(root) {
   if (state.planFingerprint == null) state.planFingerprint = fp;
   if (state.rev == null) state.rev = 0;
   const planBerubah = state.planFingerprint !== fp ? { dari: state.planFingerprint, ke: fp } : null;
+  if (planBerubah) {
+    state.consecFails = 0;
+    state.planFingerprint = fp;
+    fs6.mkdirSync(dir, { recursive: true });
+    const stateFile = path6.join(dir, F_STATE);
+    const tmp = stateFile + ".tmp-" + process.pid + "-" + Date.now();
+    fs6.writeFileSync(tmp, JSON.stringify(state, null, 1));
+    fs6.renameSync(tmp, stateFile);
+  }
   return stamp({ root, dir, plan, gates, state, planFingerprint: fp, planBerubah });
 }
 var cetakIsi = (ctx) => [F_PLAN, F_GATES, F_STATE].map((f) => cetakFile(path6.join(ctx.dir, f))).join("|");
@@ -986,6 +995,41 @@ function headSha(cwd) {
   const r = spawnSync3("git", ["rev-parse", "--verify", "HEAD"], { cwd, encoding: "utf8" });
   return r.status === 0 ? String(r.stdout || "").trim() : null;
 }
+function snapshotControlFiles(cwd) {
+  const out = {};
+  for (const f of [".planforge/plan.json", ".planforge/gates.json"])
+    try {
+      const text = fs8.readFileSync(path8.join(cwd, f), "utf8");
+      out[f] = { text, hash: crypto.createHash("sha256").update(text).digest("hex") };
+    } catch {
+      out[f] = { text: null, hash: null };
+    }
+  return out;
+}
+function restoreControlFiles(ctx, cwd, snapshot) {
+  const dir = path8.join(cwd, ".planforge");
+  let restored = false;
+  const warnings = [];
+  for (const f of [".planforge/plan.json", ".planforge/gates.json"]) {
+    const file = path8.join(cwd, f);
+    let hash = null;
+    try {
+      hash = crypto.createHash("sha256").update(fs8.readFileSync(file)).digest("hex");
+    } catch {
+    }
+    if (hash !== snapshot[f].hash) {
+      try {
+        fs8.mkdirSync(dir, { recursive: true });
+        if (snapshot[f].text == null) fs8.rmSync(file, { force: true });
+        else fs8.writeFileSync(file, snapshot[f].text);
+        restored = true;
+        warnings.push(f);
+      } catch {
+      }
+    }
+  }
+  return { restored, warnings };
+}
 
 // src/worker/agents/cost.mjs
 function catatBiaya(ctx, j, tag) {
@@ -1024,14 +1068,24 @@ function callAgent(ctx, promptText, opts) {
   const useCont = !!(session && Array.isArray(A.contArgs) && A.contArgs.length);
   let args = (useCont ? A.contArgs : A.args).slice();
   args = args.map((a) => String(a).replace("{PROMPT}", promptText).replace("{SESSION}", session || ""));
-  const r = spawnSync4(A.cmd, args, { cwd: ctx.root, encoding: "utf8", timeout: (A.timeoutMin || 20) * 6e4, maxBuffer: 40 * 1024 * 1024 });
-  ctx.state.calls++;
-  ctx.state.callsThisRun = (ctx.state.callsThisRun || 0) + 1;
-  const out = ANSI(String(r.stdout || "") + String(r.stderr || ""));
+  let r = null, out = "";
+  let attempts = 0;
+  while (attempts < 2) {
+    attempts++;
+    r = spawnSync4(A.cmd, args, { cwd: ctx.root, encoding: "utf8", timeout: (A.timeoutMin || 20) * 6e4, maxBuffer: 40 * 1024 * 1024 });
+    ctx.state.calls++;
+    ctx.state.callsThisRun = (ctx.state.callsThisRun || 0) + 1;
+    out = ANSI(String(r.stdout || "") + String(r.stderr || ""));
+    if (!detectRateLimit(out) || attempts >= 2) break;
+    log(ctx, "  rate limit HTTP 429 terdeteksi; jeda backoff singkat sebelum retry otomatis");
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 1500);
+  }
   if (r.error && /ENOENT/.test(String(r.error))) {
     throw new Error("perintah agen '" + A.cmd + "' tidak ditemukan di PATH. Ganti agent.name di gates.json, atau pakai: " + Object.keys(AGENT_PRESETS).filter((k) => k !== "none").join(", "));
   }
   let sess = null, text = out, kosong = false, agenError = null;
+  const rateLimit = detectRateLimit(out);
+  if (rateLimit) agenError = "HTTP 429 / rate limit: " + short(rateLimit, 260);
   const j = jsonObj(out);
   if (j) {
     sess = j.session_id || j.conversationId || j.conversation_id || j.response && j.response.session_id || null;
@@ -1049,9 +1103,13 @@ function callAgent(ctx, promptText, opts) {
     else if (r.status !== 0) kosong = true;
   }
   if (r.status !== 0) log(ctx, "  agen keluar dengan code " + r.status + ": " + short(out, 240));
-  return { ok: r.status === 0 && !kosong && !agenError, text: String(text), session: sess || (useCont ? session : null), code: r.status, kosong, agenError };
+  return { ok: r.status === 0 && !kosong && !agenError, text: String(text), session: sess || (useCont ? session : null), code: r.status, kosong, agenError, rateLimit: !!rateLimit };
 }
 var TOLAK_AGEN = /authentication required|please (use \/)?log ?in|not logged in|unauthori[sz]ed|invalid api key|api key (is )?(missing|invalid)|insufficient (credits|quota|balance)|quota (exceeded|habis)|need at least \d+ ai credits/i;
+function detectRateLimit(out) {
+  const text = String(out || "");
+  return /\b429\b|too many requests|rate.?limit/i.test(text) ? text.replace(/\s+/g, " ").trim().slice(0, 300) : "";
+}
 function jsonObj(out) {
   const s = String(out || "").trim();
   if (!s) return null;
@@ -1125,7 +1183,7 @@ function runFullGates(ctx, cwd, upto) {
     if (r.session) ctx.state.session = r.session;
     const vRaw = extractVerdict(String(r.text));
     const v = vRaw && Object.keys(vRaw).length ? vRaw : null;
-    log(ctx, "  " + g.id + " " + from + " sampai " + upto.id + ": " + (r.budget ? "BUDGET HABIS (" + r.budget + ") — gerbang ini tidak membuktikan apa-apa" : r.agenError ? "AGEN MENOLAK BEKERJA (" + short(r.agenError, 100) + ") — gerbang ini tidak membuktikan apa-apa" : r.kosong ? "agen balas KOSONG — gerbang ini tidak membuktikan apa-apa" : v ? short(JSON.stringify(v).replace(/\s+/g, " "), 200) : "TIDAK ADA VERDICT — gerbang ini tidak membuktikan apa-apa"));
+    log(ctx, "  " + g.id + " " + from + " sampai " + upto.id + ": " + (r.budget ? "BUDGET HABIS (" + r.budget + ") — gerbang ini tidak membuktikan apa-apa" : r.agenError ? "AGEN MENOLAK BEKERJA (" + short(r.agenError, 100) + ") — gerbang ini tidak membuktikan apa-apa" : r.kosong ? r.rateLimit ? "rate limit HTTP 429 — jeda lalu coba lagi; gerbang ini tidak membuktikan apa-apa" : "agen balas KOSONG — gerbang ini tidak membuktikan apa-apa" : v ? short(JSON.stringify(v).replace(/\s+/g, " "), 200) : "TIDAK ADA VERDICT — gerbang ini tidak membuktikan apa-apa"));
     ctx.state.history.push({ at: (/* @__PURE__ */ new Date()).toISOString(), gate: g.id, out: short(r.agenError ? String(r.agenError) : r.text, 3e3) });
     if (r.budget) {
       kenapa = r.budget;
@@ -1136,7 +1194,7 @@ function runFullGates(ctx, cwd, upto) {
       break;
     }
     if (r.kosong) {
-      kenapa = "gerbang " + g.id + " dibalas kosong (semua tool agen di-deny) — tambah --dangerously-skip-permissions di args agen, atau kerjakan lewat chat IDE";
+      kenapa = r.rateLimit ? "gerbang " + g.id + " terkena rate limit HTTP 429; tunggu jeda backoff lalu coba lagi" : "gerbang " + g.id + " dibalas kosong (semua tool agen di-deny) — tambah --dangerously-skip-permissions di args agen, atau kerjakan lewat chat IDE";
       break;
     }
     if (!v) {
@@ -1820,6 +1878,24 @@ function auditPlan(ctx, cwd) {
       add("warn", pertama.id, "folder proyek masih kosong dan file yang disebut belum ada: " + short(hilang.join(", "), 160) + " — pastikan task scaffold ada sebelum task ini.");
     if (String(pertama.id || "").toUpperCase() !== "T-001")
       add("error", "PLAN", "task pertama ber-ID " + pertama.id + ", bukan T-001 — periksa apakah task scaffold hilang.");
+  }
+  const cwdPrefixes = /* @__PURE__ */ new Map();
+  for (const t of tasks) {
+    const raw = String(t.verification || "").trim();
+    let prefix = ".";
+    for (const baris of raw.split(/[\r\n]+/)) {
+      const cd = /^\s*(?:cd|pushd)\s+(?:\/d\s+)?["']?([^"&|]+?)["']?\s*(?:&&|&|$)/i.exec(baris);
+      if (cd) {
+        prefix = cd[1].trim().replace(/[\/\\]+$/, "") || ".";
+        break;
+      }
+    }
+    if (!cwdPrefixes.has(prefix)) cwdPrefixes.set(prefix, []);
+    cwdPrefixes.get(prefix).push(t.id);
+  }
+  if (cwdPrefixes.size > 1) {
+    const rincian = [...cwdPrefixes].map(([p, ids]) => `"${p}" dipakai ${ids.join(", ")}`).join("; ");
+    add("error", "PLAN", "verification antar-task memakai asumsi cwd/prefix direktori yang tidak konsisten: " + rincian + ". Samakan kerja di root proyek atau tulis cd/prefix yang sama supaya tidak ada MODULE_NOT_FOUND.");
   }
   for (const t of tasks) {
     const rusakBeh = masalahBehavior(t);
@@ -2715,6 +2791,14 @@ function runOne(ctx, t, cwd) {
   ctx.state.calls > 0 && log(ctx, "call terpakai: " + ctx.state.calls + "/" + ctx.gates.limits.maxCalls);
   const headBefore = headSha(cwd);
   const kotorAwal = potretKotor(cwd);
+  const controlSnapshot = snapshotControlFiles(cwd);
+  const lindungiKontrol = () => {
+    const restored = restoreControlFiles(ctx, cwd, controlSnapshot);
+    if (restored.restored) {
+      const pesan = "peringatan: agen dilarang mengubah berkas penilaian mandor; dikembalikan: " + restored.warnings.join(", ");
+      log(ctx, t.id + " " + pesan);
+    }
+  };
   const statusSebelum = st.status;
   const berhenti = (r) => {
     if (!r) return null;
@@ -2734,6 +2818,7 @@ function runOne(ctx, t, cwd) {
     return "halt";
   };
   let res = callAgent(ctx, buildTaskPrompt(ctx, t), { tag: t.id });
+  lindungiKontrol();
   if (res.dry) return "dry";
   const h0 = berhenti(res);
   if (h0) return h0;
@@ -2807,30 +2892,35 @@ function runOne(ctx, t, cwd) {
       beh.kurang && beh.kurang.length ? "[PERILAKU di browser sungguhan — worker yang mengukur, bukan klaim kamu]\n" + beh.kurang.join("\n") + "\nIni angka hasil pengukuran, bukan tebakan. Perbaiki kodenya sampai check ini hijau; jangan mengubah plan.json." : ""
     ].filter(Boolean).join("\n\n");
     const fx = callAgent(ctx, buildFixPrompt(ctx, t, why), { tag: t.id + "-fix" + rounds, session: sess });
+    lindungiKontrol();
     const hf = berhenti(fx);
     if (hf) return hf;
     if (fx.session) sess = fx.session;
     cekUlang();
   }
   let light = [];
+  const berubah = changedFiles(cwd, headBefore);
+  const fallbackTerverifikasi = !!(ver.ok && beh.ok && !blockingFail.length && berubah && berubah.length > 0);
   if (L("light").length && !blockingFail.length && ver.ok && beh.ok) {
     for (const g of L("light")) {
       const nilai = () => {
         const r = callAgent(ctx, [g.label + " untuk task " + t.id + ":", card, g.prompt].join("\n\n"), { tag: g.id, session: sess });
+        lindungiKontrol();
         const hr = berhenti(r);
         if (hr) return { halt: hr };
         if (r.session) sess = r.session;
         const raw = extractVerdict(r.text);
         const v = raw && (typeof raw.pass === "boolean" || Array.isArray(raw.issues)) ? raw : null;
-        const issues = v ? v.issues || [] : ["reviewer tidak mengembalikan JSON verdict"];
-        const pass = !!v && v.pass !== false && !issues.length;
-        log(ctx, "  reviewer " + g.id + ": " + (v ? pass ? "bersih" : issues.length + " temuan" : "TIDAK ADA VERDICT — dianggap belum lolos"));
+        const issues = v ? v.issues || [] : fallbackTerverifikasi ? [] : ["reviewer tidak mengembalikan JSON verdict"];
+        const pass = v ? v.pass !== false && !issues.length : fallbackTerverifikasi;
+        log(ctx, "  reviewer " + g.id + ": " + (!v ? pass ? "fallback terverifikasi" : "TIDAK ADA VERDICT — dianggap belum lolos" : pass ? "bersih" : issues.length + " temuan"));
         return { pass, issues, v };
       };
       let rv = nilai();
       if (rv.halt) return rv.halt;
       if (!rv.pass && (ctx.gates.limits.fixRounds || 2) > 0) {
         const fx = callAgent(ctx, buildFixPrompt(ctx, t, rv.issues.join("\n") + "\n" + (rv.v && rv.v.fix || "")), { tag: "fix-" + g.id, session: sess });
+        lindungiKontrol();
         const hfx = berhenti(fx);
         if (hfx) return hfx;
         if (fx.session) sess = fx.session;
@@ -2841,14 +2931,13 @@ function runOne(ctx, t, cwd) {
       light.push({ id: g.id, pass: rv.pass, issues: rv.issues });
     }
   }
-  const berubah = changedFiles(cwd, headBefore);
   const alasan = [];
   if (blockingFail.length) alasan.push("gerbang gagal: " + blockingFail.map((b) => b.id).join(", "));
   if (!ver.ok) alasan.push(ver.kurang.join(" · "));
   if (!beh.ok) alasan.push((beh.kurang || []).join(" · "));
   const lightGagal = light.filter((x) => !x.pass);
   if (lightGagal.length) alasan.push("reviewer ringan menolak: " + lightGagal.map((x) => x.id + " (" + short((x.issues || []).join("; "), 160) + ")").join(" | "));
-  if (!(verdict && verdict.done === true)) alasan.push('agen tidak melaporkan {"done":true}');
+  if (!(verdict && verdict.done === true) && !fallbackTerverifikasi) alasan.push('agen tidak melaporkan {"done":true}');
   if (berubah && !berubah.length && !ctx.allowNoop) alasan.push("tidak ada file yang berubah");
   const passAll = !alasan.length;
   st.status = passAll ? "selesai" : "gagal";
@@ -2907,6 +2996,9 @@ function runOne(ctx, t, cwd) {
 // src/worker/cli/run-command.mjs
 function commandRun(ctx, cwd, args, cap) {
   const lim = ctx.gates.limits;
+  if (args.only) {
+    ctx.state.consecFails = 0;
+  }
   if (!args["no-gates"]) pruneUnavailableGates(ctx, cwd);
   if (!ctx.dryRun) mulaiSesi(ctx);
   log(ctx, "mulai · sesi " + (ctx.state.runId || "-") + " · agen=" + ctx.gates.agent.name + " · maxCalls=" + lim.maxCalls + " · plafon biaya " + (lim.maxCostUsd == null ? "tanpa batas" : "$" + lim.maxCostUsd) + " · gerbang keras=" + ctx.gates.hard.filter((h) => h.enabled).map((h) => h.id).join(",") + " · penuh tiap " + lim.fullEvery + " task");
@@ -2994,7 +3086,8 @@ function main(argv) {
   const cmd = args._[0];
   if (!cmd) {
     console.log("Penggunaan: node worker.mjs <perintah> [opsi]");
-    console.log("Perintah: run, status, doctor, setup-env, refresh, pin, build, verify, audit, connect, giliran, init, mcp, embed");
+    console.log("Perintah: run, status, reset, doctor, setup-env, refresh, pin, build, verify, audit, connect, giliran, init, mcp, embed");
+    console.log("Reset: node worker.mjs reset | node worker.mjs reset <task-id>");
     console.log("Contoh: node worker.mjs run --dry-run");
     console.log("Jalankan `node worker.mjs run` untuk memulai loop runner.");
     return 0;
@@ -3032,6 +3125,36 @@ function main(argv) {
   ctx.allowNoop = !!args["allow-noop"];
   const cap = args["max-tasks"] ? Number(args["max-tasks"]) : null;
   if (cmd === "status") return commandStatus(ctx, cwd);
+  if (cmd === "reset") {
+    const id = args._[1];
+    ctx.state.consecFails = 0;
+    if (id) {
+      if (!ctx.plan.tasks.tasks.some((t) => t.id === id)) {
+        console.error("task " + id + " tidak ada");
+        return 1;
+      }
+      ctx.state.tasks[id] = ctx.state.tasks[id] || { status: "belum mulai", tries: 0, gate: null, note: "" };
+      ctx.state.tasks[id].status = "belum mulai";
+      ctx.state.tasks[id].note = "";
+      ctx.state.tasks[id].finishedAt = void 0;
+      delete ctx.state.tasks[id].finishedAt;
+      console.log(id + " di-reset menjadi belum mulai; consecutive failures di-reset menjadi 0");
+    } else {
+      for (const t of ctx.plan.tasks.tasks) {
+        const s = ctx.state.tasks[t.id];
+        if (s && s.status === "gagal") {
+          s.status = "belum mulai";
+          s.note = "";
+          s.finishedAt = void 0;
+          delete s.finishedAt;
+        }
+      }
+      console.log("semua task gagal di-reset menjadi belum mulai; consecutive failures di-reset menjadi 0");
+    }
+    saveCtx(ctx);
+    log(ctx, "reset " + (id || "semua") + ": consecFails=0");
+    return 0;
+  }
   if (cmd === "build") return commandBuild();
   if (cmd === "giliran") return commandGiliran(ctx, args);
   if (cmd === "doctor") return commandDoctor(ctx, root, cwd, args);
@@ -3085,6 +3208,7 @@ export {
   connectAgent,
   crc32,
   defaultGates,
+  detectRateLimit,
   doctorMcp,
   environmentReadiness,
   extractVerdict,
@@ -3123,6 +3247,7 @@ export {
   pruneUnavailableGates,
   refreshConnector,
   resolveRoot,
+  restoreControlFiles,
   ringkasBehavior,
   ringkasVerifikasi,
   runBehavior,
@@ -3134,6 +3259,7 @@ export {
   setupEnv,
   sisaBudget,
   sisaMilestone,
+  snapshotControlFiles,
   specBehavior,
   syncCtx,
   taskCard,

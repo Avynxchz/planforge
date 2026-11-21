@@ -1,31 +1,21 @@
 {
   "version": 1,
-  "baselineSha256": "7e7ea45c5ab283c7513145a316132885fc9ad5590e645ce69525097e669b1427",
+  "baselineSha256": "f3235db929267ad61f22075bcd0fa66fd7bf09f9cde465aacfe79f6db92f0d78",
   "normalization": "Acorn AST without source offsets, raw literal spelling or comments. Export wrappers are compared separately by the captured public characterization.",
   "declarations": [
     {
       "names": [
-        "DIR"
+        "absolutkanScript"
       ],
-      "kind": "const",
-      "sha256": "8f9fe8b7f8d39ede0aeb997ab969e6c15054ce573f42b6036b0dc5eeede6c5c0"
+      "kind": "function",
+      "sha256": "94f1fc52496493c218514361266cb45821e974b7a6086b24d5d889452542dbb5"
     },
     {
       "names": [
-        "F_PLAN",
-        "F_GATES",
-        "F_STATE",
-        "F_LOG"
+        "AGENT_ADAPTERS"
       ],
       "kind": "const",
-      "sha256": "3878a4a4a199c1ee8654818b316dd4c1d659bd8a92aad1145a9d0120cb3a58b2"
-    },
-    {
-      "names": [
-        "AGENT_PRESETS"
-      ],
-      "kind": "const",
-      "sha256": "5a0b1d5188bbff8cb9e40d3577e2cb9c80f84ab6dd4a26617028098ace4d8e79"
+      "sha256": "20e6b56d317c329c48d5eb54ce37e38ff6162434199ec59b5755aa5e9079f216"
     },
     {
       "names": [
@@ -36,430 +26,10 @@
     },
     {
       "names": [
-        "presetAgen"
-      ],
-      "kind": "function",
-      "sha256": "bb0a4f947930f2b0a85586ed5df561af47029176eba87deaf58cd19ca3571f48"
-    },
-    {
-      "names": [
-        "LIGHT_REVIEW"
+        "AGENT_PRESETS"
       ],
       "kind": "const",
-      "sha256": "7271bf4bcd47df19f5513eee318201edf8b7ad474c7d9789b7dc2c113d9d2022"
-    },
-    {
-      "names": [
-        "FULL_GATES"
-      ],
-      "kind": "const",
-      "sha256": "d2d35f5c5f90f3b3380ac3e222188b8ac2f9e80e0ac6cd3d43d7d7e077849aec"
-    },
-    {
-      "names": [
-        "HARD_CHECKS"
-      ],
-      "kind": "const",
-      "sha256": "bd2bfb5626911354f82d7f4eadb890558611c55c37b75f2ff50117f6aa4d3d58"
-    },
-    {
-      "names": [
-        "defaultGates"
-      ],
-      "kind": "function",
-      "sha256": "2f604eec6af4c503473b3a3d3db7b07a56e45d05c4a0d283d0ad6917f70d9818"
-    },
-    {
-      "names": [
-        "now"
-      ],
-      "kind": "const",
-      "sha256": "4d3a9026091f8f11ea537d924541e31f21034a1d275ea8083b248c27aaab34e8"
-    },
-    {
-      "names": [
-        "short"
-      ],
-      "kind": "const",
-      "sha256": "3f348929920b8d1789ae899b41b24910ea02ef79c099ecfbe4898963f4352cf4"
-    },
-    {
-      "names": [
-        "readJson"
-      ],
-      "kind": "const",
-      "sha256": "98ec7b85356b12a1fa7d9ef3f2700d74f71c625d1602efd510ed130bcfae531f"
-    },
-    {
-      "names": [
-        "crc32"
-      ],
-      "kind": "function",
-      "sha256": "ea805cbf54883275b4d50e30c6a7ecca421d16d853b95eea803c65572ef4e31d"
-    },
-    {
-      "names": [
-        "canonPlan"
-      ],
-      "kind": "function",
-      "sha256": "e9bc5959f4bfe0dd22251fa35353d0cc1803f30efc4bd9babb5767d23e59d1d0"
-    },
-    {
-      "names": [
-        "planCoreFromPlan"
-      ],
-      "kind": "function",
-      "sha256": "ad78c41d5a30864a391082bf1770a19e95c9e14f7e4e922d3e318495f356a193"
-    },
-    {
-      "names": [
-        "planFingerprintPlan"
-      ],
-      "kind": "function",
-      "sha256": "fc0c1a2250931d9f4be01d5b7e43b0cbe721ace556522ad8676f28cd0ce119c0"
-    },
-    {
-      "names": [
-        "findRoot"
-      ],
-      "kind": "function",
-      "sha256": "45ad45d1fd826d9fa5144b6cdec54773396dbb03501f3e0d26e97d55ebe06cfc"
-    },
-    {
-      "names": [
-        "SELF_DIR"
-      ],
-      "kind": "const",
-      "sha256": "9eeba97876f63272619a74dc302e5361a0a277c838a5c07e1ee4e39664361aa6"
-    },
-    {
-      "names": [
-        "SELF_FILE"
-      ],
-      "kind": "const",
-      "sha256": "99c3a0c113d48a2fa291bdb52a082f5013a974d468e9d4cc8abb85eec5e0183e"
-    },
-    {
-      "names": [
-        "cetakFile"
-      ],
-      "kind": "const",
-      "sha256": "cfb8fbda25e5614e2a2e62b620d51a6bf3d0abcbea9dcfc9984db9279551d9f4"
-    },
-    {
-      "names": [
-        "BUILD_AWAL"
-      ],
-      "kind": "const",
-      "sha256": "a8276d3397b04885758ff871d86d75edc07dfa10b56f4e2c5e0327840778db35"
-    },
-    {
-      "names": [
-        "buildLama"
-      ],
-      "kind": "const",
-      "sha256": "897f47164a2fd7d34401bb681e03de713360d495868fee1c68b59f03dc4a0061"
-    },
-    {
-      "names": [
-        "bannerBuildLama"
-      ],
-      "kind": "function",
-      "sha256": "1af62f9e4f57216e4b0e808f3416a6453458ca1be966f7585da87cfc5bf85153"
-    },
-    {
-      "names": [
-        "resolveRoot"
-      ],
-      "kind": "function",
-      "sha256": "b80191f22cf48677e22dfb5181dfbf0cf67b3cbe057ce180fc42828c8044d881"
-    },
-    {
-      "names": [
-        "loadCtx"
-      ],
-      "kind": "function",
-      "sha256": "efcfbfdf80c0132a69ac7e8670336f37145d7930d3b00cda20bfcc9364f8bd35"
-    },
-    {
-      "names": [
-        "cetakIsi"
-      ],
-      "kind": "const",
-      "sha256": "a4585e12507ce4b03efb7c4f2e5628b98d8615966c9b7ed91b0fa53db360caa3"
-    },
-    {
-      "names": [
-        "stamp"
-      ],
-      "kind": "function",
-      "sha256": "0614985be722480b97f6cf9f4a25514740f606786057513086f7158ea1f97f46"
-    },
-    {
-      "names": [
-        "syncCtx"
-      ],
-      "kind": "function",
-      "sha256": "6d6cc32728705233995d696b36be767fb3da58b3cf20b3206799e4793c189134"
-    },
-    {
-      "names": [
-        "saveCtx"
-      ],
-      "kind": "function",
-      "sha256": "882a39e8030ffddc766f8fc11ea2c1b5426d58541158e996d82e9e0e002d65f0"
-    },
-    {
-      "names": [
-        "log"
-      ],
-      "kind": "function",
-      "sha256": "e6055fbfe103e62983a8574dfd680ec3525b4033e5319781749a6ee74211bfe1"
-    },
-    {
-      "names": [
-        "STATUS"
-      ],
-      "kind": "const",
-      "sha256": "350b5ec960ab257725cc9be90ed83aa8f89bb4527a36beb43df7bedcf7f3d756"
-    },
-    {
-      "names": [
-        "isDone"
-      ],
-      "kind": "const",
-      "sha256": "0034075e58cb60eb9248b31f840c286f9acfcfeb129c1d4f2c3231979cd55af0"
-    },
-    {
-      "names": [
-        "isFail"
-      ],
-      "kind": "const",
-      "sha256": "f5dc0addea57d6e33ce6246e10281a30213ffc532e7e965468617c11125d8844"
-    },
-    {
-      "names": [
-        "isBlocked"
-      ],
-      "kind": "const",
-      "sha256": "bcc604f22b766c33b8f0623985f3563446ebf65068afb2328592f562f4e5af99"
-    },
-    {
-      "names": [
-        "taskList"
-      ],
-      "kind": "const",
-      "sha256": "698f1cb3e8477c3288c8ece5f20ef7327ed8d1f7fd00812fe8ff8b3b8e511e64"
-    },
-    {
-      "names": [
-        "nextTask"
-      ],
-      "kind": "function",
-      "sha256": "42c853b17dfb8f445a2a9971241d9205c85543699acd45467237470b4185414c"
-    },
-    {
-      "names": [
-        "taskCard"
-      ],
-      "kind": "function",
-      "sha256": "e35d71694cf939419ab7fe6411620663eabff9d9643ab90aa2b42293f1420692"
-    },
-    {
-      "names": [
-        "buildTaskPrompt"
-      ],
-      "kind": "function",
-      "sha256": "28c4c38e0a56c850d9f1d69acfc942ef0bec25a3e2caa9ed53db1bda8ad5bd09"
-    },
-    {
-      "names": [
-        "buildFixPrompt"
-      ],
-      "kind": "function",
-      "sha256": "eeade8e583229d9d8116f6a5a8ebb354d56bd083ebd4104b5429d079a3184d8d"
-    },
-    {
-      "names": [
-        "runCmd"
-      ],
-      "kind": "function",
-      "sha256": "80be9adeabdf9497c1293fd38d26befe364f0bf84b35b37c2b1624a16908d90e"
-    },
-    {
-      "names": [
-        "parseLighthouse"
-      ],
-      "kind": "function",
-      "sha256": "1494a4fcc2ec41d3916fc69847873c728947d2ed1aa368140090100ecff8b00b"
-    },
-    {
-      "names": [
-        "metricProblems"
-      ],
-      "kind": "function",
-      "sha256": "e134656fe6cede1f1c0871264aa87519515dbfaaf505d59480ff685b78724e9f"
-    },
-    {
-      "names": [
-        "runHardGates"
-      ],
-      "kind": "function",
-      "sha256": "9a003cd6dd1ba70a15323bceb42f9e1239cf7e3c7d5e25237c0c7d961341dddb"
-    },
-    {
-      "names": [
-        "ANSI"
-      ],
-      "kind": "const",
-      "sha256": "b16bddd7b370cb5b9f55699877a30a58e5cdee1c6cdacd046ff17c807420fab4"
-    },
-    {
-      "names": [
-        "AWAL_PERINTAH"
-      ],
-      "kind": "const",
-      "sha256": "bab3ba9fdf77de0ef879e7eda120cfcfa5c59a84a0607d993a3d67112f76d538"
-    },
-    {
-      "names": [
-        "perintahVerifikasi"
-      ],
-      "kind": "function",
-      "sha256": "a0a73c0a69334287bfb7eb075f7b43703efe98b3589ea64f9a8646a454d63f0f"
-    },
-    {
-      "names": [
-        "VERIF_DILEWATI"
-      ],
-      "kind": "const",
-      "sha256": "281c9c61554a126bd3a2bb1edde4a6fc4539ff496cf3d975b88387e117e6ba0f"
-    },
-    {
-      "names": [
-        "runVerification"
-      ],
-      "kind": "function",
-      "sha256": "eb2bdb2fbc71ea008e06e2feffbd3e8f24fba8b80971e2fd2f21592d991f8ca6"
-    },
-    {
-      "names": [
-        "ringkasVerifikasi"
-      ],
-      "kind": "function",
-      "sha256": "b796702c207ddd81e4d502ef42a46af553425b1f9842a9066adce066794baa2b"
-    },
-    {
-      "names": [
-        "BROWSER_CALON"
-      ],
-      "kind": "const",
-      "sha256": "5e6cbfa917763d9be0a180b757826287e7da48f11101798d516af00d08d1ff6a"
-    },
-    {
-      "names": [
-        "cariBrowser"
-      ],
-      "kind": "function",
-      "sha256": "bcbf49a9051d961bc2ed102eed6374ad44658ade16b4233ee1dfafe5f51282b8"
-    },
-    {
-      "names": [
-        "CHECK_BROWSER"
-      ],
-      "kind": "const",
-      "sha256": "34e86827a18016741fc4702ed59c0405e36e053ba5509874c36f95fde0bc9bcf"
-    },
-    {
-      "names": [
-        "PERLU_SELECTOR"
-      ],
-      "kind": "const",
-      "sha256": "90985390221007c6f1bc7bddf21572c813c97b6eac3913bb81d30cf453a9a64d"
-    },
-    {
-      "names": [
-        "UI_FILE"
-      ],
-      "kind": "const",
-      "sha256": "02f6dd7a00258137c9d437111ba9abeeaf6ba9471bc98be1a2318facdfaaf200"
-    },
-    {
-      "names": [
-        "UI_KATA"
-      ],
-      "kind": "const",
-      "sha256": "ab73c27c383c0a36721a6a1f4b35fc1abe162527163484a6d24cad7b08d92776"
-    },
-    {
-      "names": [
-        "taskUi"
-      ],
-      "kind": "function",
-      "sha256": "968461b250aa556dd89e576b45c39dcdb7b99ad74b7ee01d14f16668eec39f22"
-    },
-    {
-      "names": [
-        "specBehavior"
-      ],
-      "kind": "function",
-      "sha256": "8a97bd0de6e5fba4c4fb86976aee8a5f64b0f9abb5a8ce3aee7dfe6f3c2cba17"
-    },
-    {
-      "names": [
-        "masalahBehavior"
-      ],
-      "kind": "function",
-      "sha256": "1b8622bbb825bec03586f9bcffb5ca3afb6ac3bcb2c8208c433a8501d946ae5d"
-    },
-    {
-      "names": [
-        "hidupan"
-      ],
-      "kind": "function",
-      "sha256": "b52156a4b86deff28664c1989134d779250a99ff9b36cece824ab39add6b8502"
-    },
-    {
-      "names": [
-        "tungguHidup"
-      ],
-      "kind": "function",
-      "sha256": "7acaf377fea6df1a2a55c5758f78e2781b5f3ba9d8a0a99dcbbf3f65e6a6331e"
-    },
-    {
-      "names": [
-        "tungguDevTools"
-      ],
-      "kind": "function",
-      "sha256": "e46235c1c35ee0ec73bf81d9cf5bd622a05aa04a8e35b988476b08e148568323"
-    },
-    {
-      "names": [
-        "cdp"
-      ],
-      "kind": "function",
-      "sha256": "63a294a1a41bb53d7a2b770401c9d153abce9d32276854a8ab60ddfd0dbffb8e"
-    },
-    {
-      "names": [
-        "sambungWs"
-      ],
-      "kind": "function",
-      "sha256": "f2252b32159137973a97fb7f71043575ed3ecc95905c0b8c8f5cfca7fc2857cb"
-    },
-    {
-      "names": [
-        "bunuh"
-      ],
-      "kind": "function",
-      "sha256": "03a17de4380202f7bfb5c73ff429cebd13fe2d3e0580c4f90a63dfebfd608ba3"
-    },
-    {
-      "names": [
-        "SEL"
-      ],
-      "kind": "const",
-      "sha256": "3be180995def3812dedfe158085b9035c56db655559d1fdaa929c453ef7c92f3"
+      "sha256": "5a0b1d5188bbff8cb9e40d3577e2cb9c80f84ab6dd4a26617028098ace4d8e79"
     },
     {
       "names": [
@@ -470,24 +40,31 @@
     },
     {
       "names": [
-        "ekspresiCheck"
+        "ANSI"
       ],
-      "kind": "function",
-      "sha256": "8247d33db2c6195bcf996533da449e7271d4cb49908f7e5bee0fa92c0b558b27"
+      "kind": "const",
+      "sha256": "b16bddd7b370cb5b9f55699877a30a58e5cdee1c6cdacd046ff17c807420fab4"
     },
     {
       "names": [
-        "nilaiCheck"
+        "auditPlan"
       ],
       "kind": "function",
-      "sha256": "5210241e39c4576393faaa4c9ad3f9be1de77e8cb37e2c9f75addd14f92991ac"
+      "sha256": "a3413527564588942409541ab988e71c351a8454771b52c67acc27ad2143c2c9"
     },
     {
       "names": [
-        "ukurPerilaku"
+        "AWAL_PERINTAH"
+      ],
+      "kind": "const",
+      "sha256": "bab3ba9fdf77de0ef879e7eda120cfcfa5c59a84a0607d993a3d67112f76d538"
+    },
+    {
+      "names": [
+        "bannerBuildLama"
       ],
       "kind": "function",
-      "sha256": "2f056c42d838419b0dc776e3ed60e694af390e0b14d55a82c4be0b7b874158a8"
+      "sha256": "1af62f9e4f57216e4b0e808f3416a6453458ca1be966f7585da87cfc5bf85153"
     },
     {
       "names": [
@@ -498,45 +75,17 @@
     },
     {
       "names": [
-        "runBehavior"
+        "BERISIKO"
       ],
-      "kind": "function",
-      "sha256": "60b12ce4dd35b8c2f04f015e12de9401347d798c87ac705d89d132f034912939"
+      "kind": "const",
+      "sha256": "0e35709430bac0c7c91dac6ef1eef131b07cba42678306fbd91d71c296cb8315"
     },
     {
       "names": [
-        "kartuBehavior"
+        "BROWSER_CALON"
       ],
-      "kind": "function",
-      "sha256": "764d6ee12a34d88d38292f1de2e1fd84ce01ae46a171aeb495545a28f1984f17"
-    },
-    {
-      "names": [
-        "ringkasBehavior"
-      ],
-      "kind": "function",
-      "sha256": "89094ac5ae74cf0e582603414d0c1bc2fab5665d6bf8d34056513409268773f3"
-    },
-    {
-      "names": [
-        "hitungBudget"
-      ],
-      "kind": "function",
-      "sha256": "954ad67238e61d61882b54ac7b3a5619cf663faf974e7498361eb1965251ba77"
-    },
-    {
-      "names": [
-        "taskMuat"
-      ],
-      "kind": "function",
-      "sha256": "5b47b7c57fd41a75040004f7e75058bfada009a93d9e92e0b573864cc8bf308e"
-    },
-    {
-      "names": [
-        "sisaMilestone"
-      ],
-      "kind": "function",
-      "sha256": "4b044aedf755ebf7f6245166761aacd8ae5a44ac77d69986cb41f3e3be3e77bb"
+      "kind": "const",
+      "sha256": "5e6cbfa917763d9be0a180b757826287e7da48f11101798d516af00d08d1ff6a"
     },
     {
       "names": [
@@ -547,157 +96,31 @@
     },
     {
       "names": [
-        "sisaBudget"
-      ],
-      "kind": "function",
-      "sha256": "4c65bcd18ff6f4f7dfdc0d66b4357a8f8ea471b26a58c5d95d851c8b692e8cdc"
-    },
-    {
-      "names": [
-        "mulaiSesi"
-      ],
-      "kind": "function",
-      "sha256": "69516f427938daab62042ea1652a43b9be2b6186f7df8df93d686064a08f45fc"
-    },
-    {
-      "names": [
-        "callAgent"
-      ],
-      "kind": "function",
-      "sha256": "8800bf14f2d9836b9b7d4935c221b739c23387cf48d8eeac69def772b3149063"
-    },
-    {
-      "names": [
-        "TOLAK_AGEN"
+        "BUILD_AWAL"
       ],
       "kind": "const",
-      "sha256": "86384be86c0c45dd1b9236d76a50e37d16cc115b4fcab73b884bf7654572b44e"
+      "sha256": "a8276d3397b04885758ff871d86d75edc07dfa10b56f4e2c5e0327840778db35"
     },
     {
       "names": [
-        "jsonObj"
+        "buildFixPrompt"
       ],
       "kind": "function",
-      "sha256": "de2539a869bc0be61ae225793ecc76a1ba3304c1acc1a16b44920468aa38ab50"
+      "sha256": "eeade8e583229d9d8116f6a5a8ebb354d56bd083ebd4104b5429d079a3184d8d"
     },
     {
       "names": [
-        "catatBiaya"
-      ],
-      "kind": "function",
-      "sha256": "caa57989aacfb115bc886eeb88b2e0b01aea3a327f74d922b9ca95f940489cdd"
-    },
-    {
-      "names": [
-        "extractVerdict"
-      ],
-      "kind": "function",
-      "sha256": "624f99484652a5953eb8a86629330de6966b801db9082ad2df6276c737c209e2"
-    },
-    {
-      "names": [
-        "hasUnmetDeps"
-      ],
-      "kind": "function",
-      "sha256": "373d7181ea2bf5ea0ada0c0a2910f45a24afb894c443b8c4a5d94d5aa729dd75"
-    },
-    {
-      "names": [
-        "runOne"
-      ],
-      "kind": "function",
-      "sha256": "22f6e27a0f83a936ad1d1c5188f31f85f53a0dce65a58c5a1c9e4909909ae540"
-    },
-    {
-      "names": [
-        "shouldRunFull"
-      ],
-      "kind": "function",
-      "sha256": "d7257bf0b8bbc3193d5b374d60358e24a3951478ae52cd6f5e9c4a06afc2cae2"
-    },
-    {
-      "names": [
-        "runFullGates"
-      ],
-      "kind": "function",
-      "sha256": "ddb78f8483bbef95a2b90b6bd560e9eaa918285fbf39493882c80715e8202677"
-    },
-    {
-      "names": [
-        "giliranJatuh"
-      ],
-      "kind": "function",
-      "sha256": "1909f0a73ba1878e30b00afdc4f512e2ef03f71618b5ac34832ed8cc94342ad7"
-    },
-    {
-      "names": [
-        "cakupanGiliran"
-      ],
-      "kind": "function",
-      "sha256": "b73457b1210dd32b70c79b686ff0b66ee09cbdd2295b45ec8494257e74dd37f0"
-    },
-    {
-      "names": [
-        "kartuGiliran"
-      ],
-      "kind": "function",
-      "sha256": "0d4e0c6a5c2d4e9e62e5d18e1abc74bcbe5391e7a49752041828b00a340964f1"
-    },
-    {
-      "names": [
-        "buktiGiliran"
-      ],
-      "kind": "function",
-      "sha256": "afa5d5cf38ad7647ec118bd12735c7decced96844185af91c4b06292bd6e643e"
-    },
-    {
-      "names": [
-        "changedFiles"
-      ],
-      "kind": "function",
-      "sha256": "c8dd52b8297efa5e177501ed59a5f949d593030d74093925df0e6f2f33564110"
-    },
-    {
-      "names": [
-        "bukanKerja"
+        "buildLama"
       ],
       "kind": "const",
-      "sha256": "d14d623bfb43bdee0acfd92eb75499e5032e07a1b0377ee917c75d4bc7ace304"
+      "sha256": "897f47164a2fd7d34401bb681e03de713360d495868fee1c68b59f03dc4a0061"
     },
     {
       "names": [
-        "CATATAN_WORKER"
-      ],
-      "kind": "const",
-      "sha256": "1df30a7ff0d5bb0d7c18a98b997bf3a2c5a0fa824b355307d90113d02b481ff4"
-    },
-    {
-      "names": [
-        "potretKotor"
+        "buildTaskPrompt"
       ],
       "kind": "function",
-      "sha256": "34a58019a363a2ca6e253f240e97080362ae5e2c996ce4b72f6ff2a69b6bbce8"
-    },
-    {
-      "names": [
-        "headSha"
-      ],
-      "kind": "function",
-      "sha256": "b1e4e2f2fd0b734a205db3a6de68626487373f9ffba96f7931fcf6efa12a9dc9"
-    },
-    {
-      "names": [
-        "gitCommit"
-      ],
-      "kind": "function",
-      "sha256": "3baaefc1d02c67f0071210c02176c1725ab4440c4329871402016772910f0b9d"
-    },
-    {
-      "names": [
-        "BUKAN_PERINTAH"
-      ],
-      "kind": "const",
-      "sha256": "86a4eb6b783f06d7ac243ab215954ef9f97a0b3ab6c8c5e084c8bf194968b253"
+      "sha256": "28c4c38e0a56c850d9f1d69acfc942ef0bec25a3e2caa9ed53db1bda8ad5bd09"
     },
     {
       "names": [
@@ -708,45 +131,17 @@
     },
     {
       "names": [
-        "BERISIKO"
+        "BUKAN_PERINTAH"
       ],
       "kind": "const",
-      "sha256": "0e35709430bac0c7c91dac6ef1eef131b07cba42678306fbd91d71c296cb8315"
+      "sha256": "86a4eb6b783f06d7ac243ab215954ef9f97a0b3ab6c8c5e084c8bf194968b253"
     },
     {
       "names": [
-        "TOKEN_FILE"
+        "bukanKerja"
       ],
       "kind": "const",
-      "sha256": "af0b3ecd6bdf7f4854260985859a405d826c3af4b1035d4accf694e16258a29f"
-    },
-    {
-      "names": [
-        "hasBin"
-      ],
-      "kind": "function",
-      "sha256": "c98be3ea50fee0d2110bd3bb5dcbe03dd54bbf8db94f1220a0a6c5ec0b8d11c0"
-    },
-    {
-      "names": [
-        "segmen"
-      ],
-      "kind": "const",
-      "sha256": "2e1fa5acd9b95b0446825b654b11f5568cb5c92b3d15510405d79428132ba80f"
-    },
-    {
-      "names": [
-        "tokenAwal"
-      ],
-      "kind": "const",
-      "sha256": "09be4b68501b66f477e18b29196d54f7b6fbd0afb157bf9b49ee66e801e60443"
-    },
-    {
-      "names": [
-        "desimal"
-      ],
-      "kind": "const",
-      "sha256": "063ce9cf7f3a865a113aa1d7930d9b8c610b6f95f64671da09e0a0fbb34441e4"
+      "sha256": "d14d623bfb43bdee0acfd92eb75499e5032e07a1b0377ee917c75d4bc7ace304"
     },
     {
       "names": [
@@ -757,10 +152,157 @@
     },
     {
       "names": [
-        "kutipSatuBocor"
+        "buktiGiliran"
       ],
       "kind": "function",
-      "sha256": "ca4d70160f6e6e7b80391dcd7b9c223997ae7dd2fdf399d17ee87866775682b1"
+      "sha256": "afa5d5cf38ad7647ec118bd12735c7decced96844185af91c4b06292bd6e643e"
+    },
+    {
+      "names": [
+        "buktiSelesai"
+      ],
+      "kind": "function",
+      "sha256": "e53424ae419762750fc09d3b565e1fcbb44badb2ef15d808ccecb9a2c05461a2"
+    },
+    {
+      "names": [
+        "bunuh"
+      ],
+      "kind": "function",
+      "sha256": "03a17de4380202f7bfb5c73ff429cebd13fe2d3e0580c4f90a63dfebfd608ba3"
+    },
+    {
+      "names": [
+        "cakupanGiliran"
+      ],
+      "kind": "function",
+      "sha256": "b73457b1210dd32b70c79b686ff0b66ee09cbdd2295b45ec8494257e74dd37f0"
+    },
+    {
+      "names": [
+        "callAgent"
+      ],
+      "kind": "function",
+      "sha256": "b1a393a57779c1fd40e7101e73882a1ede50194cf70ec1304f981f595bf5e1ce"
+    },
+    {
+      "names": [
+        "canonPlan"
+      ],
+      "kind": "function",
+      "sha256": "e9bc5959f4bfe0dd22251fa35353d0cc1803f30efc4bd9babb5767d23e59d1d0"
+    },
+    {
+      "names": [
+        "cariBrowser"
+      ],
+      "kind": "function",
+      "sha256": "bcbf49a9051d961bc2ed102eed6374ad44658ade16b4233ee1dfafe5f51282b8"
+    },
+    {
+      "names": [
+        "CATATAN_WORKER"
+      ],
+      "kind": "const",
+      "sha256": "1df30a7ff0d5bb0d7c18a98b997bf3a2c5a0fa824b355307d90113d02b481ff4"
+    },
+    {
+      "names": [
+        "catatBiaya"
+      ],
+      "kind": "function",
+      "sha256": "caa57989aacfb115bc886eeb88b2e0b01aea3a327f74d922b9ca95f940489cdd"
+    },
+    {
+      "names": [
+        "cdp"
+      ],
+      "kind": "function",
+      "sha256": "63a294a1a41bb53d7a2b770401c9d153abce9d32276854a8ab60ddfd0dbffb8e"
+    },
+    {
+      "names": [
+        "cetakFile"
+      ],
+      "kind": "const",
+      "sha256": "cfb8fbda25e5614e2a2e62b620d51a6bf3d0abcbea9dcfc9984db9279551d9f4"
+    },
+    {
+      "names": [
+        "cetakIsi"
+      ],
+      "kind": "const",
+      "sha256": "a4585e12507ce4b03efb7c4f2e5628b98d8615966c9b7ed91b0fa53db360caa3"
+    },
+    {
+      "names": [
+        "changedFiles"
+      ],
+      "kind": "function",
+      "sha256": "c8dd52b8297efa5e177501ed59a5f949d593030d74093925df0e6f2f33564110"
+    },
+    {
+      "names": [
+        "CHECK_BROWSER"
+      ],
+      "kind": "const",
+      "sha256": "34e86827a18016741fc4702ed59c0405e36e053ba5509874c36f95fde0bc9bcf"
+    },
+    {
+      "names": [
+        "connectAgent"
+      ],
+      "kind": "function",
+      "sha256": "09729338813084fe018d959f16e2690da6e3294da3291069b3ab68d0f32ef87a"
+    },
+    {
+      "names": [
+        "crc32"
+      ],
+      "kind": "function",
+      "sha256": "ea805cbf54883275b4d50e30c6a7ecca421d16d853b95eea803c65572ef4e31d"
+    },
+    {
+      "names": [
+        "defaultGates"
+      ],
+      "kind": "function",
+      "sha256": "2f604eec6af4c503473b3a3d3db7b07a56e45d05c4a0d283d0ad6917f70d9818"
+    },
+    {
+      "names": [
+        "desimal"
+      ],
+      "kind": "const",
+      "sha256": "063ce9cf7f3a865a113aa1d7930d9b8c610b6f95f64671da09e0a0fbb34441e4"
+    },
+    {
+      "names": [
+        "detectRateLimit"
+      ],
+      "kind": "function",
+      "sha256": "81f51141c86466a6c94d2d71a0bbdce0e77a74db3dcd2d3a55d051a706d645ae"
+    },
+    {
+      "names": [
+        "DIR"
+      ],
+      "kind": "const",
+      "sha256": "8f9fe8b7f8d39ede0aeb997ab969e6c15054ce573f42b6036b0dc5eeede6c5c0"
+    },
+    {
+      "names": [
+        "doctorMcp"
+      ],
+      "kind": "function",
+      "sha256": "01cf662897614e41a871b4f884d0297c11219133b679596d2add8c9d601a69fb"
+    },
+    {
+      "names": [
+        "ekspresiCheck"
+      ],
+      "kind": "function",
+      "sha256": "8247d33db2c6195bcf996533da449e7271d4cb49908f7e5bee0fa92c0b558b27"
     },
     {
       "names": [
@@ -778,27 +320,6 @@
     },
     {
       "names": [
-        "setupEnv"
-      ],
-      "kind": "function",
-      "sha256": "c686919f9aa1ea51220c173f0b06e2cf2d0b35b0727960cf19458561ebb691a8"
-    },
-    {
-      "names": [
-        "missingNpmScripts"
-      ],
-      "kind": "function",
-      "sha256": "8ae2bdf9b75a6276cda462bc3324c7c7e092a9fdd6a29156ae260fa5d4c5d19c"
-    },
-    {
-      "names": [
-        "auditPlan"
-      ],
-      "kind": "function",
-      "sha256": "08b712623c5f831dde7f0c2d2f93ee765da08b392989df9e008ed9746befc0ba"
-    },
-    {
-      "names": [
         "EPOCH"
       ],
       "kind": "const",
@@ -806,59 +327,111 @@
     },
     {
       "names": [
-        "jamProsesWindows"
+        "extractVerdict"
       ],
       "kind": "function",
-      "sha256": "53803aeb6e6666a0ab7f2acb594bf288879f2b810ae291862c8f2016d6646e7d"
+      "sha256": "624f99484652a5953eb8a86629330de6966b801db9082ad2df6276c737c209e2"
     },
     {
       "names": [
-        "jamProsesPosix"
-      ],
-      "kind": "function",
-      "sha256": "ee47c03e48251be0df3d72c1d4f69fa2dfd45c2d3dfe2c16992fa0e335537374"
-    },
-    {
-      "names": [
-        "prosesNode"
+        "F_PLAN",
+        "F_GATES",
+        "F_STATE",
+        "F_LOG"
       ],
       "kind": "const",
-      "sha256": "56931cd4707625eee3e505892d8ac4ec45eb0f1bc8f4e9de0b8bd9979147a1ce"
+      "sha256": "3878a4a4a199c1ee8654818b316dd4c1d659bd8a92aad1145a9d0120cb3a58b2"
     },
     {
       "names": [
-        "doctorMcp"
+        "findRoot"
       ],
       "kind": "function",
-      "sha256": "01cf662897614e41a871b4f884d0297c11219133b679596d2add8c9d601a69fb"
+      "sha256": "45ad45d1fd826d9fa5144b6cdec54773396dbb03501f3e0d26e97d55ebe06cfc"
     },
     {
       "names": [
-        "killPid"
-      ],
-      "kind": "function",
-      "sha256": "bcd5959a600c5a09c32f60d500a81345a2d28acf590877a6966ba6459d2fef31"
-    },
-    {
-      "names": [
-        "tidurSync"
+        "FULL_GATES"
       ],
       "kind": "const",
-      "sha256": "14097c504aba1e99515b10a1d1bb670c92d0f5ad49b3f9942a6598d0bd2cc39e"
+      "sha256": "d2d35f5c5f90f3b3380ac3e222188b8ac2f9e80e0ac6cd3d43d7d7e077849aec"
     },
     {
       "names": [
-        "refreshConnector"
+        "giliranJatuh"
       ],
       "kind": "function",
-      "sha256": "889432f18e6fa794888d55e354278d8eafdf501364d3a410e7ec62f2ced48177"
+      "sha256": "1909f0a73ba1878e30b00afdc4f512e2ef03f71618b5ac34832ed8cc94342ad7"
     },
     {
       "names": [
-        "kandidatInterpreter"
+        "gitCommit"
       ],
       "kind": "function",
-      "sha256": "c48a7b3d34daa902cc135b201500bee48f79010a64310c800d31c8c6abb05c4a"
+      "sha256": "3baaefc1d02c67f0071210c02176c1725ab4440c4329871402016772910f0b9d"
+    },
+    {
+      "names": [
+        "HARD_CHECKS"
+      ],
+      "kind": "const",
+      "sha256": "bd2bfb5626911354f82d7f4eadb890558611c55c37b75f2ff50117f6aa4d3d58"
+    },
+    {
+      "names": [
+        "hasBin"
+      ],
+      "kind": "function",
+      "sha256": "c98be3ea50fee0d2110bd3bb5dcbe03dd54bbf8db94f1220a0a6c5ec0b8d11c0"
+    },
+    {
+      "names": [
+        "hasUnmetDeps"
+      ],
+      "kind": "function",
+      "sha256": "373d7181ea2bf5ea0ada0c0a2910f45a24afb894c443b8c4a5d94d5aa729dd75"
+    },
+    {
+      "names": [
+        "headSha"
+      ],
+      "kind": "function",
+      "sha256": "b1e4e2f2fd0b734a205db3a6de68626487373f9ffba96f7931fcf6efa12a9dc9"
+    },
+    {
+      "names": [
+        "hidupan"
+      ],
+      "kind": "function",
+      "sha256": "b52156a4b86deff28664c1989134d779250a99ff9b36cece824ab39add6b8502"
+    },
+    {
+      "names": [
+        "hitungBudget"
+      ],
+      "kind": "function",
+      "sha256": "954ad67238e61d61882b54ac7b3a5619cf663faf974e7498361eb1965251ba77"
+    },
+    {
+      "names": [
+        "isBlocked"
+      ],
+      "kind": "const",
+      "sha256": "bcc604f22b766c33b8f0623985f3563446ebf65068afb2328592f562f4e5af99"
+    },
+    {
+      "names": [
+        "isDone"
+      ],
+      "kind": "const",
+      "sha256": "0034075e58cb60eb9248b31f840c286f9acfcfeb129c1d4f2c3231979cd55af0"
+    },
+    {
+      "names": [
+        "isFail"
+      ],
+      "kind": "const",
+      "sha256": "f5dc0addea57d6e33ce6246e10281a30213ffc532e7e965468617c11125d8844"
     },
     {
       "names": [
@@ -869,24 +442,101 @@
     },
     {
       "names": [
-        "absolutkanScript"
+        "jamProsesPosix"
       ],
       "kind": "function",
-      "sha256": "94f1fc52496493c218514361266cb45821e974b7a6086b24d5d889452542dbb5"
+      "sha256": "ee47c03e48251be0df3d72c1d4f69fa2dfd45c2d3dfe2c16992fa0e335537374"
     },
     {
       "names": [
-        "pinInterpreter"
+        "jamProsesWindows"
       ],
       "kind": "function",
-      "sha256": "02dfebf5eef849d1c4ae8e67999fe2a06899c32e1bd66b725c3bcdf1bdcb6e07"
+      "sha256": "53803aeb6e6666a0ab7f2acb594bf288879f2b810ae291862c8f2016d6646e7d"
     },
     {
       "names": [
-        "AGENT_ADAPTERS"
+        "jsonObj"
+      ],
+      "kind": "function",
+      "sha256": "de2539a869bc0be61ae225793ecc76a1ba3304c1acc1a16b44920468aa38ab50"
+    },
+    {
+      "names": [
+        "kandidatInterpreter"
+      ],
+      "kind": "function",
+      "sha256": "c48a7b3d34daa902cc135b201500bee48f79010a64310c800d31c8c6abb05c4a"
+    },
+    {
+      "names": [
+        "kartuBehavior"
+      ],
+      "kind": "function",
+      "sha256": "764d6ee12a34d88d38292f1de2e1fd84ce01ae46a171aeb495545a28f1984f17"
+    },
+    {
+      "names": [
+        "kartuGiliran"
+      ],
+      "kind": "function",
+      "sha256": "0d4e0c6a5c2d4e9e62e5d18e1abc74bcbe5391e7a49752041828b00a340964f1"
+    },
+    {
+      "names": [
+        "killPid"
+      ],
+      "kind": "function",
+      "sha256": "bcd5959a600c5a09c32f60d500a81345a2d28acf590877a6966ba6459d2fef31"
+    },
+    {
+      "names": [
+        "kutipSatuBocor"
+      ],
+      "kind": "function",
+      "sha256": "ca4d70160f6e6e7b80391dcd7b9c223997ae7dd2fdf399d17ee87866775682b1"
+    },
+    {
+      "names": [
+        "LIGHT_REVIEW"
       ],
       "kind": "const",
-      "sha256": "20e6b56d317c329c48d5eb54ce37e38ff6162434199ec59b5755aa5e9079f216"
+      "sha256": "7271bf4bcd47df19f5513eee318201edf8b7ad474c7d9789b7dc2c113d9d2022"
+    },
+    {
+      "names": [
+        "loadCtx"
+      ],
+      "kind": "function",
+      "sha256": "e96286b2e85ce499a81f2f314220705af11d69d95903b6b7312b00d7dd462ca5"
+    },
+    {
+      "names": [
+        "log"
+      ],
+      "kind": "function",
+      "sha256": "e6055fbfe103e62983a8574dfd680ec3525b4033e5319781749a6ee74211bfe1"
+    },
+    {
+      "names": [
+        "main"
+      ],
+      "kind": "function",
+      "sha256": "ad6e047f0f480a8bb0df4fed41dce482ff5c45d2ad6aad335cb0ba561e9ff8a3"
+    },
+    {
+      "names": [
+        "masalahBehavior"
+      ],
+      "kind": "function",
+      "sha256": "1b8622bbb825bec03586f9bcffb5ca3afb6ac3bcb2c8208c433a8501d946ae5d"
+    },
+    {
+      "names": [
+        "MCP_TOOLS"
+      ],
+      "kind": "const",
+      "sha256": "0b205940cb681f5f405f47b55aefc3d6d7e4824ed62400d1803db1339002178f"
     },
     {
       "names": [
@@ -894,6 +544,20 @@
       ],
       "kind": "function",
       "sha256": "eabf46ecc28292240c3b9eb1e5face75e4f503bf5be91ef95088e4e0e119e634"
+    },
+    {
+      "names": [
+        "mcpHandle"
+      ],
+      "kind": "function",
+      "sha256": "3cb871d58457582be8473df079f589375f004ff1c08e785394f3e229f2189312"
+    },
+    {
+      "names": [
+        "mcpMain"
+      ],
+      "kind": "function",
+      "sha256": "87856a2b12d50587bf09dd73b985717fe448fce6befc95dcf587546c95a1939f"
     },
     {
       "names": [
@@ -918,31 +582,45 @@
     },
     {
       "names": [
-        "rulesText"
+        "metricProblems"
+      ],
+      "kind": "function",
+      "sha256": "e134656fe6cede1f1c0871264aa87519515dbfaaf505d59480ff685b78724e9f"
+    },
+    {
+      "names": [
+        "missingNpmScripts"
+      ],
+      "kind": "function",
+      "sha256": "8ae2bdf9b75a6276cda462bc3324c7c7e092a9fdd6a29156ae260fa5d4c5d19c"
+    },
+    {
+      "names": [
+        "mulaiSesi"
+      ],
+      "kind": "function",
+      "sha256": "69516f427938daab62042ea1652a43b9be2b6186f7df8df93d686064a08f45fc"
+    },
+    {
+      "names": [
+        "nextTask"
+      ],
+      "kind": "function",
+      "sha256": "42c853b17dfb8f445a2a9971241d9205c85543699acd45467237470b4185414c"
+    },
+    {
+      "names": [
+        "nilaiCheck"
+      ],
+      "kind": "function",
+      "sha256": "5210241e39c4576393faaa4c9ad3f9be1de77e8cb37e2c9f75addd14f92991ac"
+    },
+    {
+      "names": [
+        "now"
       ],
       "kind": "const",
-      "sha256": "f6a59cdfc028a2b90d3d3e888569e2c595270df20738e1aad79fbcd94e85df60"
-    },
-    {
-      "names": [
-        "writeFileChecked"
-      ],
-      "kind": "function",
-      "sha256": "0027b1213053a832870bd766a5eb2f0361663f6e7b8c0965df7cf578dbe7abbc"
-    },
-    {
-      "names": [
-        "connectAgent"
-      ],
-      "kind": "function",
-      "sha256": "09729338813084fe018d959f16e2690da6e3294da3291069b3ab68d0f32ef87a"
-    },
-    {
-      "names": [
-        "parseArgs"
-      ],
-      "kind": "function",
-      "sha256": "0ce2b0c520da04aa94b0ddd3e9a4c9f80b7b0bf27c9ea3b13b8a8db884d1d217"
+      "sha256": "4d3a9026091f8f11ea537d924541e31f21034a1d275ea8083b248c27aaab34e8"
     },
     {
       "names": [
@@ -953,6 +631,76 @@
     },
     {
       "names": [
+        "parseArgs"
+      ],
+      "kind": "function",
+      "sha256": "0ce2b0c520da04aa94b0ddd3e9a4c9f80b7b0bf27c9ea3b13b8a8db884d1d217"
+    },
+    {
+      "names": [
+        "parseLighthouse"
+      ],
+      "kind": "function",
+      "sha256": "1494a4fcc2ec41d3916fc69847873c728947d2ed1aa368140090100ecff8b00b"
+    },
+    {
+      "names": [
+        "perintahVerifikasi"
+      ],
+      "kind": "function",
+      "sha256": "a0a73c0a69334287bfb7eb075f7b43703efe98b3589ea64f9a8646a454d63f0f"
+    },
+    {
+      "names": [
+        "PERLU_SELECTOR"
+      ],
+      "kind": "const",
+      "sha256": "90985390221007c6f1bc7bddf21572c813c97b6eac3913bb81d30cf453a9a64d"
+    },
+    {
+      "names": [
+        "pinInterpreter"
+      ],
+      "kind": "function",
+      "sha256": "02dfebf5eef849d1c4ae8e67999fe2a06899c32e1bd66b725c3bcdf1bdcb6e07"
+    },
+    {
+      "names": [
+        "planCoreFromPlan"
+      ],
+      "kind": "function",
+      "sha256": "ad78c41d5a30864a391082bf1770a19e95c9e14f7e4e922d3e318495f356a193"
+    },
+    {
+      "names": [
+        "planFingerprintPlan"
+      ],
+      "kind": "function",
+      "sha256": "fc0c1a2250931d9f4be01d5b7e43b0cbe721ace556522ad8676f28cd0ce119c0"
+    },
+    {
+      "names": [
+        "potretKotor"
+      ],
+      "kind": "function",
+      "sha256": "34a58019a363a2ca6e253f240e97080362ae5e2c996ce4b72f6ff2a69b6bbce8"
+    },
+    {
+      "names": [
+        "presetAgen"
+      ],
+      "kind": "function",
+      "sha256": "bb0a4f947930f2b0a85586ed5df561af47029176eba87deaf58cd19ca3571f48"
+    },
+    {
+      "names": [
+        "prosesNode"
+      ],
+      "kind": "const",
+      "sha256": "56931cd4707625eee3e505892d8ac4ec45eb0f1bc8f4e9de0b8bd9979147a1ce"
+    },
+    {
+      "names": [
         "pruneUnavailableGates"
       ],
       "kind": "function",
@@ -960,38 +708,311 @@
     },
     {
       "names": [
-        "main"
-      ],
-      "kind": "function",
-      "sha256": "ce03d42f86b0aed5272e855664d1a992f13742600e2beaa791b00409d66b0d10"
-    },
-    {
-      "names": [
-        "MCP_TOOLS"
+        "readJson"
       ],
       "kind": "const",
-      "sha256": "0b205940cb681f5f405f47b55aefc3d6d7e4824ed62400d1803db1339002178f"
+      "sha256": "98ec7b85356b12a1fa7d9ef3f2700d74f71c625d1602efd510ed130bcfae531f"
     },
     {
       "names": [
-        "buktiSelesai"
+        "refreshConnector"
       ],
       "kind": "function",
-      "sha256": "e53424ae419762750fc09d3b565e1fcbb44badb2ef15d808ccecb9a2c05461a2"
+      "sha256": "889432f18e6fa794888d55e354278d8eafdf501364d3a410e7ec62f2ced48177"
     },
     {
       "names": [
-        "mcpHandle"
+        "resolveRoot"
       ],
       "kind": "function",
-      "sha256": "3cb871d58457582be8473df079f589375f004ff1c08e785394f3e229f2189312"
+      "sha256": "b80191f22cf48677e22dfb5181dfbf0cf67b3cbe057ce180fc42828c8044d881"
     },
     {
       "names": [
-        "mcpMain"
+        "restoreControlFiles"
       ],
       "kind": "function",
-      "sha256": "87856a2b12d50587bf09dd73b985717fe448fce6befc95dcf587546c95a1939f"
+      "sha256": "e30b89977aa0ca9eb33acdd17dc22d9da8763910bd34f62b59593a20dc6eeed1"
+    },
+    {
+      "names": [
+        "ringkasBehavior"
+      ],
+      "kind": "function",
+      "sha256": "89094ac5ae74cf0e582603414d0c1bc2fab5665d6bf8d34056513409268773f3"
+    },
+    {
+      "names": [
+        "ringkasVerifikasi"
+      ],
+      "kind": "function",
+      "sha256": "b796702c207ddd81e4d502ef42a46af553425b1f9842a9066adce066794baa2b"
+    },
+    {
+      "names": [
+        "rulesText"
+      ],
+      "kind": "const",
+      "sha256": "f6a59cdfc028a2b90d3d3e888569e2c595270df20738e1aad79fbcd94e85df60"
+    },
+    {
+      "names": [
+        "runBehavior"
+      ],
+      "kind": "function",
+      "sha256": "60b12ce4dd35b8c2f04f015e12de9401347d798c87ac705d89d132f034912939"
+    },
+    {
+      "names": [
+        "runCmd"
+      ],
+      "kind": "function",
+      "sha256": "80be9adeabdf9497c1293fd38d26befe364f0bf84b35b37c2b1624a16908d90e"
+    },
+    {
+      "names": [
+        "runFullGates"
+      ],
+      "kind": "function",
+      "sha256": "602cb77ab02cc9a5b1d2a9f7e3ad3ed9440a1adcb6652bd5a338c4c11b19d3c6"
+    },
+    {
+      "names": [
+        "runHardGates"
+      ],
+      "kind": "function",
+      "sha256": "9a003cd6dd1ba70a15323bceb42f9e1239cf7e3c7d5e25237c0c7d961341dddb"
+    },
+    {
+      "names": [
+        "runOne"
+      ],
+      "kind": "function",
+      "sha256": "09bb72a21981928de7ce7e521bb1d1544b314671dfb3e12f0a43b383afd5661e"
+    },
+    {
+      "names": [
+        "runVerification"
+      ],
+      "kind": "function",
+      "sha256": "eb2bdb2fbc71ea008e06e2feffbd3e8f24fba8b80971e2fd2f21592d991f8ca6"
+    },
+    {
+      "names": [
+        "sambungWs"
+      ],
+      "kind": "function",
+      "sha256": "f2252b32159137973a97fb7f71043575ed3ecc95905c0b8c8f5cfca7fc2857cb"
+    },
+    {
+      "names": [
+        "saveCtx"
+      ],
+      "kind": "function",
+      "sha256": "882a39e8030ffddc766f8fc11ea2c1b5426d58541158e996d82e9e0e002d65f0"
+    },
+    {
+      "names": [
+        "segmen"
+      ],
+      "kind": "const",
+      "sha256": "2e1fa5acd9b95b0446825b654b11f5568cb5c92b3d15510405d79428132ba80f"
+    },
+    {
+      "names": [
+        "SEL"
+      ],
+      "kind": "const",
+      "sha256": "3be180995def3812dedfe158085b9035c56db655559d1fdaa929c453ef7c92f3"
+    },
+    {
+      "names": [
+        "SELF_DIR"
+      ],
+      "kind": "const",
+      "sha256": "9eeba97876f63272619a74dc302e5361a0a277c838a5c07e1ee4e39664361aa6"
+    },
+    {
+      "names": [
+        "SELF_FILE"
+      ],
+      "kind": "const",
+      "sha256": "99c3a0c113d48a2fa291bdb52a082f5013a974d468e9d4cc8abb85eec5e0183e"
+    },
+    {
+      "names": [
+        "setupEnv"
+      ],
+      "kind": "function",
+      "sha256": "c686919f9aa1ea51220c173f0b06e2cf2d0b35b0727960cf19458561ebb691a8"
+    },
+    {
+      "names": [
+        "short"
+      ],
+      "kind": "const",
+      "sha256": "3f348929920b8d1789ae899b41b24910ea02ef79c099ecfbe4898963f4352cf4"
+    },
+    {
+      "names": [
+        "shouldRunFull"
+      ],
+      "kind": "function",
+      "sha256": "d7257bf0b8bbc3193d5b374d60358e24a3951478ae52cd6f5e9c4a06afc2cae2"
+    },
+    {
+      "names": [
+        "sisaBudget"
+      ],
+      "kind": "function",
+      "sha256": "4c65bcd18ff6f4f7dfdc0d66b4357a8f8ea471b26a58c5d95d851c8b692e8cdc"
+    },
+    {
+      "names": [
+        "sisaMilestone"
+      ],
+      "kind": "function",
+      "sha256": "4b044aedf755ebf7f6245166761aacd8ae5a44ac77d69986cb41f3e3be3e77bb"
+    },
+    {
+      "names": [
+        "snapshotControlFiles"
+      ],
+      "kind": "function",
+      "sha256": "36a880eb90f17eac243ebc316966207c8a97bcb61053f78c6fb0faa137ffa7d0"
+    },
+    {
+      "names": [
+        "specBehavior"
+      ],
+      "kind": "function",
+      "sha256": "8a97bd0de6e5fba4c4fb86976aee8a5f64b0f9abb5a8ce3aee7dfe6f3c2cba17"
+    },
+    {
+      "names": [
+        "stamp"
+      ],
+      "kind": "function",
+      "sha256": "0614985be722480b97f6cf9f4a25514740f606786057513086f7158ea1f97f46"
+    },
+    {
+      "names": [
+        "STATUS"
+      ],
+      "kind": "const",
+      "sha256": "350b5ec960ab257725cc9be90ed83aa8f89bb4527a36beb43df7bedcf7f3d756"
+    },
+    {
+      "names": [
+        "syncCtx"
+      ],
+      "kind": "function",
+      "sha256": "6d6cc32728705233995d696b36be767fb3da58b3cf20b3206799e4793c189134"
+    },
+    {
+      "names": [
+        "taskCard"
+      ],
+      "kind": "function",
+      "sha256": "e35d71694cf939419ab7fe6411620663eabff9d9643ab90aa2b42293f1420692"
+    },
+    {
+      "names": [
+        "taskList"
+      ],
+      "kind": "const",
+      "sha256": "698f1cb3e8477c3288c8ece5f20ef7327ed8d1f7fd00812fe8ff8b3b8e511e64"
+    },
+    {
+      "names": [
+        "taskMuat"
+      ],
+      "kind": "function",
+      "sha256": "5b47b7c57fd41a75040004f7e75058bfada009a93d9e92e0b573864cc8bf308e"
+    },
+    {
+      "names": [
+        "taskUi"
+      ],
+      "kind": "function",
+      "sha256": "968461b250aa556dd89e576b45c39dcdb7b99ad74b7ee01d14f16668eec39f22"
+    },
+    {
+      "names": [
+        "tidurSync"
+      ],
+      "kind": "const",
+      "sha256": "14097c504aba1e99515b10a1d1bb670c92d0f5ad49b3f9942a6598d0bd2cc39e"
+    },
+    {
+      "names": [
+        "TOKEN_FILE"
+      ],
+      "kind": "const",
+      "sha256": "af0b3ecd6bdf7f4854260985859a405d826c3af4b1035d4accf694e16258a29f"
+    },
+    {
+      "names": [
+        "tokenAwal"
+      ],
+      "kind": "const",
+      "sha256": "09be4b68501b66f477e18b29196d54f7b6fbd0afb157bf9b49ee66e801e60443"
+    },
+    {
+      "names": [
+        "TOLAK_AGEN"
+      ],
+      "kind": "const",
+      "sha256": "86384be86c0c45dd1b9236d76a50e37d16cc115b4fcab73b884bf7654572b44e"
+    },
+    {
+      "names": [
+        "tungguDevTools"
+      ],
+      "kind": "function",
+      "sha256": "e46235c1c35ee0ec73bf81d9cf5bd622a05aa04a8e35b988476b08e148568323"
+    },
+    {
+      "names": [
+        "tungguHidup"
+      ],
+      "kind": "function",
+      "sha256": "7acaf377fea6df1a2a55c5758f78e2781b5f3ba9d8a0a99dcbbf3f65e6a6331e"
+    },
+    {
+      "names": [
+        "UI_FILE"
+      ],
+      "kind": "const",
+      "sha256": "02f6dd7a00258137c9d437111ba9abeeaf6ba9471bc98be1a2318facdfaaf200"
+    },
+    {
+      "names": [
+        "UI_KATA"
+      ],
+      "kind": "const",
+      "sha256": "ab73c27c383c0a36721a6a1f4b35fc1abe162527163484a6d24cad7b08d92776"
+    },
+    {
+      "names": [
+        "ukurPerilaku"
+      ],
+      "kind": "function",
+      "sha256": "2f056c42d838419b0dc776e3ed60e694af390e0b14d55a82c4be0b7b874158a8"
+    },
+    {
+      "names": [
+        "VERIF_DILEWATI"
+      ],
+      "kind": "const",
+      "sha256": "281c9c61554a126bd3a2bb1edde4a6fc4539ff496cf3d975b88387e117e6ba0f"
+    },
+    {
+      "names": [
+        "writeFileChecked"
+      ],
+      "kind": "function",
+      "sha256": "0027b1213053a832870bd766a5eb2f0361663f6e7b8c0965df7cf578dbe7abbc"
     }
   ],
   "commands": [
@@ -1124,7 +1145,7 @@
         "cap"
       ],
       "mode": "tail",
-      "bodySha256": "e98a8bb342c49be30849b3f393a40190118d7ef26d78cffb0ca31cfd5e7a98db"
+      "bodySha256": "e475ba0119a1124b0c3529c1be07d46b6e90c06c300530f7f883e788197b0509"
     }
   ],
   "entryGuardSha256": "c799a708e540bc972e5bcb3b3f77ff075bd8de9fe9d6f9c0703ee95bc26577b7"

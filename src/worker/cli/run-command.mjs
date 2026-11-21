@@ -10,6 +10,9 @@ import { saveCtx } from "../ledger/state.mjs";
 
 export function commandRun(ctx, cwd, args, cap){
   const lim = ctx.gates.limits;
+  if(args.only){
+    ctx.state.consecFails = 0;
+  }
   if(!args["no-gates"]) pruneUnavailableGates(ctx, cwd);
   if(!ctx.dryRun) mulaiSesi(ctx);
   log(ctx, "mulai · sesi " + (ctx.state.runId || "-") + " · agen=" + ctx.gates.agent.name + " · maxCalls=" + lim.maxCalls
