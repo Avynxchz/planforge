@@ -61,7 +61,7 @@ export async function callModel(messages, stage, cfg, controller){
   if(cfg.provider === "openrouter"){ headers["HTTP-Referer"] = location.href || "http://localhost"; headers["X-Title"] = "PlanForge"; }
   /* Satu panggilan yang nggak balik jangan bikin pengguna nunggu selamanya tanpa tahu
      apakah modelnya mikir, koneksinya putus, atau kreditnya habis. */
-  const BATAS_PANGGILAN_MS = 120000;
+  const BATAS_PANGGILAN_MS = 240000;
   const ctrl = new AbortController();
   let timeout = false;
   const pewaktu = setTimeout(()=>{ timeout = true; ctrl.abort(); }, BATAS_PANGGILAN_MS);
@@ -71,7 +71,7 @@ export async function callModel(messages, stage, cfg, controller){
   try{
     res = await fetch(url, {method:"POST", headers, body:JSON.stringify(body), signal:ctrl.signal});
   }catch(e){
-    if(timeout) throw new Error("model tidak menjawab dalam 120 detik — bisa karena antrean provider, model sedang sibuk, atau jaringan. Coba lagi, ganti model, atau klik Stop. Ini BUKAN tanda kredit habis (itu muncul sebagai HTTP 402).");
+    if(timeout) throw new Error("model tidak menjawab dalam 240 detik — bisa karena antrean provider, model sedang sibuk, atau jaringan. Coba lagi, ganti model, atau klik Stop. Ini BUKAN tanda kredit habis (itu muncul sebagai HTTP 402).");
     throw e;
   }finally{
     clearTimeout(pewaktu);
@@ -81,9 +81,13 @@ export async function callModel(messages, stage, cfg, controller){
   if(!res.ok){
     let msg = ""; try{ msg = String(JSON.parse(txt).error.message || ""); }catch(e){ msg = txt.slice(0,200); }
     const hint = res.status === 401 ? " (key salah/kedaluwarsa — cek atau tempel ulang)"
-      : res.status === 402 ? " (kredit habis / batas kredit key tercapai / anggaran in-flight penuh — cek menu Credits DAN batas di menu Keys OpenRouter, lalu isi kredit atau pakai model :free)"
-      : res.status === 403 ? " (batas budget/workspace/key menolak request sebelum sampai ke model — cek pengaturan budget di OpenRouter)"
-      : res.status === 429 ? " (kena rate limit — bisa dari OpenRouter atau provider modelnya; tunggu sebentar lalu coba lagi, terutama model :free)"
+      : res.status === 402 ? (cfg.provider === "openrouter"
+        ? " (kredit habis / batas kredit key tercapai / anggaran in-flight penuh — cek menu Credits DAN batas di menu Keys OpenRouter, lalu isi kredit atau pakai model :free)"
+        : " (provider aktif menolak request: periksa saldo, batas penggunaan, dan konfigurasi akun provider tersebut)")
+      : res.status === 403 ? " (provider menolak request karena batas akun, workspace, atau key — cek pengaturan provider)"
+      : res.status === 429 ? (cfg.provider === "openrouter"
+        ? " (kena rate limit OpenRouter; tunggu sebentar lalu coba lagi, terutama model :free)"
+        : " (kena rate limit provider aktif; tunggu sebentar lalu coba lagi)")
       : res.status === 404 ? " (ID model tidak ada di katalog provider)" : "";
     throw new Error("HTTP " + res.status + hint + ": " + msg.slice(0, 260));
   }
@@ -154,13 +158,13 @@ export async function runStage(stage, cfg, focus){
 }
 
 export const ERROR_HINTS = [
-  ["401", "API key OpenRouter salah, kedaluwarsa, atau ada spasi ikut ter-paste. Ambil ulang di openrouter.ai → Keys, tempel bersih."],
-  ["402", "kredit OpenRouter habis. Isi kredit, atau pilih preset Hemat dan pakai model gratis dari panel pemilihan model."],
+  ["401", "autentikasi provider ditolak. Periksa key, apakah sudah kedaluwarsa, dan spasi yang ikut ter-paste."],
+  ["402", "provider aktif menolak request: periksa saldo, batas penggunaan, dan konfigurasi akun provider tersebut."],
   ["403", "key ini tidak boleh memanggil model itu (mis. model butuh persetujuan pemakaian). Ganti model atau aktifkan di dashboard."],
   ["404", "ID model tidak ada di provider itu. Jangan ketik manual — klik “Muat katalog model” lalu pilih dari daftar."],
   ["429", "kena rate limit. Tunggu 15–30 detik, jalankan lagi, atau pindah ke model lain untuk tahap yang berat."],
   ["502", "server provider sedang bermasalah. Coba model lain atau ulangi sebentar."],
-  ["Failed to fetch", "browser tidak bisa mencapai API: base URL salah, provider memblokir request dari browser (OpenAI biasa menolak CORS dari browser — pakai OpenRouter), atau Ollama belum jalan di port 11434."],
+  ["Failed to fetch", "browser tidak bisa mencapai API: periksa jaringan dan base URL, pastikan provider mengizinkan request dari browser, atau pastikan server lokal sudah berjalan."],
   ["AbortError", "run dibatalkan"],
   ["bukan JSON", "provider mengembalikan halaman HTML (sering berarti login/routing di jaringanmu memotong). Cek base URL."],
   ["terpotong", "model berhenti di batas token. Defaultnya sudah tanpa batas — kalau kamu mengisi “Maks output / tahap”, kosongkan lagi. Tahap yang sudah jadi tetap tersimpan, jadi jalankan ulang hanya melanjutkan yang belum."]
@@ -168,19 +172,27 @@ export const ERROR_HINTS = [
 
 export function showError(e){
   const msg = String((e && e.message) || e || "kesalahan tidak dikenal");
+  const cfg = readCfg();
+  const kreditHint = cfg.provider === "openrouter"
+    ? "kredit atau batas key OpenRouter tercapai. Periksa menu Credits dan Keys, atau pilih model gratis."
+    : "provider aktif menolak request. Periksa saldo, batas penggunaan, dan status layanan provider itu.";
   const running = el("rail").querySelector(".stage.run");
   const at = running ? running.dataset.k : "?";
   if(running) setStage(at, "err", "gagal");
   const low = msg.toLowerCase();
-  const hints = ERROR_HINTS.filter(h=>low.includes(h[0].toLowerCase())).map(h=>"<li>" + escA(h[1]) + "</li>");
+  const hints = ERROR_HINTS.filter(h=>low.includes(h[0].toLowerCase()))
+    .map(h=>"<li>" + escA(h[0] === "402" ? kreditHint : h[1]) + "</li>");
+  const arahanProvider = cfg.provider === "openrouter"
+    ? "<li>Untuk OpenRouter: base URL harus <code>https://openrouter.ai/api/v1</code> dan ID model memakai format <code>publisher/nama-model</code>.</li>"
+      + "<li>Model gratis di OpenRouter berakhiran <code>:free</code> — centang “hanya model gratis” kalau kreditmu kosong.</li>"
+    : "<li>Periksa base URL, autentikasi, saldo, dan kuota di pengaturan provider yang sedang dipilih.</li>";
   el("out").innerHTML = "<h1>Run berhenti" + (at === "?" ? "" : " di tahap <code>" + escA(at) + "</code>") + "</h1>"
     + "<pre class='bad'>" + escA(msg.slice(0, 700)) + "</pre>"
     + (hints.length ? "<h2>Kemungkinan penyebab &amp; solusinya</h2><ul>" + hints.join("") + "</ul>" : "")
     + "<h2>Cek cepat</h2><ul>"
     + "<li>Klik <b>Muat katalog model</b>. Kalau daftar model saja gagal, masalahnya ada di key atau base URL, bukan di pipeline.</li>"
     + "<li>Ganti provider ke <b>Demo offline</b> lalu jalankan — hasil contoh muncul = aplikasi sehat, jadi sisa masalahnya murni koneksi API.</li>"
-    + "<li>Untuk OpenRouter: base URL harus <code>https://openrouter.ai/api/v1</code> dan ID model memakai format <code>publisher/nama-model</code>.</li>"
-    + "<li>Model gratis di OpenRouter berakhiran <code>:free</code> — centang “hanya model gratis” kalau kreditmu kosong.</li></ul>";
+    + arahanProvider + "</ul>";
 }
 
 /* Kuesioner discovery 5-slot: jeda runAll sampai user menjawab atau melewati.

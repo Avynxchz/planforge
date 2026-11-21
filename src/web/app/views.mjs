@@ -11,7 +11,8 @@ import { saranLingkungan, starterAktif } from "../core/starter.mjs";
 
 export function refreshRail(){
   for(const s of ["clarify","prd","roadmap","tasks"]) setStage(s, hasStage(s) ? "done" : "", hasStage(s) ? "tersimpan" : "");
-  if(hasStage("prd")) setStage("audit", state.issues.length ? "err" : "done", state.issues.length ? state.issues.length + " celah" : "bersih");
+  const adaPrd = hasStage("prd");
+  setStage("audit", adaPrd ? (state.issues.length ? "err" : "done") : "", adaPrd ? (state.issues.length ? state.issues.length + " celah" : "bersih") : "");
 }
 
 export function tabs(){
@@ -41,7 +42,7 @@ export let jamTahap = null;
 export function mulaiJam(k){
   hentiJam();
   const mulai = Date.now();
-  const update = ()=>setStage(k, "run", "mikir… " + Math.floor((Date.now()-mulai)/1000) + " dtk · batas 120 dtk");
+  const update = ()=>setStage(k, "run", "mikir… " + Math.floor((Date.now()-mulai)/1000) + " dtk · batas 240 dtk");
   update();
   jamTahap = { k, id:setInterval(update, 1000) };
 }
@@ -52,7 +53,12 @@ export function showView(v){ const b = el("tabs").querySelector('[data-view="' +
 
 export function draw(view){
   const d = state.docs;
-  if(view === "issues") { el("out").innerHTML = renderMarkdown("issues", state.issues, {fixes:state.autoFixes, auditNote:state.auditNote, struktur:masalahStrukturRencana(state.docs, starterAktif(readCfg())), warn:saranLingkungan(starterAktif(readCfg()))}); return; }
+  if(view === "issues") {
+    const adaRencana = !!(d.prd || d.roadmap || d.tasks);
+    el("out").innerHTML = renderMarkdown("issues", state.issues, {empty:!adaRencana, fixes:state.autoFixes, auditNote:state.auditNote,
+      struktur:adaRencana ? masalahStrukturRencana(state.docs, starterAktif(readCfg())) : [], warn:saranLingkungan(starterAktif(readCfg()))});
+    return;
+  }
   if(view === "runner"){ el("out").innerHTML = renderRunner();
     if(!state.workerChecked){ state.workerChecked = true; ensureWorkerSource().then((s)=>{ if(s) draw("runner"); }); }
     return; }

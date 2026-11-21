@@ -53,8 +53,8 @@ export function commandDoctor(ctx, root, cwd, args){
   const d = doctorMcp(root);
   console.log("\nworker.mjs di disk ditulis: " + new Date(d.wtulis).toLocaleString() + " · rencana ditulis: " + (d.planTulis ? new Date(d.planTulis).toLocaleString() : "-"));
   if(!d.proses.length){
-    console.log("BELUM TERVERIFIKASI: tidak ada proses `worker.mjs mcp` yang terbaca. File konfigurasi saja bukan bukti tersambung.");
-    return 1;
+    console.log("INFO: tidak ada proses `worker.mjs mcp` yang terbaca. Ini normal untuk runner CLI standalone di luar sesi MCP aktif; koneksi MCP belum terverifikasi.");
+    return gateMerah.length ? 1 : 0;
   }
   const sesuai = d.proses.filter(p=>p.proyek === "sesuai");
   let lama = 0;

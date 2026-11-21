@@ -11,6 +11,7 @@ import { StringDecoder } from "node:string_decoder";
 import { ast, inventory, sourceInventory, classicBundle, statementOrder } from "../scripts/build-ast.mjs";
 import { CORE_BEGIN, CORE_END, STARTER_BEGIN, STARTER_END, starterFiles, starterDeclaration } from "../scripts/build-web.mjs";
 import { buildWorker, buildHtml } from "../scripts/build.mjs";
+import { browserArgs } from "./browser-process.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const read = name => fs.readFileSync(path.join(root, name), "utf8");
@@ -268,9 +269,22 @@ export async function buildTests(t, ta) {
       const declaration = starterDeclaration(input);
       assert.doesNotMatch(declaration, /<\/script/i);
       assert.deepEqual(new Function(declaration + ";return STARTER_FILES;")(), input);
+      const unsorted = { "z.txt":"z", "2.txt":"two", "10.txt":"ten", "a.txt":"a" };
+      assert.equal(starterDeclaration(unsorted), 'const STARTER_FILES = {"10.txt":"ten","2.txt":"two","a.txt":"a","z.txt":"z"};');
       const actual = parts.core.slice(parts.core.indexOf(STARTER_BEGIN) + STARTER_BEGIN.length, parts.core.indexOf(STARTER_END));
       assert.equal(actual, "\n" + starterDeclaration(starterFiles(path.join(root, "starter"))) + "\n");
     } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+  });
+  t("browser: Linux root and CI launches disable Chromium sandbox; desktop launch keeps it enabled", () => {
+    const rootArgs = browserArgs("profile", { platform:"linux", uid:0, ci:false, container:false });
+    assert.ok(rootArgs.includes("--no-sandbox"));
+    assert.ok(rootArgs.includes("--disable-setuid-sandbox"));
+    const ciArgs = browserArgs("profile", { platform:"linux", uid:1000, ci:true, container:false });
+    assert.ok(ciArgs.includes("--no-sandbox"));
+    assert.ok(ciArgs.includes("--disable-setuid-sandbox"));
+    const desktopArgs = browserArgs("profile", { platform:"linux", uid:1000, ci:false, container:false });
+    assert.ok(!desktopArgs.includes("--no-sandbox"));
+    assert.ok(!desktopArgs.includes("--disable-setuid-sandbox"));
   });
   t("build: both legacy embed commands are byte-idempotent in a standalone copied project", () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "pf-build-embed-"));
@@ -296,6 +310,16 @@ export async function buildTests(t, ta) {
   t("worker dispatch: early commands precede root/context loading and preserve exit codes", () => {
     const { dir, file, ledger, invoke } = workerFixture(worker);
     try {
+      const help = invoke([]);
+      assert.equal(help.status, 0);
+      assert.match(help.stdout, /Penggunaan: node worker\.mjs <perintah> \[opsi\]/);
+      assert.match(help.stdout, /Perintah: .*run.*verify.*init.*mcp/);
+      assert.match(help.stdout, /node worker\.mjs run --dry-run/);
+      assert.equal(help.stderr, "");
+      const initialized = invoke(["init", "--agent", "none"]);
+      assert.equal(initialized.status, 0);
+      assert.ok(initialized.stdout.includes("ditulis " + path.join(dir, ".planforge", "gates.json").replace(/\\/g, "/")));
+      assert.ok(!initialized.stdout.split("ditulis ")[1].split(" —")[0].includes("\\"));
       fs.rmSync(path.join(ledger, "plan.json"));
       const missing = path.join(dir, "absent");
       assert.equal(invoke(["init", "--agent", "none", "--dir", missing]).status, 0);
@@ -333,7 +357,7 @@ export async function buildTests(t, ta) {
       assert.match(status.stdout, /auto-budget:/); assert.match(status.stdout, /call 7\/11 · agen workbuddy/);
       assert.match(status.stdout, /maxCallsPerRun 0 muat/); assert.match(status.stdout, /plafon biaya \$0/);
       assert.equal(fs.readFileSync(stateFile, "utf8"), initial);
-      const dry = invoke(["--dir", dir, "--dry-run", "--no-gates"]);
+      const dry = invoke(["run", "--dir", dir, "--dry-run", "--no-gates"]);
       assert.equal(dry.status, 0); assert.match(dry.stdout, /selesai dry-run: 1 prompt/);
       assert.equal(fs.readFileSync(stateFile, "utf8"), initial);
       assert.equal(invoke(["connect", "--list", "--dir", dir]).status, 0);
@@ -347,6 +371,9 @@ export async function buildTests(t, ta) {
         assert.equal(audit.status, 0); assert.match(audit.stdout, /audit rencana · 1 task · 0 panggilan agen/);
         assert.ok(fs.existsSync(path.join(ledger, "PLAN_AUDIT.md")));
       }
+      const taskSebelumVerify = JSON.parse(fs.readFileSync(stateFile, "utf8"));
+      taskSebelumVerify.tasks["T-001"] = { status: "sedang" };
+      fs.writeFileSync(stateFile, JSON.stringify(taskSebelumVerify));
       for (const alias of ["verify", "verifikasi"]) {
         assert.equal(invoke([alias, "--dir", dir]).stderr, "pakai: node worker.mjs verify T-002\n");
         const verify = invoke([alias, "T-001", "--dir", dir]);

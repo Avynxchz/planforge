@@ -21,6 +21,9 @@ export function starterFiles(dir) {
 }
 
 export function starterDeclaration(files) {
-  const json = JSON.stringify(files).replace(/<\/script/gi, match => "\\u003c" + match.slice(1));
-  return "const STARTER_FILES = " + json + ";";
+  const json = "{" + Object.keys(files).sort().map(key =>
+    JSON.stringify(key) + ":" + JSON.stringify(files[key])
+  ).join(",") + "}";
+  const safeJson = json.replace(/<\/script/gi, match => "\\u003c" + match.slice(1));
+  return "const STARTER_FILES = " + safeJson + ";";
 }

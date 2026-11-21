@@ -9,6 +9,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { cariBrowser, mcpServerName } from "../worker.mjs";
 import { cleanupTempDirs, makeTempDir, sweepStaleTempDirs } from "./temp-dirs.mjs";
+import { browserArgs, browserSpawnOptions, closeBrowser } from "./browser-process.mjs";
 
 const INDEX = fileURLToPath(new URL("../index.html", import.meta.url));
 const tidur = (ms)=>new Promise(r=>setTimeout(r, ms));
@@ -79,8 +80,7 @@ window.__pfJalankan = async function(){
 const bin = cariBrowser();
 if(!bin){ console.log("browser tidak ditemukan — uji Connect dilewati"); process.exit(1); }
 const tmp = makeTempDir("pf-browser-connect-");
-const browser = spawn(bin, ["--headless=new","--disable-gpu","--no-first-run","--no-default-browser-check",
-  "--remote-debugging-port=0","--remote-allow-origins=*","--user-data-dir="+tmp,"about:blank"], { stdio:["ignore","pipe","pipe"] });
+const browser = spawn(bin, browserArgs(tmp), browserSpawnOptions());
 browser.stdout.on("data", ()=>{});
 const errors = [];
 let ws = null, kirim = null;
@@ -286,10 +286,12 @@ try{
   fail++;
 }finally{
   try{ if(ws) ws.close(); }catch(e){}
-  try{ spawnSync("taskkill", ["/pid", String(browser.pid), "/T", "/F"], { encoding:"utf8", timeout:10000 }); }catch(e){}
-  await tidur(600);
-  try{ cleanupTempDirs(); }
-  finally{ sweepStaleTempDirs(); }
+  try{ await closeBrowser(browser); }
+  finally{
+    await tidur(600);
+    try{ cleanupTempDirs(); }
+    finally{ sweepStaleTempDirs(); }
+  }
 }
 console.log("\n" + pass + " lulus, " + fail + " gagal\n");
 process.exit(kode || (fail ? 1 : 0));

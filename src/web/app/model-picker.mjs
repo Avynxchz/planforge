@@ -148,7 +148,7 @@ export function updateCostGuess(){
     Math.round(sum*IDR).toLocaleString("id-ID") + " (kurs Rp" + IDR.toLocaleString("id-ID") + "/USD)" +
     (miss.length ? " — " + miss.join(", ") + " belum terhitung" : "") +
     " · ≈ " + (3 + chunks) + " panggilan AI: clarify+prd+roadmap (3) + tasks dipecah " + chunks + " milestone" +
-    (adaRoadmap ? "" : " (tebakan, roadmap belum ada)") + " (+1 kalau tambal otomatis aktif). Tiap panggilan dibatasi 120 detik.";
+    (adaRoadmap ? "" : " (tebakan, roadmap belum ada)") + " (+1 kalau tambal otomatis aktif). Tiap panggilan dibatasi 240 detik.";
 }
 
 /* Baca sisa kredit TANPA memanggil model: GET /api/v1/key gratis menurut dokumentasi

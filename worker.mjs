@@ -644,7 +644,7 @@ function commandInit(args) {
   const dir = path4.join(process.cwd(), DIR);
   fs4.mkdirSync(dir, { recursive: true });
   if (!fs4.existsSync(path4.join(dir, F_GATES))) fs4.writeFileSync(path4.join(dir, F_GATES), JSON.stringify(defaultGates(args.agent || "agy"), null, 1));
-  console.log("ditulis " + dir + "\\" + F_GATES + " — sunting perintah `hard[].cmd` sesuai proyekmu, lalu taruh plan.json di sebelah.");
+  console.log("ditulis " + path4.join(dir, F_GATES).replace(/\\/g, "/") + " — sunting perintah `hard[].cmd` sesuai proyekmu, lalu taruh plan.json di sebelah.");
   return 0;
 }
 function commandBrowser() {
@@ -1364,7 +1364,10 @@ var UI_FILE = /(\.html?|\.css|\.vue|\.svelte|\.jsx|\.tsx)\b|(^|\/)(templates|sta
 var UI_KATA = /\b(browser|halaman|layar|viewport|responsif|mobile|tombol|klik|click|grafik|chart|canvas|frontend|dom)\b/i;
 function taskUi(t) {
   if (!t) return false;
-  return UI_FILE.test((t.files_or_areas || []).join(" ")) || UI_KATA.test([t.title, t.description, ...t.acceptance_criteria || []].join(" "));
+  const targets = (Array.isArray(t.files_or_areas) ? t.files_or_areas : []).join(" ").replace(/\\/g, "/");
+  if (UI_FILE.test(targets) || /(^|\/)(web|frontend|client|components|pages|views|ui)(\/|$)/i.test(targets)) return true;
+  if (/(^|\/)(?:src\/)?(?:utils|data|cli|api|server|backend|worker|shared|database|db)(?:\/|(?:\.[^/]+)?$)|(^|\/)(?:bin|scripts)\//i.test(targets)) return false;
+  return UI_KATA.test([t.title, t.description, ...t.acceptance_criteria || []].join(" "));
 }
 function specBehavior(t) {
   const b = t && t.behavior;
@@ -1697,7 +1700,10 @@ function buildFixPrompt(ctx, t, why) {
 import { spawnSync as spawnSync8 } from "node:child_process";
 function gitCommit(ctx, cwd, t, awal) {
   const st = spawnSync8("git", ["rev-parse", "--is-inside-work-tree"], { cwd, encoding: "utf8" });
-  if (st.status !== 0) return null;
+  if (st.status !== 0) {
+    log(ctx, "  commit " + t.id + ' dilewati: folder kerja bukan repo Git. Untuk mengaktifkan auto-commit, jalankan `git init && git add . && git commit -m "init"` dari folder proyek.');
+    return null;
+  }
   const kini = potretKotor(cwd);
   if (!kini) return null;
   const ikut = [], bawaan = [], ditinggal = [];
@@ -2325,8 +2331,8 @@ function commandDoctor(ctx, root, cwd, args) {
   const d = doctorMcp(root);
   console.log("\nworker.mjs di disk ditulis: " + new Date(d.wtulis).toLocaleString() + " · rencana ditulis: " + (d.planTulis ? new Date(d.planTulis).toLocaleString() : "-"));
   if (!d.proses.length) {
-    console.log("BELUM TERVERIFIKASI: tidak ada proses `worker.mjs mcp` yang terbaca. File konfigurasi saja bukan bukti tersambung.");
-    return 1;
+    console.log("INFO: tidak ada proses `worker.mjs mcp` yang terbaca. Ini normal untuk runner CLI standalone di luar sesi MCP aktif; koneksi MCP belum terverifikasi.");
+    return gateMerah.length ? 1 : 0;
   }
   const sesuai = d.proses.filter((p) => p.proyek === "sesuai");
   let lama = 0;
@@ -2649,6 +2655,10 @@ function commandVerify(ctx, cwd, args) {
     at: (/* @__PURE__ */ new Date()).toISOString()
   };
   const catatGagal = (kenapa) => {
+    if (String(st.status || "belum mulai").trim().toLowerCase() === "belum mulai") {
+      console.log("\n" + id + " belum mulai: verify manual gagal, status ledger tidak diubah. Perbaiki task terlebih dahulu lalu jalankan `node worker.mjs run --only " + id + "` jika ingin mencobanya.");
+      return 1;
+    }
     if (isDone(st)) ctx.state.doneTasks = Math.max(0, ctx.state.doneTasks - 1);
     st.status = "gagal";
     st.gate = gate;
@@ -2940,7 +2950,10 @@ function commandRun(ctx, cwd, args, cap) {
         break;
       }
       if (t.__blocked) {
-        log(ctx, "mentok: " + t.id + " menunggu " + (t.needs || []).join(", ") + " yang belum selesai/gagal — hentikan loop");
+        const gagal = (t.needs || []).filter((id) => isFail(ctx.state.tasks[id]));
+        if (gagal.length) {
+          log(ctx, "mentok: " + t.id + " menunggu " + (t.needs || []).join(", ") + " yang belum selesai/gagal — hentikan loop. Task gagal: " + gagal.join(", ") + ". Untuk mencoba ulang, jalankan `node worker.mjs run --only " + gagal[0] + "`; setelah selesai, jalankan `node worker.mjs run` untuk melanjutkan antrean.");
+        } else log(ctx, "mentok: " + t.id + " menunggu " + (t.needs || []).join(", ") + " yang belum selesai/gagal — hentikan loop");
         break;
       }
       const unmet = hasUnmetDeps(ctx.plan, ctx.state, t);
@@ -2978,7 +2991,14 @@ function commandRun(ctx, cwd, args, cap) {
 import path17 from "node:path";
 function main(argv) {
   const args = parseArgs(argv || process.argv.slice(2));
-  const cmd = args._[0] || "run";
+  const cmd = args._[0];
+  if (!cmd) {
+    console.log("Penggunaan: node worker.mjs <perintah> [opsi]");
+    console.log("Perintah: run, status, doctor, setup-env, refresh, pin, build, verify, audit, connect, giliran, init, mcp, embed");
+    console.log("Contoh: node worker.mjs run --dry-run");
+    console.log("Jalankan `node worker.mjs run` untuk memulai loop runner.");
+    return 0;
+  }
   if (cmd === "init") return commandInit(args);
   if (cmd === "mcp") return mcpMain();
   if (cmd === "__browser") return commandBrowser();

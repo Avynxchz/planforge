@@ -10,7 +10,7 @@ function matchingTempDirs(){
   const dirs = new Set();
   try{
     for(const entry of fs.readdirSync(os.tmpdir(), {withFileTypes:true})){
-      if(entry.isDirectory() && /^(?:pf-browser-|planforge-)/.test(entry.name))
+      if(entry.isDirectory() && /^(?:pf-browser-|pf-induk-|planforge-)/.test(entry.name))
         dirs.add(path.join(os.tmpdir(), entry.name));
     }
   }catch{}

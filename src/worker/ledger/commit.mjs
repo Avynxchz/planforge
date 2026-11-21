@@ -6,7 +6,10 @@ import { short } from "../text.mjs";
 /* Commit only task work and worker notes, not unrelated user changes. */
 export function gitCommit(ctx, cwd, t, awal){
   const st = spawnSync("git", ["rev-parse", "--is-inside-work-tree"], { cwd, encoding: "utf8" });
-  if(st.status !== 0) return null;
+  if(st.status !== 0){
+    log(ctx, "  commit " + t.id + " dilewati: folder kerja bukan repo Git. Untuk mengaktifkan auto-commit, jalankan `git init && git add . && git commit -m \"init\"` dari folder proyek.");
+    return null;
+  }
   const kini = potretKotor(cwd);
   if(!kini) return null;
   const ikut = [], bawaan = [], ditinggal = [];

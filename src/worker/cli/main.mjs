@@ -16,7 +16,14 @@ import { commandRun } from "./run-command.mjs";
 
 export function main(argv){
   const args = parseArgs(argv || process.argv.slice(2));
-  const cmd = args._[0] || "run";
+  const cmd = args._[0];
+  if(!cmd){
+    console.log("Penggunaan: node worker.mjs <perintah> [opsi]");
+    console.log("Perintah: run, status, doctor, setup-env, refresh, pin, build, verify, audit, connect, giliran, init, mcp, embed");
+    console.log("Contoh: node worker.mjs run --dry-run");
+    console.log("Jalankan `node worker.mjs run` untuk memulai loop runner.");
+    return 0;
+  }
   if(cmd === "init") return commandInit(args);
   if(cmd === "mcp") return mcpMain();
   /* A timed child keeps browser measurement from hanging the synchronous loop. */

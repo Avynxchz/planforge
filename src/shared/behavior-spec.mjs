@@ -12,8 +12,10 @@ export const UI_KATA = /\b(browser|halaman|layar|viewport|responsif|mobile|tombo
 
 export function taskUi(t){
   if(!t) return false;
-  return UI_FILE.test((t.files_or_areas || []).join(" "))
-    || UI_KATA.test([t.title, t.description, ...(t.acceptance_criteria || [])].join(" "));
+  const targets = (Array.isArray(t.files_or_areas) ? t.files_or_areas : []).join(" ").replace(/\\/g, "/");
+  if(UI_FILE.test(targets) || /(^|\/)(web|frontend|client|components|pages|views|ui)(\/|$)/i.test(targets)) return true;
+  if(/(^|\/)(?:src\/)?(?:utils|data|cli|api|server|backend|worker|shared|database|db)(?:\/|(?:\.[^/]+)?$)|(^|\/)(?:bin|scripts)\//i.test(targets)) return false;
+  return UI_KATA.test([t.title, t.description, ...(t.acceptance_criteria || [])].join(" "));
 }
 
 export function specBehavior(t){

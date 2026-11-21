@@ -109,6 +109,7 @@ export function renderMarkdown(kind, d, ctx){
   if(kind === "issues"){
     const list = Array.isArray(d) ? d : [];
     const cx = ctx || {};
+    if(cx.empty) return "<h1>Cek konsistensi rencana</h1><p class='hint'>Belum ada rencana untuk diperiksa. Jalankan pipeline dulu.</p>";
     const struktur = Array.isArray(cx.struktur) ? cx.struktur : [];
     const fixesBlock = (cx.fixes && cx.fixes.length ? "<h2>Rapikan otomatis yang sudah diterapkan (" + cx.fixes.length + ")</h2><details><summary>lihat daftar</summary><ul>"
           + cx.fixes.slice(0,40).map(f=>"<li>"+esc(f)+"</li>").join("") + "</ul></details>" : "")

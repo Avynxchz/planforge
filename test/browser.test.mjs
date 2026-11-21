@@ -128,6 +128,12 @@ async function daftar(){
     const r = W.runBehavior({ gates:{} }, process.cwd(), { id:"T-002", title:"Buat skrip impor CSV", files_or_areas:["scripts/import_data.py"], acceptance_criteria:["exit code 0"] });
     assert.equal(r.ok, true); assert.equal(r.dilewati, true);
   });
+  t("kata tombol di kriteria backend tidak menghentikan worker sebagai UI", ()=>{
+    const r = W.runBehavior({ gates:{} }, process.cwd(), { id:"T-003", title:"Perbarui data tombol aktif",
+      files_or_areas:["src/utils.js"], acceptance_criteria:["API mengembalikan status tombol"] });
+    assert.equal(r.ok, true); assert.equal(r.dilewati, true);
+    assert.equal(r.planRusak, undefined);
+  });
   t("type check asing ditolak dengan daftar yang dikenal", ()=>{
     const bad = W.masalahBehavior({ behavior:{ url:"http://x/", checks:[{ type:"screenshot" }] } });
     assert.equal(bad.length, 1); assert.match(bad[0], /tidak dikenal/); assert.match(bad[0], /canvasNotBlank/);

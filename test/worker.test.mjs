@@ -164,7 +164,23 @@ t("rantai berhenti dengan rapi: T-002 tidak sempat jalan karena T-001 gagal", ()
   run(["run", "--dir", dir]);
   const r = read(dir);
   assert.match(r.log, /mentok: T-002/);
+  assert.match(r.log, /node worker\.mjs run --only T-001/);
   assert.equal(Object.values(r.state.tasks).filter(x=>x.status === "sedang").length, 0, "ada task tertinggal di status sedang");
+});
+t("task gagal bisa dicoba ulang dengan --only lalu antrean dilanjutkan", ()=>{
+  const tasks = [
+    { id:"T-001", title:"Perbaiki fondasi", depends_on:[], verification:VERIF_UJI, ui:false },
+    { id:"T-002", title:"Lanjut fitur", depends_on:["T-001"], verification:VERIF_UJI, ui:false }
+  ];
+  const dir = project(quiet, tasks), ctx = W.loadCtx(dir);
+  ctx.state.tasks["T-001"].status = "gagal";
+  W.saveCtx(ctx);
+  run(["run", "--dir", dir]);
+  assert.match(read(dir).log, /node worker\.mjs run --only T-001/);
+  run(["run", "--dir", dir, "--only", "T-001"]);
+  assert.equal(read(dir).state.tasks["T-001"].status, "selesai");
+  run(["run", "--dir", dir]);
+  assert.equal(read(dir).state.tasks["T-002"].status, "selesai");
 });
 
 t("tiga kegagalan berturut-turut menghentikan sesi (batas maxConsecutiveFails)", ()=>{
@@ -560,6 +576,14 @@ t("kalau tidak ada satu file pun yang berubah, task BUKAN selesai meski semua ge
   run(["run", "--dir", dir, "--max-tasks", "1", "--allow-noop"]);
   assert.equal(read(dir).state.tasks["T-001"].status, "selesai", "--allow-noop harus tetap bisa dipakai buat task murni verifikasi");
 });
+t("auto-commit menjelaskan pemulihan saat folder kerja bukan repo Git", ()=>{
+  const dir = project(quiet), ctx = W.loadCtx(dir);
+  W.saveCtx(ctx);
+  const result = W.gitCommit(ctx, dir, { id:"T-001", title:"Task uji" }, null);
+  assert.equal(result, null);
+  assert.match(read(dir).log, /bukan repo Git/);
+  assert.match(read(dir).log, /git init && git add \. && git commit -m "init"/);
+});
 t("agen yang mengkommit kerjanya sendiri tetap terbaca sebagai perubahan", ()=>{
   const dir = project(Object.assign({}, quiet));
   for(const c of [["init", "-q"], ["config", "user.email", "uji@test"], ["config", "user.name", "uji"]]) spawnSync("git", c, { cwd: dir, encoding:"utf8" });
@@ -589,6 +613,22 @@ t("verify T-001: menagih kommit HEAD yang benar, tanpa memanggil agen", ()=>{
   assert.equal(run(["verify", "T-002", "--dir", dir]), 1, "HEAD bukan milik T-002");
   assert.equal(read(dir).state.tasks["T-002"].status, "belum mulai", "verify yang menolak tidak boleh mengubah catatan");
   assert.equal(read(dir).state.doneTasks, 1, "hitung ulang tidak boleh ganda");
+});
+t("verify manual yang gagal tidak menandai task belum mulai sebagai gagal", ()=>{
+  const dir = project({ reviews:[], hard:[badCheck], limits:{ maxCalls:20, fixRounds:0 } }, [
+    { id:"T-001", title:"Belum dikerjakan", depends_on:[], verification:'node -e "process.exit(7)"', ui:false }
+  ]);
+  W.saveCtx(W.loadCtx(dir));
+  const file = path.join(dir, ".planforge", "state.json");
+  const before = fs.readFileSync(file, "utf8");
+  const output = [], original = console.log;
+  console.log = (...args)=>output.push(args.join(" "));
+  let code;
+  try{ code = W.main(["verify", "T-001", "--dir", dir]); }finally{ console.log = original; }
+  assert.equal(code, 1);
+  assert.match(output.join("\n"), /status ledger tidak diubah/);
+  assert.equal(fs.readFileSync(file, "utf8"), before);
+  assert.equal(read(dir).state.tasks["T-001"].status, "belum mulai");
 });
 t("agen menolak karena kredit habis: loop berhenti, task tidak dicatat gagal", ()=>{
   const dir = project(Object.assign({}, quiet));
@@ -967,8 +1007,8 @@ t("doctor tanpa connector proyek ini tidak mengklaim koneksi sudah terverifikasi
   console.log = s=>baris.push(String(s));
   let code;
   try{ code = W.main(["doctor", "--dir", dir, "--no-gates"]); }finally{ console.log = original; }
-  assert.equal(code, 1);
-  assert.match(baris.join("\n"), /BELUM TERVERIFIKASI/);
+  assert.equal(code, 0);
+  assert.match(baris.join("\n"), /INFO: tidak ada proses `worker\.mjs mcp` yang terbaca/);
   assert.doesNotMatch(baris.join("\n"), /^ok pid/m);
 });
 t("refresh mematikan connector basi lalu lapor fresh kalau app melahirkannya lagi", ()=>{
@@ -1169,7 +1209,7 @@ t("jalur runner memakai potret yang sama: perubahan bawaan tidak ikut kommit tas
    mencari "opencodeee/opencodeee/..." dan commit GAGAL. potretKotor harus strip prefix root
    dan filter hanya subtree target supaya induk & tetangga tidak tersapu. */
 function repoNested(){
-  const induk = fs.mkdtempSync(path.join(os.tmpdir(), "pf-induk-"));
+  const induk = makeTempDir("pf-induk-");
   for(const c of [["init","-q"],["config","user.email","uji@test"],["config","user.name","uji"]]) spawnSync("git", c, { cwd:induk, encoding:"utf8" });
   const dir = path.join(induk, "opencodeee");
   fs.mkdirSync(path.join(dir, ".planforge"), { recursive:true });
@@ -1197,30 +1237,35 @@ const isiKommitInduk = (induk)=> String(spawnSync("git", ["show","--name-only","
 t("kommit task di folder nested (di dalam repo induk) berhasil dan hanya menyapu subtree target", ()=>{
   const dir = repoNested();
   const induk = path.dirname(dir);
-  const ctx = W.loadCtx(dir);
-  assert.match(panggil(ctx, "next_task"), /T-001/);
-  fs.mkdirSync(path.join(dir, "src"));
-  fs.writeFileSync(path.join(dir, "src", "app.js"), "console.log(1)\n");
-  const out = panggil(ctx, "mark_done", { id:"T-001", verification:"node --test -> 3 passed in 0.4s" });
-  assert.match(out, /kommit [0-9a-f]+ T-001:/, "commit nested harus berhasil (regresi pathspec dobel-prefix): " + out);
-  const isi = isiKommitInduk(induk);
-  assert.ok(isi.includes("opencodeee/src/app.js"), "kerja task harus ikut dengan path relatif root: " + isi);
-  assert.ok(isi.includes("opencodeee/.planforge/state.json"), "catatan worker harus ikut: " + isi);
-  for(const f of ["catatan-induk.txt", "vscodeee/tetangga.js"]) assert.ok(!isi.includes(f), f + " (di luar target) tidak boleh tersapu: " + isi);
-  const sisa = String(spawnSync("git", ["status","--porcelain"], { cwd:induk, encoding:"utf8" }).stdout);
-  assert.match(sisa, /catatan-induk\.txt/, "perubahan induk harus tetap belum di-commit: " + sisa);
-  assert.match(sisa, /vscodeee\/tetangga\.js/, "perubahan tetangga harus tetap belum di-commit: " + sisa);
+  try{
+    const ctx = W.loadCtx(dir);
+    assert.match(panggil(ctx, "next_task"), /T-001/);
+    fs.mkdirSync(path.join(dir, "src"));
+    fs.writeFileSync(path.join(dir, "src", "app.js"), "console.log(1)\n");
+    const out = panggil(ctx, "mark_done", { id:"T-001", verification:"node --test -> 3 passed in 0.4s" });
+    assert.match(out, /kommit [0-9a-f]+ T-001:/, "commit nested harus berhasil (regresi pathspec dobel-prefix): " + out);
+    const isi = isiKommitInduk(induk);
+    assert.ok(isi.includes("opencodeee/src/app.js"), "kerja task harus ikut dengan path relatif root: " + isi);
+    assert.ok(isi.includes("opencodeee/.planforge/state.json"), "catatan worker harus ikut: " + isi);
+    for(const f of ["catatan-induk.txt", "vscodeee/tetangga.js"]) assert.ok(!isi.includes(f), f + " (di luar target) tidak boleh tersapu: " + isi);
+    const sisa = String(spawnSync("git", ["status","--porcelain"], { cwd:induk, encoding:"utf8" }).stdout);
+    assert.match(sisa, /catatan-induk\.txt/, "perubahan induk harus tetap belum di-commit: " + sisa);
+    assert.match(sisa, /vscodeee\/tetangga\.js/, "perubahan tetangga harus tetap belum di-commit: " + sisa);
+  }finally{ fs.rmSync(induk, { recursive:true, force:true }); }
 });
 
 t("potretKotor dari folder nested mengembalikan kunci relatif-target, bukan relatif-root induk", ()=>{
   const dir = repoNested();
-  fs.mkdirSync(path.join(dir, "src"));
-  fs.writeFileSync(path.join(dir, "src", "app.js"), "1\n");
-  const p = W.potretKotor(dir);
-  assert.ok(p, "potretKotor nested tidak boleh null");
-  assert.ok("src/app.js" in p, "kunci harus relatif-target (src/app.js), bukan opencodeee/src/app.js: " + Object.keys(p));
-  assert.ok(!Object.keys(p).some(k=>k.startsWith("opencodeee/")), "tidak boleh ada prefix root induk: " + Object.keys(p));
-  assert.ok(!Object.keys(p).some(k=>k.startsWith("vscodeee/") || k === "catatan-induk.txt"), "file di luar subtree target harus difilter: " + Object.keys(p));
+  const induk = path.dirname(dir);
+  try{
+    fs.mkdirSync(path.join(dir, "src"));
+    fs.writeFileSync(path.join(dir, "src", "app.js"), "1\n");
+    const p = W.potretKotor(dir);
+    assert.ok(p, "potretKotor nested tidak boleh null");
+    assert.ok("src/app.js" in p, "kunci harus relatif-target (src/app.js), bukan opencodeee/src/app.js: " + Object.keys(p));
+    assert.ok(!Object.keys(p).some(k=>k.startsWith("opencodeee/")), "tidak boleh ada prefix root induk: " + Object.keys(p));
+    assert.ok(!Object.keys(p).some(k=>k.startsWith("vscodeee/") || k === "catatan-induk.txt"), "file di luar subtree target harus difilter: " + Object.keys(p));
+  }finally{ fs.rmSync(induk, { recursive:true, force:true }); }
 });
 
 t("mark_done task biasa menyuruh agen LANJUT OTOMATIS, bukan diam setelah satu task", ()=>{
@@ -1404,6 +1449,9 @@ t("verification merah lalu hijau sesudah ronde perbaikan -> selesai", ()=>{
 t("verify T-001 menolak kalau verification task masih merah, lalu menerima sesudah hijau", ()=>{
   const dir = project(quiet, satuTask(verifAda("bukti.txt")));
   gitAwal(dir);
+  const ctx = W.loadCtx(dir);
+  ctx.state.tasks["T-001"].status = "sedang";
+  W.saveCtx(ctx);
   fs.writeFileSync(path.join(dir, "src.js"), "export const a = 1;\n");
   spawnSync("git", ["add","-A"], { cwd:dir, encoding:"utf8" });
   spawnSync("git", ["commit","-q","-m","T-001: bikin modul"], { cwd:dir, encoding:"utf8" });

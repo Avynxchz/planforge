@@ -31,7 +31,8 @@ export async function connectSinkron(){
   try{ progres = Number(JSON.parse(lama || "{}").doneTasks || 0); }catch(e){}
   if(progres > 0 && !confirm("Rencana berubah, tapi " + progres + " task sudah selesai. Progres lama dicadangkan dan ledger dimulai bersih. Lanjut?")) return;
   const conn = last.conn, a = AGENT_ADAPTERS[conn] || AGENT_ADAPTERS.generic;
-  const opts = { workerSource: state.workerSource || null, agent:conn, workerPath:last.path + "/worker.mjs", projectDir:last.path, starter: readCfg().starter };
+  const cfg = readCfg();
+  const opts = { workerSource: state.workerSource || null, agent:conn, targetAgent:cfg.targetAgent, workerPath:last.path + "/worker.mjs", projectDir:last.path, starter:cfg.starter };
   tidyPlan();
   const files = runnerBundle(state.docs, state.issues, gates(), opts);
   const existing = {};
@@ -98,7 +99,8 @@ export async function connectCek(){
   }
   c.path = bersih; c.error = null;
   const conn = connectConn(), a = AGENT_ADAPTERS[conn];
-  const opts = { workerSource: state.workerSource || null, agent: conn, workerPath: bersih + "/worker.mjs", projectDir: bersih, starter: readCfg().starter };
+  const cfg = readCfg();
+  const opts = { workerSource: state.workerSource || null, agent: conn, targetAgent: cfg.targetAgent, workerPath: bersih + "/worker.mjs", projectDir: bersih, starter: cfg.starter };
   tidyPlan();
   const files = runnerBundle(state.docs, state.issues, gates(), opts);
   const existing = {};

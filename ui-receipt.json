@@ -1,7 +1,7 @@
 {
-  "waktu": "2026-11-20T12:31:30.877Z",
+  "waktu": "2026-11-21T05:11:03.481Z",
   "index": "D:\\PROJECTS\\planforge\\index.html",
-  "lulus": 76,
+  "lulus": 81,
   "gagal": 0,
   "errors": [],
   "hasil": [
@@ -30,6 +30,26 @@
       "detail": "{\"siap\":true,\"skor\":100,\"label\":\"Siap dikirim (lingkungan belum diverifikasi)\",\"error\":[]}"
     },
     {
+      "nama": "skor rubrik dan tab Runner konsisten untuk task backend berkata tombol",
+      "lulus": true,
+      "detail": "{\"skor\":80,\"error\":1,\"runnerSkor\":\"80\"}"
+    },
+    {
+      "nama": "preset model terbaru tersimpan sebelum reload",
+      "lulus": true,
+      "detail": "{\"tersimpan\":true,\"model\":5}"
+    },
+    {
+      "nama": "timeout panggilan 240 detik dan bantuan 402 tidak menyebut OpenRouter untuk provider custom",
+      "lulus": true,
+      "detail": "{\"ms\":240000,\"pesan\":\"model tidak menjawab dalam 240 detik — bisa karena antrean provider, model sedang sibuk, atau jaringan. Coba lagi, ganti model, atau klik Stop. Ini BUKAN tanda kredit habis (itu muncul sebagai HTTP 402).\",\"hint\":false}"
+    },
+    {
+      "nama": "tab Cek rencana menampilkan status netral ketika plan belum ada",
+      "lulus": true,
+      "detail": "Cek konsistensi rencanaBelum ada rencana untuk diperiksa. Jalankan pipeline dulu."
+    },
+    {
       "nama": "tab Panduan memuat langkah bernomor + kode error 402/429",
       "lulus": true,
       "detail": "Panduan pakai PlanForge (dari nol)\nDua kunci yang berbeda: kunci planning (API k"
@@ -43,6 +63,11 @@
       "nama": "lampu 'perlu sinkron' nyala hanya saat sidik jari rencana berubah",
       "lulus": true,
       "detail": "{\"beda\":true,\"sama\":false}"
+    },
+    {
+      "nama": "Hapus hasil mengosongkan indikator audit rail",
+      "lulus": true,
+      "detail": "{\"kelas\":\"stage\",\"catatan\":\"\",\"reset\":true}"
     },
     {
       "nama": "kunci openrouter tersimpan scoped ke provider+baseUrl",

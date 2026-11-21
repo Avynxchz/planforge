@@ -4,8 +4,7 @@
 export const shellQ = (s)=> /\s/.test(String(s)) ? '"' + String(s) + '"' : String(s);
 export function runnerCommand(gates, opts){
   opts = opts || {};
-  /* Label UI dan kunci adaptor bukan nama preset worker. Hanya preset yang benar-benar
-     dikenal CLI yang boleh ditulis; IDE-only tidak punya padanan CLI jadi --agent dihilangkan. */
+  /* Label UI dan kunci adaptor bukan nama preset worker. */
   const presetAgen = (nama)=>{
     const teks = String(nama == null ? "" : nama).trim();
     if(!teks) return null;
@@ -19,7 +18,7 @@ export function runnerCommand(gates, opts){
   const L = gates.limits || {};
   const parts = ["node", shellQ(opts.workerPath || "worker.mjs"), "run"];
   if(opts.projectDir) parts.push("--dir", shellQ(opts.projectDir));
-  const preset = presetAgen(opts.agent);
+  const preset = presetAgen(opts.targetAgent || opts.agent);
   if(preset) parts.push("--agent", shellQ(preset));
   if(L.maxCalls != null) parts.push("--max-calls", String(L.maxCalls));
   if(L.maxCallsPerRun != null) parts.push("--max-calls-per-run", String(L.maxCallsPerRun));

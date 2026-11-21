@@ -1021,6 +1021,17 @@ t("resolver paket mengikuti label UI ke adaptor kanonik dan MCP", ()=>{
     assert.ok(files.some(f=>f.name === (a.file || ".planforge/mcp-universal.json")));
   }
 });
+t("paket runner mengikuti target Codex dan menyiapkan commit otomatis", ()=>{
+  const files = PF.runnerBundle(docsAll, [], PF.defaultGates("agy"), {agent:"codex", targetAgent:"Codex"});
+  const gates = JSON.parse(files.find(f=>f.name === ".planforge/gates.json").data);
+  const md = files.find(f=>f.name === "AGENTS.md").data;
+  assert.equal(gates.agent.name, "codex");
+  assert.equal(gates.agent.cmd, "codex");
+  assert.match(md, /node worker\.mjs run --agent codex/);
+  assert.doesNotMatch(md, /--agent codebuddy/);
+  assert.match(md, /git init && git add \. && git commit -m "init"/);
+  assert.ok(md.indexOf("git init &&") < md.indexOf("Otomatis penuh"), "Git setup harus muncul sebelum perintah runner");
+});
 t("githubPushFiles memakai adaptor kanonik untuk label UI", ()=>{
   for(const [label,key] of Object.entries({"Claude Code":"claude","Cursor":"cursor","Qoder":"qoder","Codex":"codex","umum":"generic"})){
     const files = PF.githubPushFiles(docsAll, {cfg:{targetAgent:label}, workerSource:"// worker"});
@@ -1479,6 +1490,20 @@ t("rubrik menolak rencana yang mulai T-002 tanpa scaffold", ()=>{
   assert.equal(r.label, "Perlu diperbaiki");
   assert.ok(r.skor < 100);
 });
+t("kata UI tunggal tidak menandai target backend sebagai task UI", ()=>{
+  const task = { title:"Perbarui data tombol aktif", files_or_areas:["src/utils.js"], acceptance_criteria:["API tetap mengembalikan status tombol"] };
+  assert.equal(PF.taskUi(task), false);
+  assert.deepEqual(PF.masalahBehavior(task), []);
+  assert.equal(PF.taskUi({files_or_areas:["src/api.js"], acceptance_criteria:["respons tombol konsisten"]}), false);
+  assert.equal(PF.taskUi({files_or_areas:["src/web/panel.jsx"], acceptance_criteria:["panel tampil"]}), true);
+});
+t("skor rubrik tetap 80 untuk satu celah, tanpa penalti behavior palsu pada backend", ()=>{
+  const docs = { tasks:{ tasks:[{ id:"T-001", title:"Scaffold CLI untuk data tombol", files_or_areas:["src/utils.js"],
+    verification:"node --test test/utils.test.mjs", acceptance_criteria:["API mengembalikan status tombol"] }] } };
+  const r = PF.rubrikRencana(docs, ["prd: requirements kosong"]);
+  assert.equal(r.skor, 80);
+  assert.deepEqual(r.error, ["prd: requirements kosong"]);
+});
 t("rubrik meloloskan rencana contoh yang punya T-001 scaffold", ()=>{
   const r = PF.rubrikRencana(PF.DEMO, []);
   assert.ok(r.error.length === 0 || !r.error.some(x=>/bukan scaffold|bukan T-001/.test(x)), r.error.join(" | "));
@@ -1573,6 +1598,11 @@ t("tab Cek rencana bersih kalau starter aktif (struktur kosong, list kosong)", (
   assert.ok(/Lolos cek struktur/.test(html));
   assert.ok(!/Masalah struktur/.test(html));
 });
+t("tab Cek rencana netral saat belum ada rencana", ()=>{
+  const html = PF.renderMarkdown("issues", [], {empty:true, struktur:[]});
+  assert.match(html, /Belum ada rencana untuk diperiksa/);
+  assert.ok(!/masalah struktur yang menahan Connect|Lolos cek struktur/.test(html));
+});
 t("tab Cek rencana: celah validator + masalah struktur tampil bersama", ()=>{
   const html = PF.renderMarkdown("issues", ["prd: requirements kosong"], {struktur:["task pertama ber-ID T-002, bukan T-001 — task scaffold biasanya hilang"]});
   assert.ok(/celah integritas/.test(html));
@@ -1653,7 +1683,7 @@ console.log("\n15) refactor characterization (offline, no application changes)")
 const contract = JSON.parse(fs.readFileSync(new URL("./refactor-contract.json", import.meta.url), "utf8"));
 t("refactor: original harness assertion count is intact", ()=>{
   assert.equal(contract.version, 1);
-  assert.equal(pass + fail, contract.baseline.suites.core);
+  assert.equal(pass + fail, contract.baseline.suites.core + contract.additionalAssertions.core);
 });
 t("refactor: worker namespace export names match the captured contract", ()=>{
   assert.deepEqual(Object.keys(W), contract.worker.exportNames);

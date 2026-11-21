@@ -33,7 +33,10 @@ export function restorePrev(){
 }
 
 export function clearDocs(){
-  if(!doneStages().length){ localStorage.removeItem(STATE_NAME); state.docs = {}; state.issues = []; updateSavedLabel(); return; }
+  if(!doneStages().length){
+    localStorage.removeItem(STATE_NAME); state.docs = {}; state.issues = []; state.autoFixes = []; state.auditNote = null;
+    refreshRail(); updateSavedLabel(); draw(el("tabs").querySelector(".tab.on").dataset.view); return;
+  }
   if(!confirm("Hapus semua hasil (brief, PRD, roadmap, tasks)? Versi sebelumnya masih bisa dipulihkan.")) return;
   pushHistory("sebelum dihapus");
   state.docs = {}; state.issues = []; state.ideaFp = null; state.genBy = null; state.autoFixes = []; state.auditNote = null; localStorage.removeItem(STATE_NAME);
@@ -185,7 +188,8 @@ export async function downloadRunnerPackage(){
   const g = gates();
   await ensureWorkerSource();
   const conn = AGENT_ADAPTERS[state.pkgConn] ? state.pkgConn : "workbuddy";
-  const files = runnerBundle(d, state.issues, g, Object.assign({workerSource: state.workerSource || null, agent: conn, starter: readCfg().starter}, pkgOpts()));
+  const cfg = readCfg();
+  const files = runnerBundle(d, state.issues, g, Object.assign({workerSource: state.workerSource || null, agent: conn, targetAgent: cfg.targetAgent, starter: cfg.starter}, pkgOpts()));
   const zip = makeZip(files);
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([zip], {type:"application/zip"}));

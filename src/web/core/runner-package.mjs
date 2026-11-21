@@ -1,5 +1,5 @@
 /* PlanForge core: AGENTS.md, paket runner, dan handoff GitHub. */
-import { AGENT_ADAPTERS } from "../../shared/agent-contracts.mjs";
+import { AGENT_ADAPTERS, AGENT_PRESETS } from "../../shared/agent-contracts.mjs";
 import { defaultGates, planTaskList, planBundleJson, freshStateJson } from "./plan-workspace.mjs";
 import { starterAktif, starterMeta, starterLockLines, starterContractLines, starterFileEntries } from "./starter.mjs";
 import { connNama, connPrompt, connConfigJson } from "./connect.mjs";
@@ -21,6 +21,14 @@ export function agentsMd(docs, gates, opts){
     + " `.planforge/plan.json`** dan **gerbang kualitas di `.planforge/gates.json`**. Total " + ts.length
     + " task, " + c.hard.length + " gerbang keras (" + c.hardBlocking.length + " menahan loop), "
     + c.full.length + " reviewer penuh tiap " + (L.fullEvery || 6) + " task.");
+  out.push("");
+  out.push("## Aktifkan Git dan commit otomatis");
+  out.push("");
+  out.push("Di folder proyek, jalankan perintah ini sebelum runner supaya setiap task dapat menjadi commit pemulihan:");
+  out.push("");
+  out.push("```");
+  out.push('git init && git add . && git commit -m "init"');
+  out.push("```");
   out.push("");
   if(starterAktif(opts)){
     const m = starterMeta(), p = m.perintah || {};
@@ -158,6 +166,22 @@ export function agentsMd(docs, gates, opts){
 export function runnerBundle(docs, issues, gates, opts){
   opts = opts || {};
   gates = gates || defaultGates("agy");
+  const target = String(opts.targetAgent || opts.agent || "").trim().toLowerCase();
+  const preset = target === "workbuddy" || target === "workbuddy / codebuddy" ? "codebuddy"
+    : target === "claude code" ? "claude"
+      : target === "codex cli" ? "codex"
+        : target === "antigravity cli" || target === "antigravity ide" ? "agy"
+          : ["agy", "claude", "codex", "codebuddy", "none"].includes(target) ? target : null;
+  const presetInfo = preset && AGENT_PRESETS[preset];
+  const gatesPaket = presetInfo ? Object.assign({}, gates, {
+    agent: Object.assign({}, gates.agent, {
+      name: preset,
+      label: presetInfo.label,
+      cmd: presetInfo.cmd,
+      args: presetInfo.args.slice(),
+      contArgs: presetInfo.contArgs ? presetInfo.contArgs.slice() : null
+    })
+  }) : gates;
   /* paket harus mengikuti aplikasi yang dipilih, bukan selalu Antigravity — produk ini dipakai orang lain.
      cfg.targetAgent berisi label UI, jadi terjemahkan label/kunci ke kunci adaptor yang sah. */
   const kunciAdaptor = (()=>{
@@ -175,9 +199,9 @@ export function runnerBundle(docs, issues, gates, opts){
   const f = [];
   if(opts.workerSource) f.push({ name:"worker.mjs", data:opts.workerSource });
   f.push({ name:".planforge/plan.json", data:planBundleJson(docs, issues) });
-  f.push({ name:".planforge/gates.json", data:JSON.stringify(gates, null, 1) });
+  f.push({ name:".planforge/gates.json", data:JSON.stringify(gatesPaket, null, 1) });
   f.push({ name:".planforge/state.json", data:JSON.stringify(freshStateJson(docs), null, 1) });
-  f.push({ name:a.rules, data:agentsMd(docs, gates, opts) });
+  f.push({ name:a.rules, data:agentsMd(docs, gatesPaket, opts) });
   /* aplikasi yang cuma punya pengaturan global (Qoder, Codex) tetap dapat bloknya sebagai file buat disalin */
   f.push({ name:a.file || ".planforge/mcp-universal.json", data:connConfigJson(kunciAdaptor, opts) });
   if(starterAktif(opts)) for(const e of starterFileEntries()) f.push(e);
@@ -204,7 +228,7 @@ export function githubPushFiles(docs, opts){
      termasuk planFingerprint dan prd.overview.summary yang dibaca worker. */
   const planJson = planBundleJson(docs, issues);
   f.push({path:"plan.json", content:planJson});
-  for(const r of runnerBundle(docs, issues, opts.gates, {agent:cfg.targetAgent, starter:cfg.starter, workerSource:opts.workerSource}))
+  for(const r of runnerBundle(docs, issues, opts.gates, {agent:cfg.targetAgent, targetAgent:cfg.targetAgent, starter:cfg.starter, workerSource:opts.workerSource}))
     f.push({path:r.name, content:r.name === ".planforge/plan.json" ? planJson : r.data});
   return f;
 }

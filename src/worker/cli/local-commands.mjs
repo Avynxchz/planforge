@@ -8,7 +8,7 @@ import { SELF_DIR, SELF_FILE } from "../identity.mjs";
 export function commandInit(args){
   const dir = path.join(process.cwd(), DIR); fs.mkdirSync(dir, { recursive: true });
   if(!fs.existsSync(path.join(dir, F_GATES))) fs.writeFileSync(path.join(dir, F_GATES), JSON.stringify(defaultGates(args.agent || "agy"), null, 1));
-  console.log("ditulis " + dir + "\\" + F_GATES + " — sunting perintah `hard[].cmd` sesuai proyekmu, lalu taruh plan.json di sebelah.");
+  console.log("ditulis " + path.join(dir, F_GATES).replace(/\\/g, "/") + " — sunting perintah `hard[].cmd` sesuai proyekmu, lalu taruh plan.json di sebelah.");
   return 0;
 }
 

@@ -3,10 +3,11 @@
    sidik jari rencana di bundel ekspor (progres), validasi behavior task UI (kelulusan),
    dan panel Connect meminta verifikasi identitas. Meninggalkan receipt di disk. */
 import fs from "node:fs";
-import { spawn, spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { cariBrowser } from "../worker.mjs";
 import { cleanupTempDirs, makeTempDir, sweepStaleTempDirs } from "./temp-dirs.mjs";
+import { browserArgs, browserSpawnOptions, closeBrowser } from "./browser-process.mjs";
 
 const INDEX = fileURLToPath(new URL("../index.html", import.meta.url));
 const RECEIPT = fileURLToPath(new URL("../ui-receipt.json", import.meta.url));
@@ -17,8 +18,7 @@ const catat = (nama, lulus, detail)=>{ hasil.push({nama, lulus, detail}); consol
 const bin = cariBrowser();
 if(!bin){ console.log("browser tidak ditemukan — probe UI dilewati"); process.exit(1); }
 const tmp = makeTempDir("pf-browser-ui-");
-const browser = spawn(bin, ["--headless=new","--disable-gpu","--no-first-run","--no-default-browser-check",
-  "--remote-debugging-port=0","--remote-allow-origins=*","--user-data-dir="+tmp,"about:blank"], { stdio:["ignore","pipe","pipe"] });
+const browser = spawn(bin, browserArgs(tmp), browserSpawnOptions());
 browser.stdout.on("data", ()=>{});
 const errors = [];
 let ws = null, kirim = null;
@@ -80,6 +80,63 @@ try{
     return { siap:r.siap, skor:r.skor, label:r.label, error:r.error.slice(0,2) };
   })()`);
   catat("rubrik rencana contoh lolos gerbang kualitas", rubrik.siap===true, JSON.stringify(rubrik));
+  const skorRunner = await nilai(`(()=>{
+    const sd=state.docs, si=state.issues;
+    try{
+      state.docs={tasks:{tasks:[{id:"T-001",title:"Scaffold CLI untuk data tombol",files_or_areas:["src/utils.js"],
+        verification:"node --test test/utils.test.mjs",acceptance_criteria:["API mengembalikan status tombol"]}]}};
+      state.issues=["prd: requirements kosong"];
+      const r=rubrikRencana(state.docs,state.issues,starterAktif(readCfg()));
+      const txt=renderRunner();
+      return {skor:r.skor, error:r.error.length, runnerSkor:(txt.match(/Kualitas rencana:[\\s\\S]*?skor (\\d+)/)||[])[1]||""};
+    }finally{state.docs=sd;state.issues=si;}
+  })()`);
+  catat("skor rubrik dan tab Runner konsisten untuk task backend berkata tombol",
+    skorRunner.skor===80&&skorRunner.runnerSkor==="80",JSON.stringify(skorRunner));
+  const preset = await nilai(`(()=>{
+    const asli=localStorage.getItem(CFG_NAME), models=JSON.parse(JSON.stringify(state.stageModels||{}));
+    try{
+      document.querySelector('[data-preset="hemat"]').click();
+      const saved=JSON.parse(localStorage.getItem(CFG_NAME)||"{}");
+      return { tersimpan:STAGE_KEYS.every(s=>saved.stageModels&&saved.stageModels[s]===state.stageModels[s]),
+        model:Object.keys(saved.stageModels||{}).length };
+    }finally{
+      state.stageModels=models;
+      if(asli==null)localStorage.removeItem(CFG_NAME);else localStorage.setItem(CFG_NAME,asli);
+      renderStageModelInputs();
+    }
+  })()`);
+  catat("preset model terbaru tersimpan sebelum reload",preset.tersimpan&&preset.model>0,JSON.stringify(preset));
+  const timeoutError = await nilai(`(async()=>{
+    const asliFetch=window.fetch, asliTimer=window.setTimeout, provider=el("provider").value, base=el("baseUrl").value,
+      out=el("out").innerHTML, railHtml=el("rail").innerHTML;
+    let ms=0, pesan="";
+    try{
+      el("provider").value="custom"; el("baseUrl").value="https://nim.example/v1";
+      window.setTimeout=(fn,delay)=>{ms=delay;return asliTimer(fn,0);};
+      window.fetch=(url,opts)=>new Promise((resolve,reject)=>{
+        opts.signal.addEventListener("abort",()=>reject(new Error("aborted")),{once:true});
+      });
+      try{await callModel([],"prd",{provider:"custom",baseUrl:"https://nim.example/v1",stageModels:{prd:"uji/model"},seedMode:false},null);}
+      catch(e){pesan=String(e.message||e);}
+      showError(new Error("HTTP 402: provider menolak request"));
+      return {ms,pesan,customHint:el("out").textContent, hasOpenRouter:el("out").textContent.includes("OpenRouter")};
+    }finally{
+      window.fetch=asliFetch; window.setTimeout=asliTimer; el("provider").value=provider;el("baseUrl").value=base;
+      el("out").innerHTML=out;el("rail").innerHTML=railHtml;
+    }
+  })()`);
+  catat("timeout panggilan 240 detik dan bantuan 402 tidak menyebut OpenRouter untuk provider custom",
+    timeoutError.ms===240000&&/240 detik/.test(timeoutError.pesan)&&!timeoutError.hasOpenRouter,
+    JSON.stringify({ms:timeoutError.ms,pesan:timeoutError.pesan,hint:timeoutError.hasOpenRouter}));
+  const emptyPlan = await nilai(`(()=>{
+    const sd=state.docs, si=state.issues, out=el("out").innerHTML;
+    try{
+      state.docs={};state.issues=[];draw("issues");
+      return {teks:el("out").textContent, netral:!el("out").textContent.includes("masalah struktur yang menahan Connect")};
+    }finally{state.docs=sd;state.issues=si;el("out").innerHTML=out;}
+  })()`);
+  catat("tab Cek rencana menampilkan status netral ketika plan belum ada",emptyPlan.netral&&/Belum ada rencana/.test(emptyPlan.teks),emptyPlan.teks);
   const panduan = await nilai(`(()=>{ const b=document.querySelector('[data-view="panduan"]'); if(!b) return ""; b.click(); return document.getElementById("out").textContent; })()`);
   catat("tab Panduan memuat langkah bernomor + kode error 402/429", /Coba gratis dulu/.test(panduan) && /402/.test(panduan) && /429/.test(panduan), panduan.slice(0,80));
   const gerbang = await nilai(`(()=>{
@@ -100,6 +157,23 @@ try{
     return { beda, sama };
   })()`);
   catat("lampu 'perlu sinkron' nyala hanya saat sidik jari rencana berubah", sinkron.beda === true && sinkron.sama === false, JSON.stringify(sinkron));
+
+  const railReset = await nilai(`(()=>{
+    const sd=state.docs, si=state.issues, sa=state.autoFixes, sn=state.auditNote, railHtml=el("rail").innerHTML,
+      saved=localStorage.getItem(STATE_NAME), out=el("out").innerHTML;
+    try{
+      state.docs={};state.issues=[];state.autoFixes=[];state.auditNote=null;
+      setStage("audit","err","1 celah");
+      clearDocs();
+      const audit=el("rail").querySelector('[data-k="audit"]');
+      return {kelas:audit.className,catatan:audit.querySelector("span").textContent,reset:!audit.classList.contains("err")};
+    }finally{
+      state.docs=sd;state.issues=si;state.autoFixes=sa;state.auditNote=sn;
+      if(saved==null)localStorage.removeItem(STATE_NAME);else localStorage.setItem(STATE_NAME,saved);
+      el("rail").innerHTML=railHtml;el("out").innerHTML=out;
+    }
+  })()`);
+  catat("Hapus hasil mengosongkan indikator audit rail",railReset.reset,JSON.stringify(railReset));
 
   console.log("\n2) Isolasi kunci per provider (keamanan)");
   const kunci = await nilai(`(()=>{
@@ -669,10 +743,12 @@ try{
   kode = 1;
 }finally{
   try{ if(ws) ws.close(); }catch(e){}
-  try{ spawnSync("taskkill", ["/pid", String(browser.pid), "/T", "/F"], { encoding:"utf8", timeout:10000 }); }catch(e){}
-  await tidur(600);
-  try{ cleanupTempDirs(); }
-  finally{ sweepStaleTempDirs(); }
+  try{ await closeBrowser(browser); }
+  finally{
+    await tidur(600);
+    try{ cleanupTempDirs(); }
+    finally{ sweepStaleTempDirs(); }
+  }
 }
 const lulus = hasil.filter(h=>h.lulus).length, gagal = hasil.length - lulus;
 fs.writeFileSync(RECEIPT, JSON.stringify({ waktu:new Date().toISOString(), index:INDEX, lulus, gagal, errors, hasil }, null, 2));

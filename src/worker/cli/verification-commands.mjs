@@ -38,6 +38,10 @@ export function commandVerify(ctx, cwd, args){
     at:new Date().toISOString() };
   /* Failed measurements must downgrade the ledger; a mismatched commit alone must not. */
   const catatGagal = (kenapa)=>{
+    if(String(st.status || "belum mulai").trim().toLowerCase() === "belum mulai"){
+      console.log("\n" + id + " belum mulai: verify manual gagal, status ledger tidak diubah. Perbaiki task terlebih dahulu lalu jalankan `node worker.mjs run --only " + id + "` jika ingin mencobanya.");
+      return 1;
+    }
     if(isDone(st)) ctx.state.doneTasks = Math.max(0, ctx.state.doneTasks - 1);
     st.status = "gagal"; st.gate = gate;
     st.note = "verifikasi ulang tanpa agen: " + short(kenapa, 240);

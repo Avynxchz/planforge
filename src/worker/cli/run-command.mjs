@@ -3,7 +3,7 @@ import { mulaiSesi } from "../workflow/session.mjs";
 import { log } from "../ledger/log.mjs";
 import { budgetRencana, sisaBudget } from "../workflow/budget.mjs";
 import { taskMuat } from "../../shared/budget.mjs";
-import { nextTask, hasUnmetDeps } from "../ledger/tasks.mjs";
+import { nextTask, hasUnmetDeps, isFail } from "../ledger/tasks.mjs";
 import { short } from "../text.mjs";
 import { runOne } from "../workflow/run-one.mjs";
 import { saveCtx } from "../ledger/state.mjs";
@@ -37,7 +37,15 @@ export function commandRun(ctx, cwd, args, cap){
     } else {
       t = nextTask(ctx.plan, ctx.state);
       if(!t){ log(ctx, "tidak ada task tersisa yang siap dijalankan"); break; }
-      if(t.__blocked){ log(ctx, "mentok: " + t.id + " menunggu " + (t.needs||[]).join(", ") + " yang belum selesai/gagal — hentikan loop"); break; }
+      if(t.__blocked){
+        const gagal = (t.needs || []).filter(id=>isFail(ctx.state.tasks[id]));
+        if(gagal.length){
+          log(ctx, "mentok: " + t.id + " menunggu " + (t.needs||[]).join(", ") + " yang belum selesai/gagal — hentikan loop. Task gagal: "
+            + gagal.join(", ") + ". Untuk mencoba ulang, jalankan `node worker.mjs run --only " + gagal[0]
+            + "`; setelah selesai, jalankan `node worker.mjs run` untuk melanjutkan antrean.");
+        }else log(ctx, "mentok: " + t.id + " menunggu " + (t.needs||[]).join(", ") + " yang belum selesai/gagal — hentikan loop");
+        break;
+      }
       const unmet = hasUnmetDeps(ctx.plan, ctx.state, t);
       if(unmet.length){ ctx.state.tasks[t.id].note = "menunggu " + unmet.join(", "); log(ctx, "lewati " + t.id + " (belum selesai: " + unmet.join(", ") + ")"); ctx.state.consecFails = (lim.maxConsecutiveFails||3); break; }
     }

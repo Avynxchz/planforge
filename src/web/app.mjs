@@ -114,7 +114,7 @@ el("presets").addEventListener("click", (e)=>{
     miss.push(id); return null;
   };
   for(const s of STAGE_KEYS){ const id = pick(p[s]); if(id) state.stageModels[s] = id; }
-  persist(); renderStageModelInputs();
+  renderStageModelInputs(); persist();
   if(state.pickerStage) renderModelList();
   if(miss.length) el("modelStat").textContent = "preset dipasang — tidak ada padanan untuk " + miss.join(", ");
 });

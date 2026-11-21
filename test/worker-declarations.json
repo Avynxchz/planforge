@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "baselineSha256": "938434297b6d4c11a0976ff3c3e848b0fb631267f1cca4ba1ce8d8fce95799b3",
+  "baselineSha256": "7e7ea45c5ab283c7513145a316132885fc9ad5590e645ce69525097e669b1427",
   "normalization": "Acorn AST without source offsets, raw literal spelling or comments. Export wrappers are compared separately by the captured public characterization.",
   "declarations": [
     {
@@ -396,7 +396,7 @@
         "taskUi"
       ],
       "kind": "function",
-      "sha256": "fb804612d63799eaa1405d17a1f265a45b2af3f4a801d74e77481eae6cab0e1d"
+      "sha256": "968461b250aa556dd89e576b45c39dcdb7b99ad74b7ee01d14f16668eec39f22"
     },
     {
       "names": [
@@ -690,7 +690,7 @@
         "gitCommit"
       ],
       "kind": "function",
-      "sha256": "3d181abfcab4c73d2fde1f84169289f7fa78652d52e5f078b851e788423cd414"
+      "sha256": "3baaefc1d02c67f0071210c02176c1725ab4440c4329871402016772910f0b9d"
     },
     {
       "names": [
@@ -963,7 +963,7 @@
         "main"
       ],
       "kind": "function",
-      "sha256": "705bb9b77941bf8adb354e67e5053b809fff097b17ca050828419235257986cd"
+      "sha256": "ce03d42f86b0aed5272e855664d1a992f13742600e2beaa791b00409d66b0d10"
     },
     {
       "names": [
@@ -1001,7 +1001,7 @@
         "args"
       ],
       "mode": "branch",
-      "bodySha256": "f1b467201b0aae2e2d23cdf5c8fddb423b7d83ef5087275a6e7ddb2daeb1bcf9"
+      "bodySha256": "9cc188dd61adebb47683bc3a8910e726686939b8a4c03e9145fde026e380a2fc"
     },
     {
       "name": "commandBrowser",
@@ -1066,7 +1066,7 @@
         "args"
       ],
       "mode": "branch",
-      "bodySha256": "aa7edb878c3379be686e74c48659b551fecec9528dd46b9b752bcc4d4cac938d"
+      "bodySha256": "ce26de10f91ce173cce9c18e3f725d8bca6393126de611f6cdc67f47855cfafb"
     },
     {
       "name": "commandRefresh",
@@ -1104,7 +1104,7 @@
         "args"
       ],
       "mode": "branch",
-      "bodySha256": "6b06e5498bfce5ac64ccd8632e37c4f235d59e79c781a7a764a84c6458799eab"
+      "bodySha256": "7082691adbfe20e9523e20fe20eba7c7fea7d227cf114faffe4ffeed0d418cf8"
     },
     {
       "name": "commandAudit",
@@ -1124,7 +1124,7 @@
         "cap"
       ],
       "mode": "tail",
-      "bodySha256": "05627bb1a3a67f33cef7c261c1febb0a86213700b1b6cd474a9d7f662937d81c"
+      "bodySha256": "e98a8bb342c49be30849b3f393a40190118d7ef26d78cffb0ca31cfd5e7a98db"
     }
   ],
   "entryGuardSha256": "c799a708e540bc972e5bcb3b3f77ff075bd8de9fe9d6f9c0703ee95bc26577b7"
