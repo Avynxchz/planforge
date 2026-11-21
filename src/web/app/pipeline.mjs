@@ -6,6 +6,8 @@ import { DEMO } from "../core/demo.mjs";
 import { extractJson } from "../core/plan-normalize.mjs";
 import { applyImprovingPatches, mergeTaskChunk, taskChunks, terapkanJawabanClarify } from "../core/plan-ops.mjs";
 import { validatePlan } from "../core/plan-rules.mjs";
+import { masalahStrukturRencana } from "../core/plan-readiness.mjs";
+import { lintPlanVerifications } from "../core/verification-lint.mjs";
 import { STAGES } from "../core/plan-schema.mjs";
 import { buildStageMessages } from "../core/prompts.mjs";
 import { starterAktif } from "../core/starter.mjs";
@@ -23,10 +25,10 @@ export async function tambalNow(btn){
   try{
     const total = await tambalKonvergen(cfg);
     state.auditNote = "Penambalan " + new Date().toLocaleTimeString("id-ID") + ": " + total.applied + " patch diterapkan dalam "
-      + total.rounds + " ronde, celah " + total.beforeProblems + " → " + total.afterProblems + "."
+      + total.rounds + " ronde, celah " + total.beforeProblems + " → " + state.docs.issues.length + "."
       + (total.skipped.length ? " " + total.skipped.slice(0,3).join("; ") + "." : "")
-      + (state.issues.length ? " Sisanya biasanya butuh koreksi manual di tab PRD/Tasks — atau jalankan ulang tahap roadmap/tasks dengan preset yang lebih mahal." : " Sekarang bersih.");
-    setStage("audit", state.issues.length ? "err" : "done", "tambal " + total.applied + ", sisa " + state.issues.length);
+      + (state.docs.issues.length ? " Sisanya biasanya butuh koreksi manual di tab PRD/Tasks — atau jalankan ulang tahap roadmap/tasks dengan preset yang lebih mahal." : " Sekarang bersih.");
+    setStage("audit", state.docs.issues.length ? "err" : "done", "tambal " + total.applied + ", sisa " + state.docs.issues.length);
   }catch(e){
     if(e && e.name === "AbortError"){ setStage("audit","err","dibatalkan"); state.auditNote = "Penambalan dibatalkan. Hasil sebelum tambal tetap tersimpan."; }
     else { setStage("audit","err","gagal"); state.auditNote = "Penambalan gagal: " + String(e && e.message || e).slice(0,200); }
@@ -39,12 +41,11 @@ export async function tambalNow(btn){
 
 export async function tambalKonvergen(cfg){
   const starter = starterAktif(cfg);
-  const initial = applyImprovingPatches(state.docs, {patches:[]}, starter);
+  const initial = applyImprovingPatches(state.docs, {patches:[]}, {starter, extraIssues:lintPlanVerifications});
   const total = {beforeProblems:initial.beforeProblems, afterProblems:initial.beforeProblems, applied:0, rounds:0, skipped:[]};
   while(total.afterProblems > 0){
-    state.docs.issues = state.issues;
     const patch = await runStage("audit", cfg);
-    const result = applyImprovingPatches(state.docs, patch, starter);
+    const result = applyImprovingPatches(state.docs, patch, {starter, extraIssues:lintPlanVerifications});
     total.skipped.push(...result.skipped);
     if(!result.accepted) break;
     state.docs.prd = result.prd; state.docs.roadmap = result.roadmap; state.docs.tasks = result.tasks;
@@ -53,6 +54,11 @@ export async function tambalKonvergen(cfg){
     total.afterProblems = result.afterProblems;
     saveDocs();
   }
+  const validation = validatePlan(state.docs.prd, state.docs.roadmap, state.docs.tasks);
+  const structure = masalahStrukturRencana(state.docs, starter);
+  const lint = lintPlanVerifications(state.docs);
+  state.issues = validation.concat(lint);
+  state.docs.issues = validation.concat(structure, lint);
   return total;
 }
 
@@ -133,6 +139,13 @@ export function recordUsage(stage, model, usage){
 }
 
 export async function runStage(stage, cfg, focus){
+  if(stage === "audit"){
+    const validation = validatePlan(state.docs.prd, state.docs.roadmap, state.docs.tasks);
+    const structure = masalahStrukturRencana(state.docs, starterAktif(cfg));
+    const lint = lintPlanVerifications(state.docs);
+    state.issues = validation.concat(lint);
+    state.docs.issues = validation.concat(structure, lint);
+  }
   setStage(stage, "run", focus ? (focus.label || "mikir…") : "mikir…");
   mulaiJam(stage);
   try{
@@ -378,30 +391,37 @@ export async function runAll(force){
     }
     if(ran){ state.ideaFp = ideaFp(); state.genBy = cfg.provider; }  // rekam ide+provider hanya kalau ada tahap yang benar-benar dibuat ulang
     // rapikan dulu (gratis, deterministik) — baru validator, supaya model tidak dibayar untuk kerjaan string
-    state.issues = validatePlan(state.docs.prd, state.docs.roadmap, state.docs.tasks);
-    const beforeIssues = state.issues.length;
     const nz = tidyPlan();
+    const validation = validatePlan(state.docs.prd, state.docs.roadmap, state.docs.tasks);
+    const structure = masalahStrukturRencana(state.docs, starterAktif(cfg));
+    const lint = lintPlanVerifications(state.docs);
+    state.issues = validation.concat(lint);
+    state.docs.issues = validation.concat(structure, lint);
+    const beforeIssues = state.docs.issues.length;
     if(nz.fixes.length) state.auditNote = "Rapikan otomatis: " + nz.fixes.length + " koreksi bentuk (ID, nama fitur, status task) — celah " + beforeIssues + " → " + state.issues.length + ".";
-    if(state.issues.length && cfg.provider !== "demo" && el("autoTambal").checked){
-      setStage("audit", "run", state.issues.length + " celah");
-      state.docs.issues = state.issues;
+    if(state.docs.issues.length && cfg.provider !== "demo" && el("autoTambal").checked){
+      setStage("audit", "run", state.docs.issues.length + " celah");
       const total = await tambalKonvergen(cfg);
       tidyPlan();
+      const afterValidation = validatePlan(state.docs.prd, state.docs.roadmap, state.docs.tasks);
+      const afterStructure = masalahStrukturRencana(state.docs, starterAktif(cfg));
+      const afterLint = lintPlanVerifications(state.docs);
+      state.issues = afterValidation.concat(afterLint);
+      state.docs.issues = afterValidation.concat(afterStructure, afterLint);
       state.auditNote = (nz.fixes.length ? state.auditNote + " " : "") + "Cek rencana: " + total.applied + " patch diterapkan dalam "
-        + total.rounds + " ronde, celah " + total.beforeProblems + " → " + state.issues.length + "."
+        + total.rounds + " ronde, celah " + total.beforeProblems + " → " + state.docs.issues.length + "."
         + (total.skipped.length ? " " + total.skipped.slice(0,3).join("; ") + "." : "")
-        + (state.issues.length ? " Sisanya perlu dilihat manual di tab Cek rencana." : " Sekarang bersih.");
-      setStage("audit", total.applied ? "done" : "err", "tambal " + total.applied + ", sisa " + state.issues.length);
+        + (state.docs.issues.length ? " Sisanya perlu dilihat manual di tab Cek rencana." : " Sekarang bersih.");
+      setStage("audit", state.docs.issues.length ? "err" : "done", "tambal " + total.applied + ", sisa " + state.docs.issues.length);
     } else {
-      setStage("audit", state.issues.length ? "err" : "done", state.issues.length
-        ? state.issues.length + " celah — klik 'Minta AI tambal' di tab Runner/Cek rencana (otomatis dimatikan)"
+      setStage("audit", state.docs.issues.length ? "err" : "done", state.docs.issues.length
+        ? state.docs.issues.length + " celah — klik 'Minta AI tambal' di tab Runner/Cek rencana (otomatis dimatikan)"
         : (nz.fixes.length ? "rapi lewat rapikan otomatis" : "bersih"));
     }
-    state.docs.issues = state.issues;
     saveDocs();
     drawActions();
     el("costStat").textContent = (reused ? reused + " tahap dipakai lagi · " : "") + ran + " tahap dijalankan";
-    showView(state.issues.length ? "issues" : "tasks");   // tab ikut berpindah, tidak cuma isinya
+    showView(state.docs.issues.length ? "issues" : "tasks");   // tab ikut berpindah, tidak cuma isinya
   }catch(e){
     saveDocs();
     if(e.name === "AbortError"){

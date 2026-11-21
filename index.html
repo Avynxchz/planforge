@@ -530,6 +530,7 @@ function buildStageMessages(stage, cfg, docs, focus) {
       "Tiap task: title berupa kalimat kerja pendek (mulai 'Buat', 'Ubah', 'Sambungkan'), feature = nama fitur persis dari prd.features, status 'belum mulai', priority salah satu dari utama/penting/tambahan. utama = inti MVP yang bikin produk berguna (wajib ada); penting = memperkuat alur utama tapi bukan penentu hidup-mati; tambahan = pelengkap/nice-to-have yang boleh ditunda. Sebar tier dengan jujur: jangan menandai semua task utama — hanya yang benar-benar inti saja utama, sisanya penting atau tambahan.",
       "Jaga keluaran TETAP RINGKAS supaya tidak terpotong di model kecil: description 1-2 kalimat, acceptance_criteria 1-3 butir, agent_hint satu kalimat pendek, files_or_areas yang penting saja. behavior.checks cukup 2-4 check yang benar-benar mengukur angka; jangan menumpuk check atau mengulang penjelasan panjang di tiap task.",
       "Tiap task: satu perubahan perilaku, files_or_areas konkret, depends_on memakai ID task yang sudah ada di daftar ini dan bernomor lebih kecil.",
+      "KONTRAK SERVER: server.js wajib mengekspor app/server dan hanya memanggil .listen(...) di dalam `if (require.main === module)`. Verification boleh memuat `const app = require('./server.js'); const srv = app.listen(0, ...)` lalu wajib menutupnya dengan `srv.close()`; jangan auto-listen saat require karena `.listen(0)` kedua akan gagal dengan ERR_SERVER_ALREADY_LISTEN.",
       "verification WAJIB diisi pada SETIAP task: satu perintah shell non-kosong yang benar-benar bisa dijalankan di terminal dan menghasilkan exit code (mis. `python -m pytest -q tests/test_x.py`, `npm test`, `node scripts/cek.js`). Worker menjalankannya ulang sendiri sesudah agen selesai: exit code bukan 0 = task GAGAL.",
       "Jika ide proyek menyebut web dan ekspor, task list wajib mencakup endpoint ekspor web yang dapat diakses melalui HTTP serta verifikasi yang menguji endpoint itu dan hasil unduhannya; jangan hanya merencanakan ekspor lokal.",
       "Untuk tes, jalankan perintah tes langsung dan biarkan exit code menjadi bukti (mis. `node --test test/*.test.mjs`). Jangan grep output seperti `passing`, `passed`, atau `pass N` yang berbeda antarversi Node; jangan membuat task cek versi Node memakai regex BRE seperti `grep -q 'v(18|20|22)'`.",
@@ -538,6 +539,8 @@ function buildStageMessages(stage, cfg, docs, focus) {
       'SKEMA JSON behavior: {"url":"http://localhost:3000/","checks":[{"type":"text","selector":"h1","contains":"Judul"}]}. Untuk check type "text", field contains, matches, atau equals wajib dipakai; jangan pernah menulis field expected. Check lain hanya memakai field yang tercantum dalam contoh/skema behavior di bawah.',
       `behavior.checks harus mengukur angka yang bisa salah, bukan kehadiran file. Contoh bagus: {type:'canvasNotBlank',selector:'#grafik',minPixels:500} (grafik benar-benar tergambar), {type:'click',selector:"input[value='60']"} lalu {type:'text',selector:'#judul',contains:'60'} (judul ikut filter, bukan basi), {type:'request',urlContains:'/api?window=60'} (fetch benar-benar terkirim), {type:'url',contains:'window=60'} (alamat halaman ikut berubah, bukan cuma isinya), {type:'noConsoleError'} (library yang dipakai benar-benar dimuat), {type:'noHorizontalOverflow'} dengan viewport 360x760.`,
       "behavior.url harus alamat http(s) yang bisa dibuka. Kalau butuh server lokal, isi behavior.server.cmd supaya worker menyalakannya sendiri lalu mematikannya lagi — jangan mengandalkan server yang kebetulan hidup. Selector harus cocok dengan markup yang task itu sendiri buat.",
+      "Urutan behavior: task template/komponen yang dibuat sebelum route HTTP tersedia tidak boleh memakai URL `http://localhost:...`; gunakan bukti lokal yang tersedia atau tambahkan dependensi ke task route. Jika behavior menguji kondisi khusus seperti `.out-of-stock` atau `.alert-warning`, data awal atau task sebelumnya wajib menyiapkan kondisi itu.",
+      "ANTI-VAKUUM: jangan pakai newline mentah di dalam kutipan verification, `node --test -e`/`node --test --eval`, `puppeteer`, `playwright`, atau `node-fetch` yang belum terpasang, stub `http.createServer` untuk server aplikasi, maupun `ejs.render('<string>')`; baca template asli dari file dan jalankan assertion yang menghasilkan exit nonzero saat gagal.",
       "Task backend murni (skrip impor, perhitungan, migrasi DB, endpoint tanpa tampilan) TIDAK perlu behavior. Jangan mengarang check browser untuk task yang tidak punya halaman.",
       "DILARANG menutup perintah dengan `; echo OK` atau `|| echo Gagal` (echo selalu exit 0, gerbangnya jadi tidak bisa gagal) dan dilarang memakai biner yang belum tentu terpasang. Rangkai dengan `&&`.",
       "Proyek di Windows: cmd.exe TIDAK mengenal kutip satu. `grep -Eq 'a|b'` dipecah jadi dua perintah karena `|` tetap pipe sungguhan — bisa menjalankan perintah lain yang menunggu input. Bungkus argumen dengan kutip dua (`grep -Eq \"a|b\"`) kalau di dalamnya ada | & < >.",
@@ -566,6 +569,9 @@ function buildStageMessages(stage, cfg, docs, focus) {
       JSON.stringify(docs.tasks, null, 1),
       ALLOW("feature = " + JSON.stringify(featNames) + "\nrequirement_refs = " + JSON.stringify(reqList) + "\nmilestone_ref = " + JSON.stringify(mList) + "\ntask id yang sudah ada = " + JSON.stringify(ids(docs.tasks && docs.tasks.tasks || []))),
       "Perbaiki HANYA dengan menambal masalah di atas. Jangan menulis ulang isi yang sudah benar.",
+      "KONTRAK SERVER: server.js mengekspor app/server; satu-satunya .listen(...) ada di dalam `if (require.main === module)`. Verification mengimpor `const app = require('./server.js')`, menyalakan `const srv = app.listen(0, ...)`, lalu selalu menutup `srv.close()`; jangan auto-listen saat require (akan menyebabkan ERR_SERVER_ALREADY_LISTEN).",
+      "ANTI-VAKUUM: hapus newline mentah di dalam kutipan, `node --test -e`/`node --test --eval`, dependensi `puppeteer`/`playwright`/`node-fetch` yang belum terpasang, stub `http.createServer` pada server aplikasi, dan `ejs.render('<string>')`; template harus dibaca dari file asli dan kegagalan wajib membuat exit nonzero/assert gagal.",
+      "Urutan behavior: komponen/template sebelum route HTTP tersedia tidak boleh mengecek URL localhost. Kondisi khusus seperti `.out-of-stock` atau `.alert-warning` harus disiapkan data awal atau task sebelumnya sebelum diperiksa.",
       "Untuk masalah 'target non-fungsional belum terukur', buat patch update di document prd, collection non_functional dengan target berisi angka.",
       "Untuk masalah 'requirement mvp belum dicakup', tambahkan patch update pada task yang paling dekat (requirement_refs-nya) atau patch add task baru dengan ID T- berikutnya yang belum dipakai.",
       "Untuk masalah 'task UI tanpa behavior' atau 'behavior tidak bisa diukur', kirim patch update di document tasks, collection tasks, target_id task itu, object berisi behavior lengkap (url + checks yang mengukur angka). Jangan menurunkan task-nya jadi non-UI dan jangan menghapus acceptance_criteria-nya supaya lolos.",
@@ -1252,16 +1258,17 @@ function applyPatches(docs, patch, options = null) {
   return res;
 }
 function applyImprovingPatches(docs, patch, starter) {
+  const options = starter && typeof starter === "object" ? starter : { starter: !!starter };
   const measurePlan = (plan, isStarter) => {
     const normalized = normalizePlan(plan.prd, plan.roadmap, plan.tasks);
     const candidate = Object.assign({}, plan, normalized);
-    const issues = validatePlan(candidate.prd, candidate.roadmap, candidate.tasks);
+    const issues = validatePlan(candidate.prd, candidate.roadmap, candidate.tasks).concat(typeof options.extraIssues === "function" ? options.extraIssues(candidate) : []);
     const rubric = rubrikRencana(candidate, issues, isStarter);
     return { docs: candidate, issues, problems: issues.length + masalahStrukturRencana(candidate, isStarter).length, score: rubric.skor };
   };
-  const before = measurePlan(docs, starter);
-  const applied = applyPatches(before.docs, patch, { starter });
-  const after = measurePlan(applied, starter);
+  const before = measurePlan(docs, options.starter);
+  const applied = applyPatches(before.docs, patch, { starter: options.starter });
+  const after = measurePlan(applied, options.starter);
   const accepted = applied.applied > 0 && after.problems < before.problems && after.score >= before.score;
   return {
     accepted,
@@ -1556,6 +1563,7 @@ function renderMarkdown(kind, d, ctx) {
   }
   if (kind === "issues") {
     const list = Array.isArray(d) ? d : [];
+    const issueText = (item) => item && typeof item === "object" ? String(item.message || JSON.stringify(item)) : String(item);
     const cx = ctx || {};
     if (cx.empty) return "<h1>Cek konsistensi rencana</h1><p class='hint'>Belum ada rencana untuk diperiksa. Jalankan pipeline dulu.</p>";
     const struktur = Array.isArray(cx.struktur) ? cx.struktur : [];
@@ -1597,9 +1605,10 @@ function renderMarkdown(kind, d, ctx) {
     ];
     const buckets = GROUPS.map((g) => ({ g, items: [] }));
     const other = { g: { t: "Lainnya", w: "Masih perlu dilihat manual." }, items: [] };
-    for (const i of list) {
-      const b = buckets.find((b2) => b2.g.re.test(i));
-      (b ? b.items : other.items).push(i);
+    for (const item of list) {
+      const text = issueText(item);
+      const b = buckets.find((b2) => b2.g.re.test(text));
+      (b ? b.items : other.items).push(text);
     }
     const note = cx.auditNote ? "<p class='hint'>" + esc(cx.auditNote) + "</p>" : "";
     let out = "<h1>Cek konsistensi rencana</h1><p class='warn'><b>Belum siap dieksekusi: " + list.length + " celah integritas.</b> Ini bukan error aplikasi dan belum ada kode yang disentuh — yang diperiksa adalah konsistensi PRD ↔ roadmap ↔ task list.</p><p class='hint'>Model murah sering membuat ID dan nama fitur sendiri yang tidak ada di dokumen hulunya. Mulai dari <b>Rapikan ID &amp; nama fitur</b> (gratis, tanpa AI); kalau masih sisa, baru minta model menambalnya.</p><div class='row tight' style='margin:10px 0 4px'><button class='sm' data-act='tidy'>Rapikan ID &amp; nama fitur</button><button class='sm' data-act='tambal'>Minta model tambal sisanya</button><button class='sm' data-act='tasks'>Lihat task list</button></div>" + note + strukturBlock;
@@ -2753,9 +2762,101 @@ function masalahStrukturRencana(docs, starter) {
   return out;
 }
 function rubrikRencana(docs, issues, starter) {
-  const error = (Array.isArray(issues) ? issues : []).map((x) => String(x)).concat(masalahStrukturRencana(docs, starter));
+  const error = (Array.isArray(issues) ? issues : []).map((x) => x && typeof x === "object" ? String(x.message || JSON.stringify(x)) : String(x)).concat(masalahStrukturRencana(docs, starter));
   const skor = Math.max(0, 100 - error.length * 20);
   return { siap: error.length === 0, skor, error, warn: saranLingkungan(starter), label: error.length ? "Perlu diperbaiki" : "Siap dikirim (lingkungan belum diverifikasi)" };
+}
+function escapeNewlinesInQuotes(command) {
+  const source = String(command == null ? "" : command);
+  let out = "", quote = null, escaped = false;
+  for (let i = 0; i < source.length; i++) {
+    const ch = source[i];
+    if ((ch === "\n" || ch === "\r") && quote) {
+      if (ch === "\r" && source[i + 1] === "\n") i++;
+      out += "\\n";
+      escaped = false;
+      continue;
+    }
+    out += ch;
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (ch === "\\") {
+      escaped = true;
+      continue;
+    }
+    if (quote) {
+      if (ch === quote) quote = null;
+    } else if (ch === "'" || ch === '"') quote = ch;
+  }
+  return out;
+}
+function sanitizeVerificationCommand(command) {
+  return escapeNewlinesInQuotes(command).replace(/\bnode(?:\.exe)?\s+--test\s+(?:-e|--eval)\b/gi, (match) => match.replace(/\s+--test(?=\s)/i, ""));
+}
+function sanitizeTaskBehavior(task) {
+  const largeTextSelectors = /^(?:body|html|main|#app|#root|\.container)$/i;
+  const fileExtensionMatch = /\\?\.\\?\(\??(?:[^)]*(?:json|csv|pdf|xlsx|txt))/i;
+  const isFileLinkSelector = (selector) => /^a(?:\[[^\]]*href[^\]]*\])/i.test(String(selector || "").trim());
+  const checks = task && task.behavior && Array.isArray(task.behavior.checks) ? task.behavior.checks : [];
+  const fixes = [];
+  for (const check of checks) {
+    if (!check || typeof check !== "object") continue;
+    const selector = String(check.selector || "").trim();
+    if (check.type === "text" && check.equals != null && largeTextSelectors.test(selector)) {
+      check.contains = check.equals;
+      delete check.equals;
+      fixes.push((task.id || "?") + ":text.equals->contains");
+    }
+    if (check.type === "text" && isFileLinkSelector(selector) && check.matches != null && fileExtensionMatch.test(String(check.matches)) && !check.contains) {
+      delete check.matches;
+      delete check.equals;
+      check.type = "visible";
+      fixes.push((task.id || "?") + ":text.matches->visible");
+    }
+  }
+  return fixes;
+}
+function sanitizePlanChecks(docs) {
+  const tasks = docs && docs.tasks && Array.isArray(docs.tasks.tasks) ? docs.tasks.tasks : [];
+  const fixes = [];
+  for (const task of tasks) {
+    if (!task || typeof task !== "object") continue;
+    if (task.verification != null) {
+      const clean = sanitizeVerificationCommand(task.verification);
+      if (clean !== task.verification) {
+        task.verification = clean;
+        fixes.push((task.id || "?") + ":verification disanitasi");
+      }
+    }
+    fixes.push(...sanitizeTaskBehavior(task));
+  }
+  return fixes;
+}
+function lintPlanVerifications(docs) {
+  const issue = (task, code, message) => ({ stage: "audit", taskId: task.id || "?", code, message });
+  const tasks = docs && docs.tasks && Array.isArray(docs.tasks.tasks) ? docs.tasks.tasks : [];
+  const issues = [];
+  for (const task of tasks) {
+    const verification = String(task && task.verification || "");
+    const files = Array.isArray(task && task.files_or_areas) ? task.files_or_areas.map(String) : [];
+    for (const line of verification.split(/\r?\n/)) {
+      if (/\brequire\s*\(\s*(['"])(?:puppeteer|playwright)\1\s*\)|\bimport\s*\(\s*(['"])node-fetch\2\s*\)/i.test(line))
+        issues.push(issue(task, "unavailable-dependency", "verification memakai puppeteer/playwright/node-fetch yang belum terpasang."));
+      if (/\b(?:kill\s+%1|pkill\s+-f)\b/i.test(line))
+        issues.push(issue(task, "unsafe-server-kill", "verification memakai pola kill %1 atau pkill -f; gunakan proses server yang dimiliki task dan tutup secara eksplisit."));
+      if (/\b(?:localhost|127\.0\.0\.1):\d+\b/i.test(line) && !/\.listen\s*\(/i.test(line))
+        issues.push(issue(task, "dangling-localhost", "verification mengakses localhost tanpa menyalakan server lewat .listen(...) pada perintah yang sama."));
+      if (/\bejs\.render\s*\(\s*(['"`])\s*</i.test(line) && !/\bfs\.readFileSync\s*\(/i.test(line))
+        issues.push(issue(task, "hardcoded-ejs-template", "verification merender template HTML literal dengan ejs.render; baca file template asli memakai fs.readFileSync."));
+      if (/\bhttp\.createServer\s*\(/i.test(line) && files.some((file) => /(?:^|[\\/])(?:server\.js|app\.js|[^\\/]*route[^\\/]*)(?:$|[\\/])/i.test(file)))
+        issues.push(issue(task, "stub-application-server", "verification membuat stub http.createServer pada task yang menyentuh server/route aplikasi."));
+      if (/\bconsole\.log\s*\([^;\n]{0,300}\?[^;\n]{0,180}\bPASS\b[^;\n]{0,180}:[^;\n]{0,180}\bFAIL\b/i.test(line) && !/\bprocess\.exit\s*\(\s*1\s*\)|\bassert(?:\.|\s*\()/i.test(verification))
+        issues.push(issue(task, "always-zero-verification", "verification hanya mencetak PASS/FAIL tanpa process.exit(1) atau assert, sehingga hasil gagal tetap bisa exit 0."));
+    }
+  }
+  return issues;
 }
 
 /* ===================== CORE-END ===================== */
@@ -3365,6 +3466,9 @@ function tidyPlan(note) {
     state.docs.tasks = nz.tasks;
     state.autoFixes = (state.autoFixes || []).concat(nz.fixes);
   }
+  normalisasiAliasBehavior(state.docs);
+  const checkFixes = sanitizePlanChecks(state.docs);
+  if (checkFixes.length) state.autoFixes = (state.autoFixes || []).concat(checkFixes);
   state.issues = validatePlan(state.docs.prd, state.docs.roadmap, state.docs.tasks);
   state.docs.issues = state.issues;
   if (note) state.auditNote = note;
@@ -3546,8 +3650,8 @@ async function tambalNow(btn) {
   pushHistory("sebelum tambal manual");
   try {
     const total = await tambalKonvergen(cfg);
-    state.auditNote = "Penambalan " + (/* @__PURE__ */ new Date()).toLocaleTimeString("id-ID") + ": " + total.applied + " patch diterapkan dalam " + total.rounds + " ronde, celah " + total.beforeProblems + " → " + total.afterProblems + "." + (total.skipped.length ? " " + total.skipped.slice(0, 3).join("; ") + "." : "") + (state.issues.length ? " Sisanya biasanya butuh koreksi manual di tab PRD/Tasks — atau jalankan ulang tahap roadmap/tasks dengan preset yang lebih mahal." : " Sekarang bersih.");
-    setStage("audit", state.issues.length ? "err" : "done", "tambal " + total.applied + ", sisa " + state.issues.length);
+    state.auditNote = "Penambalan " + (/* @__PURE__ */ new Date()).toLocaleTimeString("id-ID") + ": " + total.applied + " patch diterapkan dalam " + total.rounds + " ronde, celah " + total.beforeProblems + " → " + state.docs.issues.length + "." + (total.skipped.length ? " " + total.skipped.slice(0, 3).join("; ") + "." : "") + (state.docs.issues.length ? " Sisanya biasanya butuh koreksi manual di tab PRD/Tasks — atau jalankan ulang tahap roadmap/tasks dengan preset yang lebih mahal." : " Sekarang bersih.");
+    setStage("audit", state.docs.issues.length ? "err" : "done", "tambal " + total.applied + ", sisa " + state.docs.issues.length);
   } catch (e) {
     if (e && e.name === "AbortError") {
       setStage("audit", "err", "dibatalkan");
@@ -3567,12 +3671,11 @@ async function tambalNow(btn) {
 }
 async function tambalKonvergen(cfg) {
   const starter = starterAktif(cfg);
-  const initial = applyImprovingPatches(state.docs, { patches: [] }, starter);
+  const initial = applyImprovingPatches(state.docs, { patches: [] }, { starter, extraIssues: lintPlanVerifications });
   const total = { beforeProblems: initial.beforeProblems, afterProblems: initial.beforeProblems, applied: 0, rounds: 0, skipped: [] };
   while (total.afterProblems > 0) {
-    state.docs.issues = state.issues;
     const patch = await runStage("audit", cfg);
-    const result = applyImprovingPatches(state.docs, patch, starter);
+    const result = applyImprovingPatches(state.docs, patch, { starter, extraIssues: lintPlanVerifications });
     total.skipped.push(...result.skipped);
     if (!result.accepted) break;
     state.docs.prd = result.prd;
@@ -3585,6 +3688,11 @@ async function tambalKonvergen(cfg) {
     total.afterProblems = result.afterProblems;
     saveDocs();
   }
+  const validation = validatePlan(state.docs.prd, state.docs.roadmap, state.docs.tasks);
+  const structure = masalahStrukturRencana(state.docs, starter);
+  const lint = lintPlanVerifications(state.docs);
+  state.issues = validation.concat(lint);
+  state.docs.issues = validation.concat(structure, lint);
   return total;
 }
 function drawActions() {
@@ -3837,7 +3945,7 @@ function renderRunner() {
   const rubrik = rubrikRencana(d, state.issues, starterAktif(readCfg()));
   h.push("<p class='" + (rubrik.siap ? "ok" : "warn") + "'><b>Kualitas rencana: " + esc(rubrik.label) + " (skor " + rubrik.skor + ")</b>" + (rubrik.siap ? " — aman dikirim ke folder proyek." : " — " + esc(rubrik.error.slice(0, 3).join(" · ")) + (rubrik.error.length > 3 ? " (+" + (rubrik.error.length - 3) + " lagi)" : "") + ". Connect ditahan sampai beres.") + "</p>");
   if (rubrik.warn.length) h.push("<details class='environment-hints'><summary>Persiapan lingkungan - tidak menahan Connect</summary><ul>" + rubrik.warn.map((s) => "<li>" + esc(s) + "</li>").join("") + "</ul></details>");
-  h.push("<div class='bar'><button class='sm' data-act='gBetulkanAlias'>Betulkan alat ukur yang jelas</button>" + (state.issues.length ? "<button class='sm' data-act='tambal'>Minta AI tambal (" + state.issues.length + " celah)</button>" : "") + (perluSinkron() ? "<button class='sm go' data-act='cSinkron'>Sinkron ke folder (1 klik)</button>" : "") + "</div>");
+  h.push("<div class='bar'><button class='sm' data-act='gBetulkanAlias'>Betulkan alat ukur yang jelas</button>" + (!rubrik.siap ? "<button class='sm' data-act='tambal'>Minta AI tambal (" + rubrik.error.length + " celah)</button>" : "") + (perluSinkron() ? "<button class='sm go' data-act='cSinkron'>Sinkron ke folder (1 klik)</button>" : "") + "</div>");
   if (perluSinkron()) h.push("<p class='warn'>Rencana berubah sejak Connect terakhir" + (state.lastConnect ? " ke <code>" + esc(state.lastConnect.path) + "</code>" : "") + ". Klik <b>Sinkron ke folder</b> — tidak perlu pilih folder, ketik path, atau daftar ulang connector.</p>");
   if (!ts.length) h.push("<p class='warn'>Belum ada task. Jalankan pipeline dulu di kiri — paket worker tetap bisa diunduh, tapi isinya kosong.</p>");
   h.push("<div id='pf-connect'>" + connectPanel() + "</div>");
@@ -4049,6 +4157,7 @@ async function connectSinkron() {
     draw("runner");
     return;
   }
+  tidyPlan();
   const audit = rubrikRencana(state.docs, state.issues, starterAktif(readCfg()));
   if (!audit.siap) {
     state.runnerNote = "Sinkron DITAHAN — rencana masih " + audit.label + ": " + audit.error.slice(0, 3).join(" · ") + ". Bereskan dulu supaya rencana rusak tidak sampai ke folder proyek.";
@@ -4079,7 +4188,6 @@ async function connectSinkron() {
   const conn = last.conn, a = AGENT_ADAPTERS[conn] || AGENT_ADAPTERS.generic;
   const cfg = readCfg();
   const opts = { workerSource: state.workerSource || null, agent: conn, targetAgent: cfg.targetAgent, workerPath: last.path + "/worker.mjs", projectDir: last.path, starter: cfg.starter };
-  tidyPlan();
   const files = runnerBundle(state.docs, state.issues, gates(), opts);
   const existing = {};
   for (const f of files) existing[f.name] = await connectBaca(handle, f.name);
@@ -4121,6 +4229,7 @@ async function connectPilih() {
     draw("runner");
     return;
   }
+  tidyPlan();
   const audit = rubrikRencana(state.docs, state.issues, starterAktif(readCfg()));
   if (!audit.siap) {
     state.runnerNote = "Connect DITAHAN — " + audit.label + " (skor " + audit.skor + "): " + audit.error.slice(0, 4).join(" · ") + (audit.error.length > 4 ? " (+" + (audit.error.length - 4) + " lagi)" : "") + ". Betulkan alat ukur/alur di tab Cek rencana, lalu Connect lagi.";
@@ -4164,7 +4273,6 @@ async function connectCek() {
   const conn = connectConn(), a = AGENT_ADAPTERS[conn];
   const cfg = readCfg();
   const opts = { workerSource: state.workerSource || null, agent: conn, targetAgent: cfg.targetAgent, workerPath: bersih + "/worker.mjs", projectDir: bersih, starter: cfg.starter };
-  tidyPlan();
   const files = runnerBundle(state.docs, state.issues, gates(), opts);
   const existing = {};
   for (const f of files) existing[f.name] = await connectBaca(c.handle, f.name);
@@ -4440,6 +4548,13 @@ function recordUsage(stage, model, usage) {
   el("costStat").textContent = state.cost.map((x) => x.stage + " " + (x.p + x.c) + "t").join(" · ") + " — total " + tot + " token" + money;
 }
 async function runStage(stage, cfg, focus) {
+  if (stage === "audit") {
+    const validation = validatePlan(state.docs.prd, state.docs.roadmap, state.docs.tasks);
+    const structure = masalahStrukturRencana(state.docs, starterAktif(cfg));
+    const lint = lintPlanVerifications(state.docs);
+    state.issues = validation.concat(lint);
+    state.docs.issues = validation.concat(structure, lint);
+  }
   setStage(stage, "run", focus ? focus.label || "mikir…" : "mikir…");
   mulaiJam(stage);
   try {
@@ -4693,25 +4808,32 @@ async function runAll(force) {
       state.ideaFp = ideaFp();
       state.genBy = cfg.provider;
     }
-    state.issues = validatePlan(state.docs.prd, state.docs.roadmap, state.docs.tasks);
-    const beforeIssues = state.issues.length;
     const nz = tidyPlan();
+    const validation = validatePlan(state.docs.prd, state.docs.roadmap, state.docs.tasks);
+    const structure = masalahStrukturRencana(state.docs, starterAktif(cfg));
+    const lint = lintPlanVerifications(state.docs);
+    state.issues = validation.concat(lint);
+    state.docs.issues = validation.concat(structure, lint);
+    const beforeIssues = state.docs.issues.length;
     if (nz.fixes.length) state.auditNote = "Rapikan otomatis: " + nz.fixes.length + " koreksi bentuk (ID, nama fitur, status task) — celah " + beforeIssues + " → " + state.issues.length + ".";
-    if (state.issues.length && cfg.provider !== "demo" && el("autoTambal").checked) {
-      setStage("audit", "run", state.issues.length + " celah");
-      state.docs.issues = state.issues;
+    if (state.docs.issues.length && cfg.provider !== "demo" && el("autoTambal").checked) {
+      setStage("audit", "run", state.docs.issues.length + " celah");
       const total = await tambalKonvergen(cfg);
       tidyPlan();
-      state.auditNote = (nz.fixes.length ? state.auditNote + " " : "") + "Cek rencana: " + total.applied + " patch diterapkan dalam " + total.rounds + " ronde, celah " + total.beforeProblems + " → " + state.issues.length + "." + (total.skipped.length ? " " + total.skipped.slice(0, 3).join("; ") + "." : "") + (state.issues.length ? " Sisanya perlu dilihat manual di tab Cek rencana." : " Sekarang bersih.");
-      setStage("audit", total.applied ? "done" : "err", "tambal " + total.applied + ", sisa " + state.issues.length);
+      const afterValidation = validatePlan(state.docs.prd, state.docs.roadmap, state.docs.tasks);
+      const afterStructure = masalahStrukturRencana(state.docs, starterAktif(cfg));
+      const afterLint = lintPlanVerifications(state.docs);
+      state.issues = afterValidation.concat(afterLint);
+      state.docs.issues = afterValidation.concat(afterStructure, afterLint);
+      state.auditNote = (nz.fixes.length ? state.auditNote + " " : "") + "Cek rencana: " + total.applied + " patch diterapkan dalam " + total.rounds + " ronde, celah " + total.beforeProblems + " → " + state.docs.issues.length + "." + (total.skipped.length ? " " + total.skipped.slice(0, 3).join("; ") + "." : "") + (state.docs.issues.length ? " Sisanya perlu dilihat manual di tab Cek rencana." : " Sekarang bersih.");
+      setStage("audit", state.docs.issues.length ? "err" : "done", "tambal " + total.applied + ", sisa " + state.docs.issues.length);
     } else {
-      setStage("audit", state.issues.length ? "err" : "done", state.issues.length ? state.issues.length + " celah — klik 'Minta AI tambal' di tab Runner/Cek rencana (otomatis dimatikan)" : nz.fixes.length ? "rapi lewat rapikan otomatis" : "bersih");
+      setStage("audit", state.docs.issues.length ? "err" : "done", state.docs.issues.length ? state.docs.issues.length + " celah — klik 'Minta AI tambal' di tab Runner/Cek rencana (otomatis dimatikan)" : nz.fixes.length ? "rapi lewat rapikan otomatis" : "bersih");
     }
-    state.docs.issues = state.issues;
     saveDocs();
     drawActions();
     el("costStat").textContent = (reused ? reused + " tahap dipakai lagi · " : "") + ran + " tahap dijalankan";
-    showView(state.issues.length ? "issues" : "tasks");
+    showView(state.docs.issues.length ? "issues" : "tasks");
   } catch (e) {
     saveDocs();
     if (e.name === "AbortError") {

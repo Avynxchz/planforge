@@ -14,6 +14,7 @@ import { starterAktif } from "../core/starter.mjs";
 export async function connectSinkron(){
   const last = state.lastConnect;
   if(!last || !last.handle){ state.runnerNote = "Belum ada folder yang pernah di-Connect."; draw("runner"); return; }
+  tidyPlan();
   const audit = rubrikRencana(state.docs, state.issues, starterAktif(readCfg()));
   if(!audit.siap){
     state.runnerNote = "Sinkron DITAHAN — rencana masih " + audit.label + ": " + audit.error.slice(0,3).join(" · ")
@@ -33,7 +34,6 @@ export async function connectSinkron(){
   const conn = last.conn, a = AGENT_ADAPTERS[conn] || AGENT_ADAPTERS.generic;
   const cfg = readCfg();
   const opts = { workerSource: state.workerSource || null, agent:conn, targetAgent:cfg.targetAgent, workerPath:last.path + "/worker.mjs", projectDir:last.path, starter:cfg.starter };
-  tidyPlan();
   const files = runnerBundle(state.docs, state.issues, gates(), opts);
   const existing = {};
   for(const f of files) existing[f.name] = await connectBaca(handle, f.name);
@@ -63,6 +63,7 @@ export async function connectPilih(){
   /* Jangan kirim rencana setengah jadi ke folder: agen IDE akan berhenti di audit_plan
      atau lebih parah mengerjakan task yang file dasarnya tidak pernah ada. */
   if(el("runAll").disabled){ state.runnerNote = "Connect ditahan: pipeline masih berjalan. Tunggu semua tahap selesai dulu."; draw("runner"); return; }
+  tidyPlan();
   const audit = rubrikRencana(state.docs, state.issues, starterAktif(readCfg()));
   if(!audit.siap){
     state.runnerNote = "Connect DITAHAN — " + audit.label + " (skor " + audit.skor + "): "
@@ -101,7 +102,6 @@ export async function connectCek(){
   const conn = connectConn(), a = AGENT_ADAPTERS[conn];
   const cfg = readCfg();
   const opts = { workerSource: state.workerSource || null, agent: conn, targetAgent: cfg.targetAgent, workerPath: bersih + "/worker.mjs", projectDir: bersih, starter: cfg.starter };
-  tidyPlan();
   const files = runnerBundle(state.docs, state.issues, gates(), opts);
   const existing = {};
   for(const f of files) existing[f.name] = await connectBaca(c.handle, f.name);

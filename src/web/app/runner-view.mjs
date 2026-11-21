@@ -40,7 +40,7 @@ export function renderRunner(){
     + rubrik.warn.map(s=>"<li>" + esc(s) + "</li>").join("") + "</ul></details>");
   h.push("<div class='bar'>"
     + "<button class='sm' data-act='gBetulkanAlias'>Betulkan alat ukur yang jelas</button>"
-    + (state.issues.length ? "<button class='sm' data-act='tambal'>Minta AI tambal (" + state.issues.length + " celah)</button>" : "")
+    + (!rubrik.siap ? "<button class='sm' data-act='tambal'>Minta AI tambal (" + rubrik.error.length + " celah)</button>" : "")
     + (perluSinkron() ? "<button class='sm go' data-act='cSinkron'>Sinkron ke folder (1 klik)</button>" : "")
     + "</div>");
   if(perluSinkron()) h.push("<p class='warn'>Rencana berubah sejak Connect terakhir"

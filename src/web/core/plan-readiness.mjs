@@ -97,7 +97,7 @@ export function masalahStrukturRencana(docs, starter){
   return out;
 }
 export function rubrikRencana(docs, issues, starter){
-  const error = (Array.isArray(issues) ? issues : []).map(x=>String(x))
+  const error = (Array.isArray(issues) ? issues : []).map(x=>x && typeof x === "object" ? String(x.message || JSON.stringify(x)) : String(x))
     .concat(masalahStrukturRencana(docs, starter));
   const skor = Math.max(0, 100 - error.length * 20);
   return { siap: error.length === 0, skor, error, warn:saranLingkungan(starter), label: error.length ? "Perlu diperbaiki" : "Siap dikirim (lingkungan belum diverifikasi)" };

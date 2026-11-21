@@ -109,16 +109,18 @@ export function applyPatches(docs, patch, options = null){
 }
 
 export function applyImprovingPatches(docs, patch, starter){
+  const options = starter && typeof starter === "object" ? starter : {starter:!!starter};
   const measurePlan = (plan, isStarter)=>{
     const normalized = normalizePlan(plan.prd, plan.roadmap, plan.tasks);
     const candidate = Object.assign({}, plan, normalized);
-    const issues = validatePlan(candidate.prd, candidate.roadmap, candidate.tasks);
+    const issues = validatePlan(candidate.prd, candidate.roadmap, candidate.tasks)
+      .concat(typeof options.extraIssues === "function" ? options.extraIssues(candidate) : []);
     const rubric = rubrikRencana(candidate, issues, isStarter);
     return {docs:candidate, issues, problems:issues.length + masalahStrukturRencana(candidate, isStarter).length, score:rubric.skor};
   };
-  const before = measurePlan(docs, starter);
-  const applied = applyPatches(before.docs, patch, {starter});
-  const after = measurePlan(applied, starter);
+  const before = measurePlan(docs, options.starter);
+  const applied = applyPatches(before.docs, patch, {starter:options.starter});
+  const after = measurePlan(applied, options.starter);
   const accepted = applied.applied > 0 && after.problems < before.problems && after.score >= before.score;
   return {
     accepted,

@@ -25,3 +25,4 @@ import { agentsMd, runnerBundle, githubPushFiles, githubPush } from "./core/runn
 import { ALIAS_CHECK, normalisasiAliasBehavior } from "./core/behavior-alias.mjs";
 import { missingNpmScripts } from "../shared/npm-contract.mjs";
 import { KATA_SCAFFOLD, potongTeks, masalahStrukturRencana, rubrikRencana } from "./core/plan-readiness.mjs";
+import { escapeNewlinesInQuotes, sanitizeVerificationCommand, sanitizeTaskBehavior, sanitizePlanChecks, lintPlanVerifications } from "./core/verification-lint.mjs";

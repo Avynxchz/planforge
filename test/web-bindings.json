@@ -463,6 +463,31 @@
       "name": "rubrikRencana",
       "kind": "function",
       "arity": 3
+    },
+    {
+      "name": "escapeNewlinesInQuotes",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "sanitizeVerificationCommand",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "sanitizeTaskBehavior",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "sanitizePlanChecks",
+      "kind": "function",
+      "arity": 1
+    },
+    {
+      "name": "lintPlanVerifications",
+      "kind": "function",
+      "arity": 1
     }
   ],
   "app": [

@@ -6,6 +6,10 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import * as W from "../worker.mjs";
 import { cleanupTempDirs, cleanupTempDirsSince, tempDirCheckpoint, withTempDir } from "./temp-dirs.mjs";
+import {
+  escapeNewlinesInQuotes, sanitizeVerificationCommand, sanitizeTaskBehavior,
+  sanitizePlanChecks, lintPlanVerifications
+} from "../src/web/core/verification-lint.mjs";
 
 const html = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const a = html.indexOf("/* ===================== CORE-BEGIN ===================== */");
@@ -87,6 +91,49 @@ t("task backend server tidak jadi UI hanya karena deskripsi menyebut frontend", 
   assert.equal(PF.taskUi(task), false);
   assert.deepEqual(PF.masalahBehavior(task), []);
 });
+t("task JavaScript frontend di public/js tetap diklasifikasikan sebagai UI", ()=>{
+  assert.equal(PF.taskUi({files_or_areas:["public/js/app.js"]}), true);
+});
+t("escapeNewlinesInQuotes meng-escape baris dalam kutipan tetapi mempertahankan baris perintah", ()=>{
+  const command = "node -e \"const x = 'a\r\nb';\"\r\nnpm test";
+  assert.equal(escapeNewlinesInQuotes(command), "node -e \"const x = 'a\\nb';\"\r\nnpm test");
+});
+t("sanitizeVerificationCommand menghapus flag --test yang bertentangan dengan eval", ()=>{
+  assert.equal(sanitizeVerificationCommand("node --test -e \"console.log(1)\""), "node -e \"console.log(1)\"");
+  assert.equal(sanitizeVerificationCommand("node --test --eval \"console.log(1)\""), "node --eval \"console.log(1)\"");
+});
+t("sanitizeTaskBehavior memperbaiki equals container dan matches nama file pada tautan", ()=>{
+  const task = {id:"T-010", behavior:{checks:[
+    {type:"text", selector:"body", equals:"Produk"},
+    {type:"text", selector:'a[href$=".pdf"]', matches:"\\.(json|csv|pdf|xlsx|txt)$"}
+  ]}};
+  assert.deepEqual(sanitizeTaskBehavior(task), ["T-010:text.equals->contains", "T-010:text.matches->visible"]);
+  assert.deepEqual(task.behavior.checks, [
+    {type:"text", selector:"body", contains:"Produk"},
+    {type:"visible", selector:'a[href$=".pdf"]'}
+  ]);
+});
+t("sanitizePlanChecks membersihkan verification dan seluruh checks dalam dokumen", ()=>{
+  const docs = {tasks:{tasks:[{
+    id:"T-011", verification:"node --test -e \"x\"", behavior:{checks:[{type:"text", selector:"#root", equals:"Siap"}]}
+  }]}};
+  assert.equal(sanitizePlanChecks(docs).length, 2);
+  assert.equal(docs.tasks.tasks[0].verification, "node -e \"x\"");
+  assert.equal(docs.tasks.tasks[0].behavior.checks[0].contains, "Siap");
+});
+t("lintPlanVerifications memberi temuan terstruktur untuk pola verification berisiko", ()=>{
+  const docs = {tasks:{tasks:[
+    {id:"T-021", verification:"node -e \"require('puppeteer'); fetch('http://localhost:3000')\""},
+    {id:"T-022", verification:"pkill -f server"},
+    {id:"T-023", verification:"node -e \"ejs.render('<h1>x</h1>')\""},
+    {id:"T-024", files_or_areas:["server.js"], verification:"node -e \"http.createServer(() => {})\""},
+    {id:"T-025", verification:"node -e \"console.log(ok ? 'PASS' : 'FAIL')\""}
+  ]}};
+  const issues = lintPlanVerifications(docs);
+  assert.ok(issues.every(x=>x.stage === "audit" && x.taskId && x.code && x.message));
+  for(const code of ["unavailable-dependency","dangling-localhost","unsafe-server-kill","hardcoded-ejs-template","stub-application-server","always-zero-verification"])
+    assert.ok(issues.some(x=>x.code === code), "missing " + code + ": " + JSON.stringify(issues));
+});
 t("bahasa Inggris dan target agent umum ikut terpakai", ()=>{
   const p = PF.buildSystemPrompt({language:"English", targetAgent:"umum"});
   assert.ok(p.includes("English") && p.includes("agen mana pun"));
@@ -98,6 +145,16 @@ t("prompt tasks dan audit menetapkan skema behavior serta verifikasi berbasis ex
     assert.match(text, /[Ff]ield expected TIDAK valid/);
     assert.match(text, /exit code/);
     assert.match(text, /regex BRE/);
+  }
+});
+t("prompt tasks dan audit menetapkan kontrak server, anti-vakum, dan urutan behavior", ()=>{
+  for(const stage of ["tasks","audit"]){
+    const text = PF.buildStageMessages(stage, {language:"Bahasa Indonesia", idea:"x"}, PF.DEMO)[1].content;
+    assert.match(text, /require\.main === module/);
+    assert.match(text, /ERR_SERVER_ALREADY_LISTEN/);
+    assert.match(text, /node-fetch/);
+    assert.match(text, /http\.createServer/);
+    assert.match(text, /out-of-stock/);
   }
 });
 t("prompt tasks mewajibkan verification non-kosong dan endpoint ekspor web", ()=>{

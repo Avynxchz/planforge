@@ -108,6 +108,7 @@ export function renderMarkdown(kind, d, ctx){
   }
   if(kind === "issues"){
     const list = Array.isArray(d) ? d : [];
+    const issueText = item=>item && typeof item === "object" ? String(item.message || JSON.stringify(item)) : String(item);
     const cx = ctx || {};
     if(cx.empty) return "<h1>Cek konsistensi rencana</h1><p class='hint'>Belum ada rencana untuk diperiksa. Jalankan pipeline dulu.</p>";
     const struktur = Array.isArray(cx.struktur) ? cx.struktur : [];
@@ -142,9 +143,10 @@ export function renderMarkdown(kind, d, ctx){
     ];
     const buckets = GROUPS.map(g=>({g, items:[]}));
     const other = {g:{t:"Lainnya", w:"Masih perlu dilihat manual."}, items:[]};
-    for(const i of list){
-      const b = buckets.find(b=>b.g.re.test(i));
-      (b ? b.items : other.items).push(i);
+    for(const item of list){
+      const text = issueText(item);
+      const b = buckets.find(b=>b.g.re.test(text));
+      (b ? b.items : other.items).push(text);
     }
     const note = cx.auditNote ? "<p class='hint'>" + esc(cx.auditNote) + "</p>" : "";
     let out = "<h1>Cek konsistensi rencana</h1>"
