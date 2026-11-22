@@ -2,6 +2,7 @@
 import { normId, normalizePlan } from "./plan-normalize.mjs";
 import { KATA_SCAFFOLD, masalahStrukturRencana, rubrikRencana } from "./plan-readiness.mjs";
 import { validatePlan } from "./plan-rules.mjs";
+import { sanitizePlanChecks } from "./verification-lint.mjs";
 
 /* Pecah pembuatan task per milestone supaya model kecil tidak terpotong: tiap chunk
    kecil, total task tetap natural (tidak dipatok). Tanpa milestone -> satu panggilan penuh. */
@@ -110,18 +111,32 @@ export function applyPatches(docs, patch, options = null){
 
 export function applyImprovingPatches(docs, patch, starter){
   const options = starter && typeof starter === "object" ? starter : {starter:!!starter};
-  const measurePlan = (plan, isStarter)=>{
+  const measurePlan = (plan, isStarter, sanitize)=>{
     const normalized = normalizePlan(plan.prd, plan.roadmap, plan.tasks);
     const candidate = Object.assign({}, plan, normalized);
+    if(sanitize) sanitizePlanChecks(candidate);
+    const lintIssues = typeof options.extraIssues === "function" ? options.extraIssues(candidate) : [];
     const issues = validatePlan(candidate.prd, candidate.roadmap, candidate.tasks)
-      .concat(typeof options.extraIssues === "function" ? options.extraIssues(candidate) : []);
+      .concat(lintIssues);
     const rubric = rubrikRencana(candidate, issues, isStarter);
-    return {docs:candidate, issues, problems:issues.length + masalahStrukturRencana(candidate, isStarter).length, score:rubric.skor};
+    return {docs:candidate, issues, lintIssues, problems:issues.length + masalahStrukturRencana(candidate, isStarter).length, score:rubric.skor};
   };
-  const before = measurePlan(docs, options.starter);
+  const before = measurePlan(docs, options.starter, false);
   const applied = applyPatches(before.docs, patch, {starter:options.starter});
-  const after = measurePlan(applied, options.starter);
-  const accepted = applied.applied > 0 && after.problems < before.problems && after.score >= before.score;
+  const after = measurePlan(applied, options.starter, true);
+  const baselineLintIssues = new Map();
+  for(const item of before.lintIssues){
+    const key = JSON.stringify([item && item.stage, item && item.taskId, item && item.code, item && item.message]);
+    baselineLintIssues.set(key, (baselineLintIssues.get(key) || 0) + 1);
+  }
+  const newLintIssues = after.lintIssues.filter(item=>{
+    const key = JSON.stringify([item && item.stage, item && item.taskId, item && item.code, item && item.message]);
+    const count = baselineLintIssues.get(key) || 0;
+    if(count) baselineLintIssues.set(key, count - 1);
+    return count === 0;
+  });
+  const accepted = applied.applied > 0 && !newLintIssues.length
+    && after.problems < before.problems && after.score >= before.score;
   return {
     accepted,
     prd:accepted ? after.docs.prd : before.docs.prd,
@@ -129,7 +144,9 @@ export function applyImprovingPatches(docs, patch, starter){
     tasks:accepted ? after.docs.tasks : before.docs.tasks,
     issues:accepted ? after.issues : before.issues,
     applied:accepted ? applied.applied : 0,
-    skipped:applied.skipped.concat(accepted ? [] : ["patch ditolak: jumlah masalah tidak berkurang atau skor rubrik turun"]),
+    skipped:applied.skipped.concat(accepted ? [] : [newLintIssues.length
+      ? "patch ditolak: memperkenalkan temuan verification baru (" + [...new Set(newLintIssues.map(item=>item.code || "lint"))].join(", ") + ")"
+      : "patch ditolak: jumlah masalah tidak berkurang atau skor rubrik turun"]),
     beforeProblems:before.problems,
     afterProblems:accepted ? after.problems : before.problems,
     beforeScore:before.score,

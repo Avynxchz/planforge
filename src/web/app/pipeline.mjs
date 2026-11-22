@@ -6,7 +6,7 @@ import { DEMO } from "../core/demo.mjs";
 import { extractJson } from "../core/plan-normalize.mjs";
 import { applyImprovingPatches, mergeTaskChunk, taskChunks, terapkanJawabanClarify } from "../core/plan-ops.mjs";
 import { collectPlanIssues } from "../core/plan-readiness.mjs";
-import { lintPlanVerifications } from "../core/verification-lint.mjs";
+import { lintPlanVerifications, sanitizePlanChecks } from "../core/verification-lint.mjs";
 import { STAGES } from "../core/plan-schema.mjs";
 import { buildStageMessages } from "../core/prompts.mjs";
 import { starterAktif } from "../core/starter.mjs";
@@ -53,6 +53,8 @@ export async function tambalKonvergen(cfg){
     total.afterProblems = result.afterProblems;
     saveDocs();
   }
+  const checkFixes = sanitizePlanChecks(state.docs);
+  if(checkFixes.length) state.autoFixes = (state.autoFixes || []).concat(checkFixes);
   state.issues = collectPlanIssues(state.docs, starter);
   state.docs.issues = state.issues;
   return total;

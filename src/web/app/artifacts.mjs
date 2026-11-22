@@ -1,6 +1,6 @@
 /* Copy, download, export and GitHub handoff helpers. */
 import { el, esc } from "./dom.mjs";
-import { readCfg, state } from "./state.mjs";
+import { readCfg, state, tidyPlan } from "./state.mjs";
 import { ensureWorkerSource, gates } from "./runner-config.mjs";
 import { makeZip } from "../core/handoff.mjs";
 import { buildAgentPrompt, featuresToMd, prdToMd, roadmapToMd, tasksToMd } from "../core/render.mjs";
@@ -19,6 +19,7 @@ export function dl(name, text, type){
 }
 
 export function bundleFiles(){
+  tidyPlan();
   const d = state.docs, cfg = readCfg();
   const f = [];
   f.push({name:"PRD.md", data:prdToMd(d.prd)});

@@ -290,6 +290,69 @@ t("behavior-route-order mengizinkan task pembuat route dan dependensi transitif 
   ]}};
   assert.ok(!lintPlanVerifications(transitive).some(x=>x.taskId === "T-038" && x.code === "behavior-route-order"));
 });
+t("sanitizePlanChecks menyintesis behavior UI dan membuang behavior non-UI tanpa server", ()=>{
+  const docs = {tasks:{tasks:[
+    {id:"T-040", files_or_areas:["public/dashboard.html"], acceptance_criteria:["Route /dashboard.html memuat tabel produk"]},
+    {id:"T-041", files_or_areas:["src/data/fixture.js"], behavior:{url:"http://localhost:3000/", checks:[{type:"visible",selector:"body"}]}}
+  ]}};
+  sanitizePlanChecks(docs);
+  assert.equal(docs.tasks.tasks[0].behavior.url, "http://127.0.0.1:8080/dashboard.html");
+  assert.deepEqual(docs.tasks.tasks[0].behavior.checks, [{type:"visible",selector:"table"}]);
+  assert.equal(Object.prototype.hasOwnProperty.call(docs.tasks.tasks[1], "behavior"), false);
+});
+t("tambal menolak patch yang menambahkan syntax node -e bersarang", ()=>{
+  const result = PF.applyImprovingPatches(PF.DEMO, {patches:[{
+    document:"tasks", collection:"tasks", action:"update", target_id:"T-001",
+    object:{verification:'node -e "node -e \'console.log(1)\'"'}
+  }]}, {extraIssues:lintPlanVerifications});
+  assert.equal(result.accepted, false);
+  assert.match(result.skipped.join(" "), /invalid-verification-syntax/);
+});
+t("lint mendeteksi pipe diagnostik dan sanitizer menjaga exit code tes", ()=>{
+  const command = "node --test test/core.test.mjs 2>&1 | tail -5";
+  const docs = {tasks:{tasks:[{id:"T-042",verification:command}]}};
+  assert.ok(lintPlanVerifications(docs).some(x=>x.taskId === "T-042" && x.code === "always-zero-verification"));
+  sanitizePlanChecks(docs);
+  assert.doesNotMatch(docs.tasks.tasks[0].verification, /\|\s*tail\b/i);
+});
+t("lint dan sanitizer menangani http.request tanpa port pada listen(0)", ()=>{
+  const command = 'node -e "const http=require(\'node:http\'); const srv=http.createServer(()=>{}).listen(0); http.request({hostname:\'127.0.0.1\',path:\'/\'}); srv.close()"';
+  const docs = {tasks:{tasks:[{id:"T-043",verification:command}]}};
+  assert.ok(lintPlanVerifications(docs).some(x=>x.taskId === "T-043" && x.code === "missing-ephemeral-port"));
+  sanitizePlanChecks(docs);
+  assert.match(docs.tasks.tasks[0].verification, /port:\s*srv\.address\(\)\.port/);
+  assert.ok(!lintPlanVerifications(docs).some(x=>x.taskId === "T-043" && x.code === "missing-ephemeral-port"));
+});
+t("lint menolak ternary process.exit yang mengembalikan string", ()=>{
+  const issues = lintPlanVerifications({tasks:{tasks:[{
+    id:"T-044",verification:'node -e "process.exit(ok ? \'OK\' : \'FAIL\')"'
+  }]}});
+  assert.ok(issues.some(x=>x.taskId === "T-044" && x.code === "invalid-verification-exit"));
+});
+t("lint dan sanitizer menangani cd workspace serta kontradiksi antar node -e", ()=>{
+  const docs = {tasks:{tasks:[{id:"T-045",verification:
+    'cd /workspace && node -e "const assert=require(\'node:assert/strict\'); const items=[]; assert.equal(items.length,0)"'
+      + ' && node -e "const assert=require(\'node:assert/strict\'); const items=[{name:\'x\'}]; assert.ok(items[0].name)"'
+  }]}};
+  const issues = lintPlanVerifications(docs);
+  assert.ok(issues.some(x=>x.taskId === "T-045" && x.code === "hardcoded-workspace-path"));
+  assert.ok(issues.some(x=>x.taskId === "T-045" && x.code === "contradictory-verification"));
+  sanitizePlanChecks(docs);
+  assert.doesNotMatch(docs.tasks.tasks[0].verification, /^\s*cd\s+\/workspace\b/i);
+});
+t("lint membedakan file statis dari route dan memeriksa kontrak path serta method modul", ()=>{
+  const docs = {tasks:{tasks:[
+    {id:"T-046",title:"Uji dashboard",behavior:{url:"http://localhost:3000/dashboard"},
+      verification:'node -e "require(\'node:fs\').readFileSync(\'./dashboard.html\')"'},
+    {id:"T-047",title:"Buat file dashboard statis",files_or_areas:["public/dashboard.html"]},
+    {id:"T-048",title:"Buat modul penyimpanan",files_or_areas:["src/dataStore.js"]},
+    {id:"T-049",title:"Verifikasi penyimpanan",verification:'node -e "const ds=require(\'./src/dataStore.js\'); ds.init()"'}
+  ]}};
+  const issues = lintPlanVerifications(docs);
+  assert.ok(issues.some(x=>x.taskId === "T-046" && x.code === "behavior-route-order"));
+  assert.ok(issues.some(x=>x.taskId === "T-046" && x.code === "conflicting-file-path"));
+  assert.ok(issues.some(x=>x.taskId === "T-049" && x.code === "undefined-module-method"));
+});
 t("bahasa Inggris dan target agent umum ikut terpakai", ()=>{
   const p = PF.buildSystemPrompt({language:"English", targetAgent:"umum"});
   assert.ok(p.includes("English") && p.includes("agen mana pun"));
@@ -307,6 +370,10 @@ t("prompt tasks dan audit menetapkan skema behavior serta verifikasi berbasis ex
     assert.match(text, /process\.exit\(0\).*process\.exit\(1\)/);
     assert.match(text, /path relatif \.\/\.\.\./);
     assert.match(text, /satu bahasa nama properti model data yang konsisten/);
+    assert.ok(text.includes("cd /workspace"));
+    assert.ok(text.includes("| tail"));
+    assert.ok(text.includes("port: srv.address().port"));
+    assert.ok(text.includes("nama method"));
   }
 });
 t("prompt tasks dan audit menetapkan kontrak server, anti-vakum, dan urutan behavior", ()=>{
