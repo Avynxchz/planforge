@@ -33,7 +33,17 @@ export function validatePlan(prd, roadmap, tasks){
   const tIds = tasks && tasks.tasks ? ids(tasks.tasks).map(normId) : [];
   if(new Set(tIds).size !== tIds.length) issues.push("tasks: ID task duplikat");
 
-  const covered = new Set();
+  const covered = new Set(), implemented = new Set();
+  const testOnlyTask = task=>{
+    if(/^(?:unit[- ]?)?tests?$/i.test(String(task.type || "").trim())) return true;
+    const files = Array.isArray(task.files_or_areas) ? task.files_or_areas.map(String)
+      : (Array.isArray(task.files) ? task.files.map(String) : []);
+    if(files.length && files.every(file=>/(?:^|[\\/])(?:test|tests|__tests__)(?:[\\/]|$)/i.test(file))) return true;
+    const title = String(task.title || "").trim();
+    const description = String(task.description || "").trim();
+    const testOnlyText = /^(?:(?:write|add|create|buat|tambah(?:kan)?|tulis)\s+(?:(?:unit|integration|e2e)\s+)?tests?\b|(?:unit|integration|e2e)\s+tests?\b|(?:uji|pengujian)\b)/i;
+    return testOnlyText.test(title) || testOnlyText.test(description);
+  };
   const seenT = new Set();
   for(const t of (tasks && tasks.tasks) || []){
     if(!t.id) issues.push("tasks: ada task tanpa id");
@@ -43,7 +53,12 @@ export function validatePlan(prd, roadmap, tasks){
     for(const m of masalahBehavior(t)) issues.push((t.id||"task") + ": " + m);
     if(!Array.isArray(t.requirement_refs) || !t.requirement_refs.length)
       issues.push((t.id||"task") + ": tidak merujuk requirement apa pun");
-    for(const r of t.requirement_refs||[]){ if(reqIds.includes(normId(r))) covered.add(normId(r)); else issues.push((t.id||"task") + ": requirement_refs '" + r + "' tidak dikenal"); }
+    for(const r of t.requirement_refs||[]){
+      if(reqIds.includes(normId(r))){
+        covered.add(normId(r));
+        if(!testOnlyTask(t)) implemented.add(normId(r));
+      }else issues.push((t.id||"task") + ": requirement_refs '" + r + "' tidak dikenal");
+    }
     for(const d of t.depends_on||[]){ if(!seenT.has(d) && !seenT.has(normId(d))) issues.push((t.id||"task") + ": depends_on '" + d + "' belum/bukan ID task yang valid (harus task sebelumnya)"); }
     if(t.milestone_ref && mIds.length && !mIds.includes(normId(t.milestone_ref)))
       issues.push((t.id||"task") + ": milestone_ref '" + t.milestone_ref + "' tidak dikenal");
@@ -52,6 +67,8 @@ export function validatePlan(prd, roadmap, tasks){
   for(const r of prd.requirements){
     const need = r.scope === "mvp" || r.scope === "must" || r.priority === "must";
     if(need && !covered.has(normId(r.id))) issues.push(normId(r.id) + ": requirement mvp belum dicakup task mana pun");
+    else if(r.scope === "mvp" && !implemented.has(normId(r.id)))
+      issues.push(normId(r.id) + ": requirement mvp hanya dicakup task pengujian; perlu task implementasi fitur");
   }
   for(const m of (roadmap && roadmap.milestones) || []){
     for(const r of m.requirement_refs||[]) if(!reqIds.includes(normId(r)))

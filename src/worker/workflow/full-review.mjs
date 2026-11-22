@@ -9,11 +9,12 @@ export function shouldRunFull(ctx, t){
   const lim = ctx.gates.limits, full = ctx.gates.reviews.filter(r=>r.enabled && r.tier === "full");
   if(!full.length) return false;
   if(ctx.state.sinceFull >= (lim.fullEvery || 6)) return true;
+  const next = nextTask(ctx.plan, ctx.state);
+  if(next && next.__blocked && ctx.state.sinceFull > 0) return true;
   if(lim.fullAtMilestoneEnd){
-    const nx = nextTask(ctx.plan, ctx.state);
     /* The last task also ends a milestone; the budget already includes this review. */
-    if(!nx && ctx.state.sinceFull > 0) return true;
-    if(nx && !nx.__blocked && nx.milestone_ref && nx.milestone_ref !== t.milestone_ref) return true;
+    if(!next && ctx.state.sinceFull > 0) return true;
+    if(next && !next.__blocked && next.milestone_ref && next.milestone_ref !== t.milestone_ref) return true;
   }
   return false;
 }

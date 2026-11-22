@@ -21,8 +21,116 @@ export function escapeNewlinesInQuotes(command){
 }
 
 export function sanitizeVerificationCommand(command){
-  return escapeNewlinesInQuotes(command).replace(/\bnode(?:\.exe)?\s+--test\s+(?:-e|--eval)\b/gi, match=>
+  const inspect = arguments[1];
+  const normalize = value=>escapeNewlinesInQuotes(value).replace(/\bnode(?:\.exe)?\s+--test\s+(?:-e|--eval)\b/gi, match=>
     match.replace(/\s+--test(?=\s)/i, ""));
+  const vm = typeof process !== "undefined" && typeof process.getBuiltinModule === "function"
+    ? process.getBuiltinModule("node:vm") : null;
+  const parse = code=>{ if(vm) new vm.Script(code); else new Function(code); };
+  const nodeEval = value=>{
+    const match = /\bnode(?:\.exe)?\s+(?:-e|--eval)\s+/i.exec(value);
+    if(!match) return null;
+    let start = match.index + match[0].length;
+    while(start < value.length && /\s/.test(value[start])) start++;
+    const quote = value[start] === "'" || value[start] === '"' ? value[start] : null;
+    const codeStart = start + (quote ? 1 : 0);
+    if(!quote) return { code:value.slice(codeStart), start:codeStart, end:value.length, quote:null, closed:true };
+    let escaped = false;
+    for(let i=codeStart; i<value.length; i++){
+      const ch = value[i];
+      if(escaped){ escaped = false; continue; }
+      if(ch === "\\"){ escaped = true; continue; }
+      if(ch === quote)
+        return { code:value.slice(codeStart, i), start:codeStart, end:i, quote, closed:true, suffixStart:i+1 };
+    }
+    return { code:value.slice(codeStart), start:codeStart, end:value.length, quote, closed:false };
+  };
+  const delimiterState = code=>{
+    const stack = [];
+    let quote = null, escaped = false, lineComment = false, blockComment = false, mismatch = false;
+    const pairs = {")":"(", "}":"{", "]":"["};
+    for(let i=0; i<code.length; i++){
+      const ch = code[i], next = code[i+1];
+      if(lineComment){ if(ch === "\n") lineComment = false; continue; }
+      if(blockComment){ if(ch === "*" && next === "/"){ blockComment = false; i++; } continue; }
+      if(quote){
+        if(escaped) escaped = false;
+        else if(ch === "\\") escaped = true;
+        else if(ch === quote) quote = null;
+        continue;
+      }
+      if(ch === "/" && next === "/"){ lineComment = true; i++; continue; }
+      if(ch === "/" && next === "*"){ blockComment = true; i++; continue; }
+      if(ch === "'" || ch === '"' || ch === "`"){ quote = ch; continue; }
+      if(ch === "(" || ch === "{" || ch === "[") stack.push(ch);
+      else if(pairs[ch]){
+        if(stack[stack.length-1] === pairs[ch]) stack.pop();
+        else mismatch = true;
+      }
+    }
+    return { stack, quote, blockComment, mismatch };
+  };
+  const repair = code=>{
+    let candidate = code;
+    try{ parse(candidate); return candidate; }catch(e){}
+    if(/\]\s*$/.test(candidate)){
+      const withoutTrailingBracket = candidate.replace(/\]\s*$/, "");
+      try{ parse(withoutTrailingBracket); return withoutTrailingBracket; }catch(e){}
+    }
+    const state = delimiterState(candidate);
+    if(state.quote || state.blockComment || state.mismatch) return null;
+    const closing = { "(":")", "{":"}", "[":"]" };
+    candidate += state.stack.slice().reverse().map(ch=>closing[ch]).join("");
+    try{ parse(candidate); return candidate; }catch(e){ return null; }
+  };
+  const shellMarkers = value=>{
+    let quote = null, escaped = false;
+    const markers = [];
+    for(let i=0; i<value.length; i++){
+      const ch = value[i];
+      if(quote === "'"){ if(ch === "'") quote = null; continue; }
+      if(escaped){ escaped = false; continue; }
+      if(ch === "\\" && quote !== "'"){ escaped = true; continue; }
+      if(quote){ if(ch === quote) quote = null; continue; }
+      if(ch === "'" || ch === '"'){ quote = ch; continue; }
+      if(ch === "&" || ch === "|") markers.push({ ch, index:i });
+    }
+    return markers;
+  };
+  const source = normalize(command);
+  if(inspect){
+    const extracted = nodeEval(source);
+    let syntaxError = null;
+    if(extracted) try{ parse(extracted.code); }catch(e){ syntaxError = e; }
+    const markers = shellMarkers(source);
+    const last = markers[markers.length-1];
+    const fallback = markers.some((marker,index)=>{
+      if(marker.ch !== "|" || source[marker.index+1] !== "|") return false;
+      const next = markers.slice(index+1).find(item=>item.index > marker.index+1);
+      const shellFallback = source.slice(marker.index+2, next ? next.index : source.length).trim();
+      return /^(?:echo\b|true\b|:\s*(?:$|\s))/i.test(shellFallback);
+    });
+    return {
+      code:extracted && extracted.code, syntaxError, fallback,
+      background:!!last && last.ch === "&" && source[last.index+1] !== "&" && source.slice(last.index+1).trim() === ""
+    };
+  }
+  const extracted = nodeEval(source);
+  if(!extracted) return source;
+  const fixed = repair(extracted.code);
+  let out = fixed == null || fixed === extracted.code ? source
+    : source.slice(0, extracted.start) + fixed + source.slice(extracted.end);
+  let current = nodeEval(out);
+  if(current && current.quote && !current.closed && fixed != null){
+    out += current.quote;
+    current = nodeEval(out);
+  }
+  if(current && current.closed && current.suffixStart != null){
+    const suffix = out.slice(current.suffixStart);
+    if(/^\s*(?:\]|\s*\]|\s*["']\s*\])\s*$/.test(suffix))
+      out = out.slice(0, current.suffixStart) + suffix.replace(/^\s*["']?\s*\]\s*$/, "");
+  }
+  return out;
 }
 
 export function sanitizeTaskBehavior(task){
@@ -72,19 +180,15 @@ export function lintPlanVerifications(docs){
   const tasks = docs && docs.tasks && Array.isArray(docs.tasks.tasks) ? docs.tasks.tasks : [];
   const issues = [];
   const requireOnlyExit = command=>{
-    if(!/\bnode(?:\.exe)?\s+(?:-e|--eval)\b/i.test(command)
-      || !/\brequire\s*\(/i.test(command)
-      || !/\bprocess\.exit\s*\(\s*0\s*\)/i.test(command)
-      || /\b(?:assert|if|test|it|describe|fetch)\s*(?:\.|\()/i.test(command)
-      || /\bhttps?\s*\.\s*(?:request|get)\s*\(/i.test(command)
-      || /(?<![=<>!])(?:===|!==|==|!=|<=|>=|<|>)/.test(command)) return false;
-    const evalPart = command.replace(/^.*?(?:-e|--eval)\s*/i, "").trim();
-    const quote = evalPart[0];
-    const code = (quote === "'" || quote === '"' || quote === "`")
-      && evalPart.lastIndexOf(quote) > 0
-      ? evalPart.slice(1, evalPart.lastIndexOf(quote)) : evalPart;
+    const code = sanitizeVerificationCommand(command, true).code;
+    if(code == null
+      || !/\brequire\s*\(/i.test(code)
+      || !/\bprocess\.exit\s*\(\s*0\s*\)/i.test(code)
+      || /\b(?:assert|if|test|it|describe|fetch)\s*(?:\.|\()/i.test(code)
+      || /\bhttps?\s*\.\s*(?:request|get)\s*\(/i.test(code)
+      || /(?<![=<>!])(?:===|!==|==|!=|<=|>=|<|>)/.test(code)) return false;
     const rest = code
-      .replace(/\b(?:const|let|var)\s+[\w$]+\s*(?:=\s*(?:require\s*\([^)]*\)|true|false|null|undefined|-?\d+(?:\.\d+)?|(['"`])(?:\\.|(?!\1)[^\\])*\1))?\s*;?/gi, "")
+      .replace(/\b(?:const|let|var)\s+(?:\{[^}]*\}|\[[^\]]*\]|[\w$]+)\s*(?:=\s*(?:require\s*\([^)]*\)|true|false|null|undefined|-?\d+(?:\.\d+)?|(['"`])(?:\\.|(?!\1)[^\\])*\1))?\s*;?/gi, "")
       .replace(/\brequire\s*\([^)]*\)/gi, "")
       .replace(/\bprocess\.exit\s*\(\s*0\s*\)/gi, "")
       .replace(/[;,\s()[\]{}]/g, "");
@@ -125,10 +229,13 @@ export function lintPlanVerifications(docs){
   const setsUpState = command=>
     /\b(?:writeFileSync|writeFile|unlinkSync|rmSync|seed|reset|truncate)\b|\b(?:DELETE\s+FROM|INSERT\s+INTO)\s+\w+|\bTRUNCATE\s+TABLE\b/i.test(command);
   const createsRoute = task=>{
-    const files = Array.isArray(task.files_or_areas) ? task.files_or_areas.map(String) : [];
+    const files = Array.isArray(task.files_or_areas) ? task.files_or_areas.map(String)
+      : (Array.isArray(task.files) ? task.files.map(String) : []);
     const details = String(task.title || "") + " " + String(task.description || "");
-    return files.some(file=>/(?:^|[\\/])(?:server|app)\.js$/i.test(file))
-      || /\b(?:endpoint|route|routing|dashboard|render(?:ing)?|halaman|rute|dasbor)\b/i.test(details);
+    return files.some(file=>/(?:^|[\\/])(?:server|app)\.js$/i.test(file)
+      || /(?:^|[\\/])(?:routes?|api|server)(?:[\\/]|\.|$)/i.test(file))
+      || /\b(?:buat|membuat|definisikan|implement(?:asikan)?|tambahkan|add|create|build|develop)\b.{0,50}\b(?:endpoint|route|routing|rute|server|dashboard|halaman|dasbor)\b/i.test(details)
+      || /\b(?:endpoint|route|routing|rute|server)\b.{0,50}\b(?:dibuat|ditambahkan|dibangun|diimplementasikan)\b/i.test(details);
   };
   for(let taskIndex = 0; taskIndex < tasks.length; taskIndex++){
     const task = tasks[taskIndex] || {};
@@ -149,6 +256,13 @@ export function lintPlanVerifications(docs){
         && !/\bprocess\.exit\s*\(\s*1\s*\)|\bassert(?:\.|\s*\()/i.test(verification))
         || requireOnlyExit(line))
         issues.push(issue(task, "always-zero-verification", "verification tidak menjalankan assertion/kondisi yang dapat menggagalkan proses; hasil gagal bisa tetap exit 0."));
+      const inspection = sanitizeVerificationCommand(line, true);
+      if(inspection.background)
+        issues.push(issue(task, "unsafe-background-process", "verification menjalankan proses latar belakang dengan '&'; proses dapat lolos dari gerbang dan tetap hidup setelah pemeriksaan."));
+      if(inspection.fallback)
+        issues.push(issue(task, "always-zero-verification", "verification memakai fallback shell '|| echo/true/:' yang menelan kegagalan dan dapat mengembalikan exit code 0."));
+      if(inspection.code != null && inspection.syntaxError)
+        issues.push(issue(task, "invalid-verification-syntax", "kode JavaScript pada node -e tidak valid: " + String(inspection.syntaxError.message || inspection.syntaxError)));
       if(mutatesSource(line))
         issues.push(issue(task, "verification-mutates-source", "verification tidak boleh menulis file sumber proyek; tulis hanya ke data/, tmp/, atau test/."));
       if(/\b(?:tidak ada (?:barang|data|item|produk)|empty|0\s+items?)\b/i.test(line) && !setsUpState(line))
@@ -157,13 +271,26 @@ export function lintPlanVerifications(docs){
     const behaviorUrl = String(task.behavior && task.behavior.url || "");
     if(/^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?(?:[/?#]|$)/i.test(behaviorUrl)){
       const dependsOn = Array.isArray(task.depends_on) ? task.depends_on.map(String) : [];
-      const missing = tasks
-        .map((candidate, index)=>({ candidate:candidate || {}, index }))
-        .filter(({candidate, index})=>candidate.id !== task.id && createsRoute(candidate)
-          && (index > taskIndex || !dependsOn.includes(String(candidate.id))));
-      if(missing.length)
-        issues.push(issue(task, "behavior-route-order", "behavior localhost mendahului atau tidak bergantung pada task pembuat server/route: "
-          + missing.map(x=>x.candidate.id || "?").join(", ") + "."));
+      const creators = tasks.map((candidate,index)=>({ candidate:candidate || {}, index }))
+        .filter(({index,candidate})=>index !== taskIndex && createsRoute(candidate));
+      if(creators.length && !createsRoute(task)){
+        const byId = new Map(tasks.map((candidate,index)=>[String(candidate && candidate.id || ""), { candidate:candidate || {}, index }]));
+        const pending = dependsOn.slice(), seen = new Set();
+        let earlierCreator = false;
+        while(pending.length){
+          const id = pending.pop();
+          if(seen.has(id)) continue;
+          seen.add(id);
+          const dependency = byId.get(id);
+          if(!dependency || dependency.index >= taskIndex) continue;
+          if(createsRoute(dependency.candidate)){ earlierCreator = true; break; }
+          pending.push(...(Array.isArray(dependency.candidate.depends_on)
+            ? dependency.candidate.depends_on.map(String) : []));
+        }
+        if(!earlierCreator)
+          issues.push(issue(task, "behavior-route-order", "behavior localhost mendahului atau tidak bergantung pada task pembuat server/route: "
+            + creators.map(x=>x.candidate.id || "?").join(", ") + "."));
+      }
     }
   }
   return issues;

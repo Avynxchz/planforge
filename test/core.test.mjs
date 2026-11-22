@@ -17,7 +17,7 @@ const b = html.indexOf("/* ===================== CORE-END ===================== 
 assert.ok(a > -1 && b > a, "penanda CORE tidak ditemukan");
 const core = html.slice(a, b);
 
-const PF = new Function(core + "; return {SCHEMAS, STAGES, buildSystemPrompt, briefBlock, buildStageMessages, extractJson, validatePlan, cycleOf, taskChunks, mergeTaskChunk, terapkanJawabanClarify, applyPatches, applyImprovingPatches, normalizePlan, normId, normStatus, featMatch, renderMarkdown, tasksToMd, prdToMd, roadmapToMd, featuresToMd, buildAgentPrompt, crc32, canonPlan, planCoreFromPlan, planFingerprintPlan, planFingerprint, makeZip, DEMO, AGENT_PRESETS, LIGHT_REVIEW, FULL_GATES, HARD_CHECKS, defaultGates, planBundleJson, freshStateJson, progresDariState, connNama, connPrompt, connConfigJson, connEntry, connUniversal, rencanaTulis, AGENT_ADAPTERS, gateCounts, hitungBudget, taskMuat, sisaMilestone, runnerCommand, agentsMd, runnerBundle, planTaskList, taskUi, specBehavior, masalahBehavior, behaviorBaris, CHECK_BROWSER, ALIAS_CHECK, normalisasiAliasBehavior, masalahStrukturRencana, rubrikRencana, starterMeta, starterAktif, starterLockLines, starterContractLines, saranLingkungan, missingNpmScripts, starterFileEntries, STARTER_FILES, parseField, svgWrap, erDiagramSvg, sequenceDiagramSvg, githubPushFiles, githubPush};")();
+const PF = new Function(core + "; return {SCHEMAS, STAGES, buildSystemPrompt, briefBlock, buildStageMessages, extractJson, validatePlan, cycleOf, taskChunks, mergeTaskChunk, terapkanJawabanClarify, applyPatches, applyImprovingPatches, normalizePlan, normId, normStatus, featMatch, renderMarkdown, tasksToMd, prdToMd, roadmapToMd, featuresToMd, buildAgentPrompt, crc32, canonPlan, planCoreFromPlan, planFingerprintPlan, planFingerprint, makeZip, DEMO, AGENT_PRESETS, LIGHT_REVIEW, FULL_GATES, HARD_CHECKS, defaultGates, planBundleJson, freshStateJson, progresDariState, connNama, connPrompt, connConfigJson, connEntry, connUniversal, rencanaTulis, AGENT_ADAPTERS, gateCounts, hitungBudget, taskMuat, sisaMilestone, runnerCommand, agentsMd, runnerBundle, planTaskList, taskUi, specBehavior, masalahBehavior, behaviorBaris, CHECK_BROWSER, ALIAS_CHECK, normalisasiAliasBehavior, masalahStrukturRencana, rubrikRencana, collectPlanIssues, starterMeta, starterAktif, starterLockLines, starterContractLines, saranLingkungan, missingNpmScripts, starterFileEntries, STARTER_FILES, parseField, svgWrap, erDiagramSvg, sequenceDiagramSvg, githubPushFiles, githubPush};")();
 
 let pass = 0, fail = 0;
 const t = (name, fn)=>{
@@ -130,6 +130,20 @@ t("sanitizePlanChecks membersihkan verification dan seluruh checks dalam dokumen
   assert.equal(docs.tasks.tasks[0].verification, "node -e \"x\"");
   assert.equal(docs.tasks.tasks[0].behavior.checks[0].contains, "Siap");
 });
+t("sanitizePlanChecks memperbaiki syntax node -e dan membersihkan trailing artifact", ()=>{
+  const docs = {tasks:{tasks:[
+    {id:"T-012", verification:'node -e "if (true) { console.log(\'ok\'"'},
+    {id:"T-013", verification:'node -e "console.log(\'ok\')"]'}
+  ]}};
+  assert.equal(sanitizePlanChecks(docs).length, 2);
+  assert.equal(docs.tasks.tasks[0].verification, 'node -e "if (true) { console.log(\'ok\')}"');
+  assert.equal(docs.tasks.tasks[1].verification, 'node -e "console.log(\'ok\')"');
+  assert.ok(!lintPlanVerifications(docs).some(x=>x.code === "invalid-verification-syntax"));
+});
+t("lintPlanVerifications menolak syntax node -e yang tidak bisa diperbaiki", ()=>{
+  const issues = lintPlanVerifications({tasks:{tasks:[{id:"T-014", verification:'node -e "const = ;"'}]}});
+  assert.ok(issues.some(x=>x.taskId === "T-014" && x.code === "invalid-verification-syntax"), JSON.stringify(issues));
+});
 t("lintPlanVerifications memberi temuan terstruktur untuk pola verification berisiko", ()=>{
   const docs = {tasks:{tasks:[
     {id:"T-021", verification:"node -e \"require('puppeteer'); fetch('http://localhost:3000')\""},
@@ -151,6 +165,23 @@ t("lintPlanVerifications menandai verification require-saja yang exit 0", ()=>{
   const issues = lintPlanVerifications(docs);
   assert.ok(issues.some(x=>x.taskId === "T-026" && x.code === "always-zero-verification"), JSON.stringify(issues));
   assert.ok(!issues.some(x=>x.taskId === "T-027" && x.code === "always-zero-verification"), JSON.stringify(issues));
+});
+t("requireOnlyExit menangkap destructuring require sebelum process.exit(0)", ()=>{
+  const issues = lintPlanVerifications({tasks:{tasks:[{
+    id:"T-027a", verification:'node -e "const { fn } = require(\'./module.js\'); process.exit(0)"'
+  }]}});
+  assert.ok(issues.some(x=>x.taskId === "T-027a" && x.code === "always-zero-verification"), JSON.stringify(issues));
+});
+t("lintPlanVerifications menolak background command dan fallback shell yang selalu sukses", ()=>{
+  const issues = lintPlanVerifications({tasks:{tasks:[
+    {id:"T-027b", verification:'node -e "process.exit(0)" &'},
+    {id:"T-027c", verification:"npm test || echo gagal"},
+    {id:"T-027d", verification:"npm test || true"},
+    {id:"T-027e", verification:"npm test || :"}
+  ]}});
+  assert.ok(issues.some(x=>x.taskId === "T-027b" && x.code === "unsafe-background-process"), JSON.stringify(issues));
+  for(const id of ["T-027c","T-027d","T-027e"])
+    assert.ok(issues.some(x=>x.taskId === id && x.code === "always-zero-verification"), JSON.stringify(issues));
 });
 t("lintPlanVerifications melarang verification yang menimpa kode sumber", ()=>{
   const docs = {tasks:{tasks:[
@@ -186,6 +217,19 @@ t("lintPlanVerifications mensyaratkan behavior localhost bergantung pada task pe
   docs.tasks.tasks.reverse();
   assert.ok(!lintPlanVerifications(docs).some(x=>x.taskId === "T-033" && x.code === "behavior-route-order"));
 });
+t("behavior-route-order mengizinkan task pembuat route dan dependensi transitif sebelumnya", ()=>{
+  const ownRoute = {tasks:{tasks:[{
+    id:"T-035", title:"Buat route dashboard", files_or_areas:["server.js"],
+    behavior:{url:"http://localhost:3000/"}
+  }]}};
+  assert.ok(!lintPlanVerifications(ownRoute).some(x=>x.code === "behavior-route-order"));
+  const transitive = {tasks:{tasks:[
+    {id:"T-036", title:"Buat endpoint dashboard", files_or_areas:["src/routes/dashboard.js"], depends_on:[]},
+    {id:"T-037", title:"Siapkan data dashboard", depends_on:["T-036"]},
+    {id:"T-038", title:"Cek dashboard", depends_on:["T-037"], behavior:{url:"http://localhost:3000/"}}
+  ]}};
+  assert.ok(!lintPlanVerifications(transitive).some(x=>x.taskId === "T-038" && x.code === "behavior-route-order"));
+});
 t("bahasa Inggris dan target agent umum ikut terpakai", ()=>{
   const p = PF.buildSystemPrompt({language:"English", targetAgent:"umum"});
   assert.ok(p.includes("English") && p.includes("agen mana pun"));
@@ -209,6 +253,9 @@ t("prompt tasks dan audit menetapkan kontrak server, anti-vakum, dan urutan beha
     assert.match(text, /node-fetch/);
     assert.match(text, /http\.createServer/);
     assert.match(text, /out-of-stock/);
+    assert.match(text, /requirement scope mvp.*task implementasi/i);
+    assert.match(text, /`&`/);
+    assert.match(text, /`\\|\\| echo`/);
   }
 });
 t("prompt tasks mewajibkan verification non-kosong dan endpoint ekspor web", ()=>{
@@ -257,6 +304,20 @@ t("mendeteksi requirement mvp tanpa task", ()=>{
   prd.requirements.push({id:"R-009", title:"Baru", description:"d", acceptance_criteria:["x"], priority:"must", scope:"mvp"});
   const i = PF.validatePlan(prd, PF.DEMO.roadmap, PF.DEMO.tasks);
   assert.ok(i.some(x=>x.includes("R-009") && x.includes("belum dicakup")), JSON.stringify(i));
+});
+t("requirement mvp tidak boleh hanya dicakup task unit test", ()=>{
+  const prd = structuredClone(PF.DEMO.prd);
+  prd.requirements.push({id:"R-009", title:"Baru", description:"d", acceptance_criteria:["x"], priority:"must", scope:"mvp"});
+  const tasks = structuredClone(PF.DEMO.tasks);
+  const task = tasks.tasks.find(x=>x.requirement_refs.includes("R-001"));
+  task.title = "Buat unit test katalog";
+  task.description = "Tambahkan pengujian untuk requirement katalog.";
+  task.files_or_areas = ["test/katalog.test.mjs"];
+  for(const other of tasks.tasks)
+    if(other !== task) other.requirement_refs = other.requirement_refs.filter(ref=>ref !== "R-001");
+  const issues = PF.validatePlan(prd, PF.DEMO.roadmap, tasks);
+  assert.ok(issues.some(x=>x.includes("R-009") && x.includes("belum dicakup")), JSON.stringify(issues));
+  assert.ok(issues.some(x=>x.includes("R-001") && x.includes("hanya dicakup task pengujian")), JSON.stringify(issues));
 });
 t("mendeteksi requirement_refs palsu", ()=>{
   const tasks = JSON.parse(JSON.stringify(PF.DEMO.tasks));
@@ -1769,6 +1830,17 @@ t("rubrik menggabungkan celah validator lokal dengan celah struktur", ()=>{
   assert.equal(r.siap, false);
   assert.ok(r.error.includes("prd: requirements kosong"));
   assert.ok(r.skor === 80, "satu celah = skor 80, dapat: " + r.skor);
+});
+t("skor rubrik fresh dan tersimpan memakai temuan validator serta lint yang sama", ()=>{
+  const docs = structuredClone(PF.DEMO);
+  docs.tasks.tasks[0].verification = 'node -e "const = ;"';
+  const freshIssues = PF.collectPlanIssues(docs);
+  assert.ok(freshIssues.some(x=>x.code === "invalid-verification-syntax"), JSON.stringify(freshIssues));
+  const storedIssues = structuredClone(freshIssues);
+  const fresh = PF.rubrikRencana(docs, freshIssues);
+  const stored = PF.rubrikRencana(docs, storedIssues);
+  assert.equal(fresh.skor, stored.skor);
+  assert.deepEqual(fresh.error, stored.error);
 });
 
 console.log("\n13b) rubrik sadar-starter (bug: Connect ditahan padahal starter aktif)");

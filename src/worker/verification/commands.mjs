@@ -1,12 +1,34 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { AWAL_PERINTAH, bukanPerintah } from "../environment/shell.mjs";
 import { short } from "../text.mjs";
 import { log } from "../ledger/log.mjs";
 
 export function runCmd(cmd, cwd, timeoutMs){
-  const r = spawnSync(cmd, { cwd, shell: true, encoding: "utf8", timeout: timeoutMs || 300000, maxBuffer: 20 * 1024 * 1024 });
-  const out = String(r.stdout || "") + String(r.stderr || "");
-  return { code: r.status === null ? -1 : r.status, out: out.replace(/\u001b\[[0-9;]*m/g, ""), timeout: r.status === null && /ETIMEDOUT|killed/i.test(String(r.error || "")) };
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "planforge-verification-"));
+  const stdout = path.join(dir, "stdout");
+  const stderr = path.join(dir, "stderr");
+  let outFd, errFd;
+  try{
+    outFd = fs.openSync(stdout, "w");
+    errFd = fs.openSync(stderr, "w");
+    const r = spawnSync(cmd, {
+      cwd, shell:true, timeout:timeoutMs || 300000, maxBuffer:20 * 1024 * 1024,
+      stdio:["ignore", outFd, errFd], windowsHide:true
+    });
+    const out = fs.readFileSync(stdout).toString("utf8") + fs.readFileSync(stderr).toString("utf8");
+    return {
+      code:r.status === null ? -1 : r.status,
+      out:out.replace(/\u001b\[[0-9;]*m/g, ""),
+      timeout:r.status === null && /ETIMEDOUT|killed/i.test(String(r.error || ""))
+    };
+  }finally{
+    if(outFd !== undefined) fs.closeSync(outFd);
+    if(errFd !== undefined) fs.closeSync(errFd);
+    fs.rmSync(dir, { recursive:true, force:true });
+  }
 }
 
 export function perintahVerifikasi(t){

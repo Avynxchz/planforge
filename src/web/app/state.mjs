@@ -2,9 +2,9 @@
 import { el } from "./dom.mjs";
 import { crc32 } from "../core/handoff.mjs";
 import { normalizePlan } from "../core/plan-normalize.mjs";
-import { validatePlan } from "../core/plan-rules.mjs";
 import { normalisasiAliasBehavior } from "../core/behavior-alias.mjs";
 import { sanitizePlanChecks } from "../core/verification-lint.mjs";
+import { collectPlanIssues } from "../core/plan-readiness.mjs";
 
 /* ===================== UI + TRANSPORT ===================== */
 export const PROFILES = {
@@ -179,7 +179,7 @@ export function tidyPlan(note){
   normalisasiAliasBehavior(state.docs);
   const checkFixes = sanitizePlanChecks(state.docs);
   if(checkFixes.length) state.autoFixes = (state.autoFixes || []).concat(checkFixes);
-  state.issues = validatePlan(state.docs.prd, state.docs.roadmap, state.docs.tasks);
+  state.issues = collectPlanIssues(state.docs);
   state.docs.issues = state.issues;
   if(note) state.auditNote = note;
   saveDocs();

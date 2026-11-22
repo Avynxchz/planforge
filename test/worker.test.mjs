@@ -5,6 +5,8 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import * as W from "../worker.mjs";
+import { runCmd } from "../src/worker/verification/commands.mjs";
+import { shouldRunFull } from "../src/worker/workflow/full-review.mjs";
 import { cleanupTempDirs, cleanupTempDirsSince, makeTempDir, tempDirCheckpoint, sweepStaleTempDirs } from "./temp-dirs.mjs";
 
 /* harness: tiap skenario dapat proyek temporer + agen bohongan */
@@ -68,6 +70,24 @@ const say = console.log, mute = ()=>{ console.log = ()=>{}; }, unmute = ()=>{ co
 function run(args){ mute(); try{ const c = W.main(args); return c; } finally{ unmute(); } }
 
 console.log("\n1) loop happy path — task per task dengan jeda gerbang");
+
+t("gerbang penuh penutup tetap terbuka bila task tersisa semuanya __blocked", ()=>{
+  const ctx = {
+    gates:{ limits:{fullEvery:99,fullAtMilestoneEnd:false}, reviews:[{enabled:true,tier:"full"}] },
+    plan:{ tasks:[
+      {id:"T-001",depends_on:[]},
+      {id:"T-002",depends_on:["T-003"]}
+    ] },
+    state:{ sinceFull:1, tasks:{
+      "T-001":{status:"selesai"},
+      "T-002":{status:"belum mulai"},
+      "T-003":{status:"gagal"}
+    } }
+  };
+  assert.equal(shouldRunFull(ctx, {id:"T-001"}), true);
+  ctx.state.sinceFull = 0;
+  assert.equal(shouldRunFull(ctx, {id:"T-001"}), false);
+});
 
 t("sembilan task selesai satu per satu, reviewer + gerbang penuh ikut jalan", ()=>{
   const dir = project({
@@ -1440,6 +1460,16 @@ t("state.json buatan Connect (tanpa history) tidak membuat mark_done GILIRAN cra
 });
 
 console.log("\n7) verification task: worker yang menjalankan, bukan klaim agen");
+
+t("runCmd tidak menunggu child process yang mewarisi output handle", ()=>{
+  const command = '"' + NODE + '" -e "console.log(\'utama selesai\'); require(\'node:child_process\').spawn(process.execPath,[\'-e\',\'setTimeout(()=>{},4000)\'],{stdio:\'inherit\'}).unref()"';
+  const started = Date.now();
+  const result = runCmd(command, process.cwd(), 8000);
+  const elapsed = Date.now() - started;
+  assert.equal(result.code, 0, JSON.stringify(result));
+  assert.match(result.out, /utama selesai/);
+  assert.ok(elapsed < 3000, "runCmd menunggu proses turunan terlalu lama: " + elapsed + "ms");
+});
 
 /* verifikasi yang cuma jadi hijau kalau sebuah file benar-benar ada — dipakai menguji
    merah -> ronde perbaikan -> hijau, dan penolakan mark_done/verify tanpa file itu */

@@ -4,9 +4,15 @@ import { missingNpmScripts } from "../../shared/npm-contract.mjs";
 import { normId } from "./plan-normalize.mjs";
 import { planTaskList } from "./plan-workspace.mjs";
 import { saranLingkungan } from "./starter.mjs";
+import { validatePlan } from "./plan-rules.mjs";
+import { lintPlanVerifications } from "./verification-lint.mjs";
 
 export const KATA_SCAFFOLD = /scaffold|kerangka|skeleton|setup|inisial|struktur dasar|bootstrap|bangun dasar/i;
 export const potongTeks = (s, n)=>{ const x = String(s == null ? "" : s); return x.length > n ? x.slice(0, n) + "..." : x; };
+export function collectPlanIssues(docs){
+  return validatePlan(docs && docs.prd, docs && docs.roadmap, docs && docs.tasks)
+    .concat(lintPlanVerifications(docs));
+}
 export function masalahStrukturRencana(docs, starter){
   const out = [];
   const list = planTaskList(docs) || [];

@@ -11,7 +11,8 @@ import { normalisasiAliasBehavior } from "../core/behavior-alias.mjs";
 import { AGENT_ADAPTERS, connConfigJson, connPrompt, connUniversal } from "../core/connect.mjs";
 import { makeZip } from "../core/handoff.mjs";
 import { normStatus } from "../core/plan-normalize.mjs";
-import { masalahBehavior, validatePlan } from "../core/plan-rules.mjs";
+import { masalahBehavior } from "../core/plan-rules.mjs";
+import { collectPlanIssues } from "../core/plan-readiness.mjs";
 import { hitungBudget, planTaskList, sisaMilestone } from "../core/plan-workspace.mjs";
 import { runnerCommand, shellQ } from "../core/runner.mjs";
 import { runnerBundle } from "../core/runner-package.mjs";
@@ -72,7 +73,7 @@ export function simpanBehavior(id){
     msg.textContent = "Belum disimpan — " + rusak.join(" · ");
     return;
   }
-  state.issues = validatePlan(state.docs.prd, state.docs.roadmap, state.docs.tasks);
+  state.issues = collectPlanIssues(state.docs);
   state.docs.issues = state.issues;
   saveDocs(); refreshRail();
   draw(el("tabs").querySelector(".tab.on").dataset.view);

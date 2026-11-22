@@ -465,6 +465,11 @@
       "arity": 3
     },
     {
+      "name": "collectPlanIssues",
+      "kind": "function",
+      "arity": 1
+    },
+    {
       "name": "escapeNewlinesInQuotes",
       "kind": "function",
       "arity": 1

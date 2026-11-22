@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "baselineSha256": "bdfad9972a1f98add8b2d885e845c5ae3cc354a8187537d48922bfdff55b86a2",
+  "baselineSha256": "47ddd301380749fc7c05da452c1aab4a469bd7f908db0683b081c3693acb303b",
   "normalization": "Acorn AST without source offsets, raw literal spelling or comments. Export wrappers are compared separately by the captured public characterization.",
   "declarations": [
     {
@@ -774,7 +774,7 @@
         "runCmd"
       ],
       "kind": "function",
-      "sha256": "80be9adeabdf9497c1293fd38d26befe364f0bf84b35b37c2b1624a16908d90e"
+      "sha256": "b13acc3d9ff2d225e15d6fea5993138b52b8ee48be60153d3c352b82aee2819d"
     },
     {
       "names": [
@@ -872,7 +872,7 @@
         "shouldRunFull"
       ],
       "kind": "function",
-      "sha256": "d7257bf0b8bbc3193d5b374d60358e24a3951478ae52cd6f5e9c4a06afc2cae2"
+      "sha256": "f15ee73ee889f4c638fa591550ee1694677c6e8c3b1dab1530bdff0d415220a2"
     },
     {
       "names": [
