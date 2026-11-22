@@ -270,7 +270,7 @@ t("lintPlanVerifications menandai pengecekan data kosong tanpa setup state", ()=
 t("lintPlanVerifications mensyaratkan behavior localhost bergantung pada task pembuat route", ()=>{
   const docs = {tasks:{tasks:[
     {id:"T-033", title:"Cek dashboard", behavior:{url:"http://localhost:3000/"}},
-    {id:"T-034", title:"Buat endpoint dashboard", files_or_areas:["server.js"]}
+    {id:"T-034", title:"Buat endpoint / dashboard", files_or_areas:["server.js"]}
   ]}};
   assert.ok(lintPlanVerifications(docs).some(x=>x.taskId === "T-033" && x.code === "behavior-route-order"));
   docs.tasks.tasks[0].depends_on = ["T-034"];
@@ -279,7 +279,7 @@ t("lintPlanVerifications mensyaratkan behavior localhost bergantung pada task pe
 });
 t("behavior-route-order mengizinkan task pembuat route dan dependensi transitif sebelumnya", ()=>{
   const ownRoute = {tasks:{tasks:[{
-    id:"T-035", title:"Buat route dashboard", files_or_areas:["server.js"],
+    id:"T-035", title:"Buat route / dashboard", files_or_areas:["server.js"],
     behavior:{url:"http://localhost:3000/"}
   }]}};
   assert.ok(!lintPlanVerifications(ownRoute).some(x=>x.code === "behavior-route-order"));
@@ -352,6 +352,113 @@ t("lint membedakan file statis dari route dan memeriksa kontrak path serta metho
   assert.ok(issues.some(x=>x.taskId === "T-046" && x.code === "behavior-route-order"));
   assert.ok(issues.some(x=>x.taskId === "T-046" && x.code === "conflicting-file-path"));
   assert.ok(issues.some(x=>x.taskId === "T-049" && x.code === "undefined-module-method"));
+});
+t("B11-01 unwrap require namespace dan menandai sistem modul campuran", ()=>{
+  const docs = {tasks:{tasks:[
+    {id:"B11-01a", title:"Gunakan type module", description:'package.json berisi "type": "module"'},
+    {id:"B11-01b", files_or_areas:["server.js"],
+      verification:'node -e "const app = require(\'./server.js\'); http.createServer(app)"'}
+  ]}};
+  sanitizePlanChecks(docs);
+  assert.match(docs.tasks.tasks[1].verification, /const _mod = require\('\.\/server\.js'\); const app = typeof _mod === 'function' \? _mod : \(_mod\.default \|\| _mod\)/);
+  assert.ok(lintPlanVerifications(docs).some(item=>item.code === "module-system-mismatch"));
+});
+t("B11-02 menemukan try-catch terbalik untuk stok mencukupi", ()=>{
+  const issues = lintPlanVerifications({tasks:{tasks:[{
+    id:"B11-02", description:"Jika stok tidak mencukupi, operasi harus gagal.",
+    acceptance_criteria:["Tolak jumlah yang tidak mencukupi."],
+    verification:'node -e "const items=[{sku:\'A1\',quantity:10}]; try { removeItem(items,\'A1\',2); process.exit(1); } catch { process.exit(0); }"'
+  }]}});
+  assert.ok(issues.some(item=>item.code === "inverted-verification-assertion"), JSON.stringify(issues));
+});
+t("B11-03 membuang koma shell dan menemukan kutip tak tertutup", ()=>{
+  const docs = {tasks:{tasks:[
+    {id:"B11-03a", verification:'node -e "if (true) { process.exit(1); }",'},
+    {id:"B11-03b", verification:'npm test "unterminated'}
+  ]}};
+  sanitizePlanChecks(docs);
+  assert.equal(docs.tasks.tasks[0].verification, 'node -e "if (true) { process.exit(1); }"');
+  assert.ok(lintPlanVerifications(docs).some(item=>item.taskId === "B11-03b" && item.code === "invalid-verification-syntax"));
+});
+t("B11-04 memangkas tanda baca URL dan memvalidasi behavior server URL", ()=>{
+  const docs = {tasks:{tasks:[{
+    id:"B11-04", files_or_areas:["public/dashboard.html"],
+    acceptance_criteria:["Buka http://localhost:3000, lalu tampilkan halaman dashboard."]
+  }]}};
+  sanitizePlanChecks(docs);
+  assert.equal(docs.tasks.tasks[0].behavior.url, "http://localhost:3000");
+  docs.tasks.tasks[0].behavior.server = {cmd:"node server.js", ready:"http://localhost:3000,"};
+  assert.ok(lintPlanVerifications(docs).some(item=>item.code === "invalid-behavior-url"));
+});
+t("B11-05 guard menolak patch tambal yang mengganti identitas task", ()=>{
+  const result = PF.applyImprovingPatches(PF.DEMO, {patches:[
+    {document:"tasks", collection:"tasks", action:"update", target_id:"T-001",
+      object:{title:"Buat halaman dashboard interaktif", description:"Bangun frontend dan kontrol grafis.",
+        files_or_areas:["public/dashboard.html"], behavior:{url:"http://localhost:3000/",checks:[{type:"visible",selector:"body"}]}}},
+    {document:"tasks", collection:"tasks", action:"update", target_id:"T-002",
+      object:{files_or_areas:["store.js","test/store.test.mjs","public/dashboard.html"],
+        behavior:{url:"http://localhost:3000/",checks:[{type:"visible",selector:"body"}]}}}
+  ]}, {extraIssues:lintPlanVerifications});
+  assert.equal(result.accepted, false);
+  assert.equal(result.applied, 0);
+  assert.match(result.skipped.join(" "), /task_identity_mismatch/);
+  assert.match(result.skipped.join(" "), /sanitizePlanChecks deterministik/);
+});
+t("B11-11 literal string dalam kondisi ternary numerik bukan exit string", ()=>{
+  const issues = lintPlanVerifications({tasks:{tasks:[{
+    id:"B11-11", verification:'node -e "process.exit(low[0].sku === \'A1\' ? 0 : 1)"'
+  }]}});
+  assert.ok(!issues.some(item=>item.code === "invalid-verification-exit"), JSON.stringify(issues));
+});
+t("B11-12 method modul diagregasi dari seluruh task pembuat", ()=>{
+  const issues = lintPlanVerifications({tasks:{tasks:[
+    {id:"B11-12a", files_or_areas:["src/dataStore.js"], description:"Ekspor init()."},
+    {id:"B11-12b", files_or_areas:["./src/dataStore.js"], description:"Definisikan save() untuk penyimpanan."},
+    {id:"B11-12c", verification:'node -e "const store=require(\'./src/dataStore.js\'); store.save()"'}
+  ]}});
+  assert.ok(!issues.some(item=>item.taskId === "B11-12c" && item.code === "undefined-module-method"), JSON.stringify(issues));
+});
+t("B11-13 teks localhost dalam README tidak dianggap permintaan HTTP", ()=>{
+  const issues = lintPlanVerifications({tasks:{tasks:[{
+    id:"B11-13", files_or_areas:["README.md"],
+    verification:'node -e "require(\'node:fs\').readFileSync(\'README.md\',\'utf8\').includes(\'http://localhost:3000\')"'
+  }]}});
+  assert.ok(!issues.some(item=>item.code === "dangling-localhost"), JSON.stringify(issues));
+});
+t("B11-14 mendeteksi opsi variabel tanpa port pada listen nol", ()=>{
+  const docs = {tasks:{tasks:[{
+    id:"B11-14", verification:'node -e "const http=require(\'node:http\'); const srv=http.createServer(()=>{}).listen(0); const opt={hostname:\'127.0.0.1\',path:\'/\'}; http.get(opt); srv.close()"'
+  }]}};
+  assert.ok(lintPlanVerifications(docs).some(item=>item.code === "missing-ephemeral-port"));
+  sanitizePlanChecks(docs);
+  assert.match(docs.tasks.tasks[0].verification, /port:\s*srv\.address\(\)\.port/);
+});
+t("B11-15 menangkap kontradiksi ternary dan percabangan exit array", ()=>{
+  for(const verification of [
+    'node -e "const items=[{name:\'x\'}]; process.exit(items.length === 0 ? 0 : 1); assert.ok(items[0].name)"',
+    'node -e "const items=[{name:\'x\'}]; if (items.length === 0) { process.exit(0); } else { process.exit(1); } assert.ok(items[0].name)"'
+  ]){
+    assert.ok(lintPlanVerifications({tasks:{tasks:[{id:"B11-15",verification}]}})
+      .some(item=>item.code === "contradictory-verification"), verification);
+  }
+});
+t("B11-08 dan B11-10 menandai verification bergantung pada state", ()=>{
+  const issues = lintPlanVerifications({tasks:{tasks:[
+    {id:"B11-08", verification:'node -e "require(\'node:fs\').existsSync(\'dist/output.csv\')"'},
+    {id:"B11-10", verification:'node -e "const item=cli(\'add-item\'); if(item.quantity !== 2) process.exit(1)"'}
+  ]}});
+  assert.ok(issues.some(item=>item.taskId === "B11-08" && item.code === "state-dependent-verification"), JSON.stringify(issues));
+  assert.ok(issues.some(item=>item.taskId === "B11-10" && item.code === "state-dependent-verification"), JSON.stringify(issues));
+});
+t("B11-16 dan B11-17 menolak file HTML sebagai route serta path deklarasi konflik", ()=>{
+  const issues = lintPlanVerifications({tasks:{tasks:[
+    {id:"B11-16a", behavior:{url:"http://localhost:3000/dashboard.html"}},
+    {id:"B11-16b", files_or_areas:["server.js"]},
+    {id:"B11-17a", files_or_areas:["public/dashboard.html"]},
+    {id:"B11-17b", files_or_areas:["./dashboard.html"]}
+  ]}});
+  assert.ok(issues.some(item=>item.taskId === "B11-16a" && item.code === "behavior-route-order"), JSON.stringify(issues));
+  assert.ok(issues.some(item=>item.code === "conflicting-file-path"), JSON.stringify(issues));
 });
 t("bahasa Inggris dan target agent umum ikut terpakai", ()=>{
   const p = PF.buildSystemPrompt({language:"English", targetAgent:"umum"});

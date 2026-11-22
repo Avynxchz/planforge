@@ -133,10 +133,19 @@ export function sanitizeVerificationCommand(command){
   const fixEphemeralPort = code=>{
     const server = ephemeralServerName(code);
     if(!server) return code;
-    return code.replace(/(\bhttps?\s*\.\s*(?:request|get)\s*\(\s*)\{([^{}]*)\}/g, (all, head, body)=>{
+    let fixed = code.replace(/(\bhttps?\s*\.\s*(?:request|get)\s*\(\s*)\{([^{}]*)\}/g, (all, head, body)=>{
       if(/\bport\s*:/.test(body) || !/\b(?:hostname|host)\s*:/.test(body)) return all;
       return head + "{ port: " + server + ".address().port, " + body + "}";
     });
+    const options = /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*\{([^{}]*)\}/g;
+    let match;
+    while((match = options.exec(fixed))){
+      if(/\bport\s*:/.test(match[2]) || !/\b(?:hostname|host)\s*:/.test(match[2])) continue;
+      const used = new RegExp("\\bhttps?\\s*\\.\\s*(?:request|get)\\s*\\(\\s*" + match[1] + "\\s*(?:,|\\))");
+      if(used.test(fixed))
+        fixed = fixed.slice(0, match.index) + match[0].replace(match[2], "port: " + server + ".address().port, " + match[2]) + fixed.slice(match.index + match[0].length);
+    }
+    return fixed;
   };
   const source = stripDiagnosticPipes(normalize(command));
   if(inspect){
@@ -170,7 +179,17 @@ export function sanitizeVerificationCommand(command){
     const suffix = out.slice(current.suffixStart);
     if(/^\s*(?:\]|\s*\]|\s*["']\s*\])\s*$/.test(suffix))
       out = out.slice(0, current.suffixStart) + suffix.replace(/^\s*["']?\s*\]\s*$/, "");
+    else if(/^\s*,\s*(?:["']\s*)?$/.test(suffix))
+      out = out.slice(0, current.suffixStart);
   }
+  const moduleRequire = /\b(const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*require\s*\(\s*(['"])(\.{1,2}\/(?:src\/)?[^'"]+\.js)\3\s*\)\s*;?/g;
+  out = out.replace(moduleRequire, (all, declaration, name, quote, path, offset, source)=>{
+    const createServer = new RegExp("\\bhttp\\s*\\.\\s*createServer\\s*\\(\\s*" + name + "\\s*\\)");
+    if(!createServer.test(source.slice(offset + all.length))) return all;
+    const temporary = /\b_mod\d*\b/.test(source) ? "_mod1" : "_mod";
+    return "const " + temporary + " = require(" + quote + path + quote + "); const " + name
+      + " = typeof " + temporary + " === 'function' ? " + temporary + " : (" + temporary + ".default || " + temporary + ");";
+  });
   return out;
 }
 
@@ -221,7 +240,7 @@ export function sanitizePlanChecks(docs){
     const explicit = /(https?:\/\/[^\s"'`]+)/i.exec(text);
     const route = /\b(?:route|rute|url|path|halaman)\s*(?:adalah|is|:|=)?\s*(\/[A-Za-z0-9._~!$&'()*+,;=:@%/-]*)/i.exec(text);
     let url = existing.url ? String(existing.url) : "";
-    if(!url && explicit) url = explicit[1];
+    if(!url && explicit) url = explicit[1].replace(/[,.;:!?)'"\]]+$/, "");
     if(!url && route) url = "http://127.0.0.1:8080" + route[1];
     if(!url){
       const html = filesOf(task).map(file=>file.replace(/\\/g, "/")).find(file=>/\.html?$/i.test(file));
@@ -352,6 +371,21 @@ export function lintPlanVerifications(docs){
     out.push(current);
     return out.map(item=>item.trim()).filter(Boolean);
   };
+  const unbalancedShellQuotes = value=>{
+    let quote = null, escaped = false;
+    for(const ch of String(value || "")){
+      if(quote === "'"){
+        if(ch === "'") quote = null;
+        continue;
+      }
+      if(escaped){ escaped = false; continue; }
+      if(ch === "\\" && quote !== "'"){ escaped = true; continue; }
+      if(quote){
+        if(ch === quote) quote = null;
+      }else if(ch === "'" || ch === '"' || ch === "`") quote = ch;
+    }
+    return quote !== null;
+  };
   const classifyArray = expression=>{
     const text = String(expression || "").trim();
     let match;
@@ -364,6 +398,16 @@ export function lintPlanVerifications(docs){
   };
   const arrayExpectations = code=>{
     const out = new Map();
+    const aliases = new Map();
+    let alias;
+    const aliasPattern = /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*([A-Za-z_$][\w$]*)\s*\.\s*length\b/g;
+    while((alias = aliasPattern.exec(code))) aliases.set(alias[1], alias[2]);
+    const classify = expression=>{
+      let normalized = String(expression || "");
+      for(const [name, array] of aliases)
+        normalized = normalized.replace(new RegExp("\\b" + escapeRe(name) + "\\b", "g"), array + ".length");
+      return classifyArray(normalized);
+    };
     const add = (name, kind)=>{
       if(!out.has(name)) out.set(name, new Set());
       out.get(name).add(kind);
@@ -372,8 +416,22 @@ export function lintPlanVerifications(docs){
     let match;
     const conditional = /\bif\s*\(([^()]*)\)\s*(?:\{)?\s*(process\.exit\s*\(\s*1\s*\)|throw\b|assert\.fail)/g;
     while((match = conditional.exec(code))){
-      const info = classifyArray(match[1]);
+      const info = classify(match[1]);
       if(info) add(info[1], negate(info[0]));
+    }
+    const ternaryExit = /process\.exit\s*\(\s*([^?;]+?)\s*\?\s*([01])\s*:\s*([01])\s*\)/g;
+    while((match = ternaryExit.exec(code))){
+      const info = classify(match[1]);
+      if(info) add(info[1], match[2] === "0" ? info[0] : negate(info[0]));
+    }
+    const ifElseExit = /\bif\s*\(([^()]*)\)\s*\{([^{}]*)\}\s*else\s*\{([^{}]*)\}/g;
+    while((match = ifElseExit.exec(code))){
+      const info = classify(match[1]);
+      if(!info) continue;
+      const yes = /\bprocess\.exit\s*\(\s*0\s*\)/.test(match[2]);
+      const no = /\bprocess\.exit\s*\(\s*0\s*\)/.test(match[3]);
+      if(yes && !no) add(info[1], info[0]);
+      else if(no && !yes) add(info[1], negate(info[0]));
     }
     const asserts = [
       [/\bassert\s*\.\s*(?:equal|strictEqual|deepEqual)\s*\(\s*([A-Za-z_$][\w$]*)\s*\.\s*length\s*,\s*0\s*\)/g, "empty"],
@@ -410,7 +468,9 @@ export function lintPlanVerifications(docs){
     const calls = /process\.exit\s*\(([^)]*)\)/gi;
     while((match = calls.exec(code))){
       const argument = match[1];
-      if(/(['"`])/.test(argument) && !/^\s*(?:Number|parseInt|parseFloat)\s*\(/.test(argument)) return true;
+      if(/^\s*(['"`])[^]*?\1\s*$/.test(argument)) return true;
+      const ternary = /\?\s*(['"`])[^]*?\1\s*:\s*(['"`])[^]*?\2|\?\s*[^:;]+\s*:\s*(['"`])[^]*?\3/.exec(argument);
+      if(ternary) return true;
     }
     return false;
   };
@@ -455,22 +515,18 @@ export function lintPlanVerifications(docs){
     "apply", "call", "bind", "keys", "values", "entries", "json", "text", "ok", "status", "listen", "close",
     "address", "on", "once", "emit", "use", "get", "post", "put", "patch", "delete", "all", "static", "set",
     "setHeader", "write", "end", "send", "sendFile", "redirect", "render"]);
-  const creatorOf = modulePath=>{
-    const entry = declaredPaths.get(normalizedPath(modulePath));
-    return entry ? tasks[entry.index] : null;
-  };
   const moduleMethod = (task, modulePath, method, seen)=>{
     if(!method || safeMethods.has(method)) return;
-    const creator = creatorOf(modulePath);
-    if(!creator) return;
+    const creators = tasks.filter(candidate=>filesOf(candidate).some(file=>normalizedPath(file) === normalizedPath(modulePath)));
+    if(!creators.length) return;
     const key = (task.id || "?") + "|" + method;
     if(seen.has(key)) return;
-    if(new RegExp("\\b" + escapeRe(method) + "\\b", "i").test(textOf(creator) + " " + String(creator.verification || ""))) return;
+    if(creators.some(creator=>new RegExp("\\b" + escapeRe(method) + "\\b", "i").test(textOf(creator) + " " + String(creator.verification || "")))) return;
     const code = sanitizeVerificationCommand(String(task.verification || ""), true).code || "";
     if(new RegExp("\\b" + escapeRe(method) + "\\s*=", "i").test(code)) return;
     if(new RegExp("\\bfunction\\s+" + escapeRe(method) + "\\b", "i").test(code)) return;
     seen.add(key);
-    issues.push(issue(task, "undefined-module-method", "verification memanggil metode '" + method + "' pada modul '" + modulePath + "' tetapi task pembuat '" + (creator.id || "?") + "' tidak pernah mendefinisikan metode itu."));
+    issues.push(issue(task, "undefined-module-method", "verification memanggil metode '" + method + "' pada modul '" + modulePath + "' tetapi tidak ada task yang mendefinisikannya."));
   };
   const moduleMethods = task=>{
     const verification = String(task.verification || "");
@@ -539,7 +595,9 @@ export function lintPlanVerifications(docs){
   const routeFileOf = task=>{
     const files = filesOf(task);
     const details = String(task.title || "") + " " + String(task.description || "");
-    const serverEntry = files.some(file=>/(?:^|[\\/])server\.js$/i.test(file))
+    const serverFile = files.some(file=>/(?:^|[\\/])server\.js$/i.test(file));
+    const serverEntry = serverFile && (/\bexpress\.static\b/i.test(details)
+      || /(?:^|\s)\/[A-Za-z0-9._~!$&'()*+,;=:@%/-]*/.test(details))
       || (files.some(file=>/(?:^|[\\/])app\.js$/i.test(file))
         && /\b(?:server|express|http|route|routing|rute|static|endpoint)\b/i.test(details));
     const routeModule = files.some(file=>/(?:^|[\\/])(?:routes?|api)[\\/]/i.test(file)
@@ -555,12 +613,14 @@ export function lintPlanVerifications(docs){
   const servesBehaviorPath = (task, route)=>{
     const files = filesOf(task);
     const details = files.join(" ") + " " + String(task.title || "") + " " + String(task.description || "");
+    const serverCommand = String(task.behavior && task.behavior.server && task.behavior.server.cmd || "");
     const normalizedRoute = route.replace(/\\/g, "/").replace(/^\/+/, "");
-    const routeBase = normalizedRoute.split("/").pop().toLowerCase();
     if(normalizedRoute && /\.html?$/i.test(normalizedRoute)
-      && files.some(file=>String(file).replace(/\\/g, "/").split("/").pop().toLowerCase() === routeBase)) return true;
-    if(routeFileOf(task)) return true;
+      && files.some(file=>String(file).replace(/\\/g, "/").split("/").pop().toLowerCase() === normalizedRoute.split("/").pop().toLowerCase())
+      && /\b(?:http\.server|http-server|serve\s+static)\b/i.test(serverCommand)) return true;
     const staticServing = /\bexpress\.static\b|\bstatic(?:\s+file|\s+asset|\s+serving| server| files?)\b|serve\s+static/i.test(details);
+    if(files.some(file=>/(?:^|[\\/])server\.js$/i.test(file)) && staticServing) return true;
+    if(routeFileOf(task)) return true;
     const handlerCode = /\b(?:app|router|server|fastify|express)\s*\.\s*(?:get|post|put|patch|delete|all|use|static)\s*\(/i.test(details)
       || /\b(?:http\.createServer|createServer\s*\(|serve-static|sajikan\s+(?:file|statis|halaman))/i.test(details);
     if(normalizedRoute && details.replace(/\\/g, "/").toLowerCase().includes(normalizedRoute.toLowerCase())
@@ -574,6 +634,12 @@ export function lintPlanVerifications(docs){
     let match;
     while((match = requests.exec(code))){
       if(/\b(?:hostname|host)\s*:/.test(match[1]) && !/\bport\s*:/.test(match[1])) return true;
+    }
+    const options = /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*\{([^{}]*)\}/g;
+    while((match = options.exec(code))){
+      if(!/\b(?:hostname|host)\s*:/.test(match[2]) || /\bport\s*:/.test(match[2])) continue;
+      const call = new RegExp("\\bhttps?\\s*\\.\\s*(?:request|get)\\s*\\(\\s*" + match[1] + "\\s*(?:,|\\))");
+      if(call.test(code)) return true;
     }
     return false;
   };
@@ -605,6 +671,22 @@ export function lintPlanVerifications(docs){
   const allCriteria = taskList.flatMap(task=>
     [task.title, task.description, ...(Array.isArray(task.acceptance_criteria) ? task.acceptance_criteria : [])]).join(" ");
   const allVerifications = taskList.map(task=>String(task.verification || "")).join("\n");
+  const declaredVariants = new Map();
+  for(const [path, entry] of declaredPaths){
+    const base = path.split("/").pop().toLowerCase();
+    if(!declaredVariants.has(base)) declaredVariants.set(base, []);
+    declaredVariants.get(base).push({path, entry});
+  }
+  for(const variants of declaredVariants.values()){
+    const unique = [...new Map(variants.map(item=>[item.path, item])).values()];
+    if(unique.length < 2) continue;
+    for(const item of unique){
+      const task = tasks[item.entry.index] || {};
+      issues.push(issue(task, "conflicting-file-path", "path file '" + item.path
+        + "' bertentangan dengan deklarasi lintas task: "
+        + unique.filter(other=>other.path !== item.path).map(other=>other.path).join(", ") + "."));
+    }
+  }
   const languageMix = fieldPairs.some(([local, english])=>
     new RegExp("\\b" + local + "\\b", "i").test(allCriteria)
     && new RegExp("\\." + english + "\\b", "i").test(allVerifications)
@@ -622,7 +704,8 @@ export function lintPlanVerifications(docs){
         issues.push(issue(task, "unavailable-dependency", "verification memakai puppeteer/playwright/node-fetch yang belum terpasang."));
       if(/\b(?:kill\s+%1|pkill\s+-f)\b/i.test(line))
         issues.push(issue(task, "unsafe-server-kill", "verification memakai pola kill %1 atau pkill -f; gunakan proses server yang dimiliki task dan tutup secara eksplisit."));
-      if(/\b(?:localhost|127\.0\.0\.1):\d+\b/i.test(line) && !/\.listen\s*\(/i.test(line))
+      if(/\b(?:localhost|127\.0\.0\.1):\d+\b/i.test(line) && !/\.listen\s*\(/i.test(line)
+        && /\b(?:fetch|https?\s*\.\s*(?:request|get)|axios(?:\.\w+)?|supertest)\s*\(/i.test(line))
         issues.push(issue(task, "dangling-localhost", "verification mengakses localhost tanpa menyalakan server lewat .listen(...) pada perintah yang sama."));
       if(/\bejs\.render\s*\(\s*(['"`])\s*</i.test(line) && !/\bfs\.readFileSync\s*\(/i.test(line))
         issues.push(issue(task, "hardcoded-ejs-template", "verification merender template HTML literal dengan ejs.render; baca file template asli memakai fs.readFileSync."));
@@ -634,6 +717,8 @@ export function lintPlanVerifications(docs){
         || alwaysZeroNodeEval(line))
         issues.push(issue(task, "always-zero-verification", "verification tidak menjalankan assertion/kondisi yang dapat menggagalkan proses; hasil gagal bisa tetap exit 0."));
       const lineInspection = sanitizeVerificationCommand(line, true);
+      if(unbalancedShellQuotes(verification) && !hasIssue(task, "invalid-verification-syntax"))
+        issues.push(issue(task, "invalid-verification-syntax", "perintah shell memiliki tanda kutip yang tidak berpasangan."));
       if(isNodeEval(line) && invalidExitArg(lineInspection.code || ""))
         issues.push(issue(task, "invalid-verification-exit", "process.exit menerima literal string; Node.js melempar ERR_INVALID_ARG_TYPE dan verification selalu gagal."));
       if(/\brequire\s*\(\s*(['"])(?:\/workspace\/|\/home\/)[^'"]*\1\s*\)|\bcd\s+\/(?:tmp|workspace)(?:\/[^\s;&|]*)?(?:\s|$)/i.test(line))
@@ -655,17 +740,60 @@ export function lintPlanVerifications(docs){
         issues.push(issue(task, "verification-mutates-source", "verification tidak boleh menulis file sumber proyek; tulis hanya ke data/, tmp/, atau test/."));
       if(/\b(?:tidak ada (?:barang|data|item|produk)|empty|0\s+items?)\b/i.test(line) && !setsUpState(line))
         issues.push(issue(task, "state-dependent-verification", "verification memeriksa kondisi data kosong tanpa menyiapkan atau mereset state yang diperiksa pada perintah yang sama."));
+      if(/(?:test\s+-f|existsSync|accessSync|statSync)\s*\(?\s*['"`][^'"`]*(?:output|hasil|export|generated|dist\/)[^'"`]*['"`]?/i.test(line)
+        && !/\b(?:writeFile|writeFileSync|appendFile|mkdir|build|generate|export)\b/i.test(verification))
+        issues.push(issue(task, "state-dependent-verification", "verification hanya memeriksa keberadaan file output tanpa membuat atau menghasilkan file itu."));
+      if(/\badd-item\b/i.test(line) && /\bquantity\b|\.qty\b|jumlah/i.test(line)
+        && /\b(?:===?|assert\.equal|strictEqual)\b|process\.exit/i.test(line)
+        && !setsUpState(verification))
+        issues.push(issue(task, "state-dependent-verification", "verification add-item memeriksa kuantitas eksak tanpa menyiapkan atau mereset data terlebih dahulu."));
       for(const ref of pathReferences(line)) conflictingPath(task, ref);
     }
     if(contradictoryCommands(verification) && !hasIssue(task, "contradictory-verification"))
       issues.push(issue(task, "contradictory-verification", "verification memeriksa array yang sama sebagai kosong dan sekaligus mewajibkan elemen pertamanya."));
     moduleMethods(task);
     const criteria = [task.title, task.description, ...(Array.isArray(task.acceptance_criteria) ? task.acceptance_criteria : [])].join(" ");
+    const moduleRequirement = /(?:["']type["']\s*:\s*["']module["']|\btype\s*===?\s*["']module["'])/i.test(textOf(task) + " " + String(task.verification || ""));
+    const cjsUsage = /\brequire\s*\(\s*(['"])(?:\.{1,2}\/)[^'"]+\.js\1\s*\)/i.test(String(task.verification || ""));
+    if(moduleRequirement || cjsUsage){
+      const conflicting = tasks.some(candidate=>{
+        const source = textOf(candidate) + " " + String(candidate && candidate.verification || "");
+        return moduleRequirement
+          ? /\brequire\s*\(\s*(['"])(?:\.{1,2}\/)[^'"]+\.js\1\s*\)/i.test(String(candidate && candidate.verification || ""))
+          : /(?:["']type["']\s*:\s*["']module["']|\btype\s*===?\s*["']module["'])/i.test(source);
+      });
+      if(conflicting && !hasIssue(task, "module-system-mismatch"))
+        issues.push(issue(task, "module-system-mismatch", "plan mencampur type: module dengan require() untuk modul lokal .js; gunakan satu sistem modul secara konsisten."));
+    }
+    if(/\b(?:tidak mencukupi|tidak ditemukan|gagal|invalid|negatif|kosong|insufficient|not found|failed)\b/i.test(criteria)){
+      const code = sanitizeVerificationCommand(String(task.verification || ""), true).code || "";
+      const tryCatch = /\btry\s*\{([\s\S]*?)\}\s*catch(?:\s*\([^)]*\))?\s*\{([\s\S]*?)\}/i.exec(code);
+      const seeded = /\bquantity\s*:\s*(\d+)/i.exec(code);
+      const removal = /\bremoveItem\s*\([^)]*,\s*(\d+)\s*\)/i.exec(code);
+      if(tryCatch && seeded && removal && Number(seeded[1]) >= Number(removal[1])
+        && /\bprocess\.exit\s*\(\s*1\s*\)/.test(tryCatch[1])
+        && /\bprocess\.exit\s*\(\s*0\s*\)/.test(tryCatch[2]))
+        issues.push(issue(task, "inverted-verification-assertion", "kriteria menuntut penolakan kondisi tidak valid, tetapi verification mengharapkan exception untuk removeItem dengan stok mencukupi."));
+    }
     if(/\bCSV\b/i.test(criteria) && /\bJSON\b/i.test(verification) && !/\bCSV\b/i.test(verification))
       issues.push(issue(task, "verification-criteria-mismatch", "kriteria task membahas CSV tetapi verification hanya menguji JSON."));
     const behaviorUrl = String(task.behavior && task.behavior.url || "");
-    if(/^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?(?:[/?#]|$)/i.test(behaviorUrl)){
-      const route = new URL(behaviorUrl).pathname || "/";
+    const behaviorReady = String(task.behavior && task.behavior.server && task.behavior.server.ready || "");
+    const behaviorUrls = [behaviorUrl, behaviorReady].filter((url, index)=>url || (index === 0 && !!task.behavior));
+    let parsedBehaviorUrl = null;
+    for(const url of behaviorUrls){
+      try{
+        const parsed = new URL(url);
+        if(!/^https?:$/.test(parsed.protocol) || /[,.;:!?)'"\]]+$/.test(url))
+          throw new Error("invalid URL punctuation or protocol");
+        if(url === behaviorUrl) parsedBehaviorUrl = parsed;
+      }catch(e){
+        issues.push(issue(task, "invalid-behavior-url", "behavior.url dan behavior.server.ready harus berupa URL http(s) yang valid tanpa tanda baca akhir."));
+        break;
+      }
+    }
+    if(parsedBehaviorUrl && /^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?(?:[/?#]|$)/i.test(behaviorUrl)){
+      const route = parsedBehaviorUrl.pathname || "/";
       const creators = tasks.map((candidate,index)=>({ candidate:candidate || {}, index }))
         .filter(({index,candidate})=>index !== taskIndex && createsRoute(candidate));
       if(!routeDependencies(task, taskIndex, route))

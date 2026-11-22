@@ -3,6 +3,7 @@ import { normId, normalizePlan } from "./plan-normalize.mjs";
 import { KATA_SCAFFOLD, masalahStrukturRencana, rubrikRencana } from "./plan-readiness.mjs";
 import { validatePlan } from "./plan-rules.mjs";
 import { sanitizePlanChecks } from "./verification-lint.mjs";
+import { taskUi } from "../../shared/behavior-spec.mjs";
 
 /* Pecah pembuatan task per milestone supaya model kecil tidak terpotong: tiap chunk
    kecil, total task tetap natural (tidak dipatok). Tanpa milestone -> satu panggilan penuh. */
@@ -122,8 +123,31 @@ export function applyImprovingPatches(docs, patch, starter){
     return {docs:candidate, issues, lintIssues, problems:issues.length + masalahStrukturRencana(candidate, isStarter).length, score:rubric.skor};
   };
   const before = measurePlan(docs, options.starter, false);
-  const applied = applyPatches(before.docs, patch, {starter:options.starter});
+  const taskList = before.docs.tasks && Array.isArray(before.docs.tasks.tasks) ? before.docs.tasks.tasks : [];
+  const rejected = [];
+  const patches = ((patch && patch.patches) || []).filter(item=>{
+    if(!item || item.document !== "tasks" || item.collection !== "tasks" || item.action !== "update") return true;
+    const oldTask = taskList.find(task=>task && task.id === item.target_id);
+    if(!oldTask) return true;
+    const updated = Object.assign({}, oldTask, item.object || {});
+    const words = task=>new Set((String(task.title || "") + " " + String(task.description || ""))
+      .toLowerCase().match(/[a-z0-9]{3,}/g) || []);
+    const oldWords = words(oldTask), nextWords = words(updated);
+    const overlap = [...oldWords].filter(word=>nextWords.has(word)).length;
+    const identityShift = oldWords.size >= 3 && nextWords.size >= 3 && overlap / Math.min(oldWords.size, nextWords.size) < 0.25;
+    const uiShift = !taskUi(oldTask) && taskUi(updated) && !!updated.behavior;
+    if(!identityShift && !uiShift) return true;
+    rejected.push("patch task " + String(item.target_id || "?") + " ditolak: identitas/domain task berubah (task_identity_mismatch)");
+    return false;
+  });
+  const applied = applyPatches(before.docs, Object.assign({}, patch, {patches}), {starter:options.starter});
+  applied.skipped.unshift(...rejected);
   const after = measurePlan(applied, options.starter, true);
+  if(rejected.length && !applied.applied){
+    const codes = [...new Set(after.lintIssues.map(item=>item && item.code).filter(Boolean))];
+    applied.skipped.push("ronde menghasilkan 0 patch; sanitizePlanChecks deterministik dijalankan"
+      + (codes.length ? " (kode lint: " + codes.join(", ") + ")" : " (tanpa kode lint baru)"));
+  }
   const baselineLintIssues = new Map();
   for(const item of before.lintIssues){
     const key = JSON.stringify([item && item.stage, item && item.taskId, item && item.code, item && item.message]);

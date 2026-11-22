@@ -14,15 +14,47 @@ export function runCmd(cmd, cwd, timeoutMs){
   try{
     outFd = fs.openSync(stdout, "w");
     errFd = fs.openSync(stderr, "w");
+    const rawTimeout = timeoutMs === undefined
+      ? process.env.PLANFORGE_VERIFY_TIMEOUT_MS
+      : timeoutMs;
+    const parsedTimeout = Number(rawTimeout);
+    const effectiveTimeout = Number.isFinite(parsedTimeout) && parsedTimeout > 0
+      ? Math.floor(parsedTimeout)
+      : 30000;
     const r = spawnSync(cmd, {
-      cwd, shell:true, timeout:timeoutMs || 300000, maxBuffer:20 * 1024 * 1024,
-      stdio:["ignore", outFd, errFd], windowsHide:true
+      cwd, shell:true, timeout:effectiveTimeout, maxBuffer:20 * 1024 * 1024,
+      stdio:["ignore", outFd, errFd], windowsHide:true,
+      detached:process.platform !== "win32", killSignal:"SIGKILL"
     });
+    const timedOut = r.status === null && (!!r.error || /ETIMEDOUT|killed/i.test(String(r.error || "")));
+    if(timedOut && r.pid){
+      if(process.platform === "win32"){
+        spawnSync("taskkill", ["/pid", String(r.pid), "/T", "/F"], {
+          encoding:"utf8", timeout:10000, windowsHide:true
+        });
+      }else{
+        try{ process.kill(-r.pid, "SIGKILL"); }
+        catch(e){
+          try{ process.kill(r.pid, "SIGKILL"); }catch(killError){}
+        }
+      }
+    }
     const out = fs.readFileSync(stdout).toString("utf8") + fs.readFileSync(stderr).toString("utf8");
+    if(timedOut){
+      const duration = effectiveTimeout >= 1000 && effectiveTimeout % 1000 === 0
+        ? (effectiveTimeout / 1000) + "s"
+        : effectiveTimeout + "ms";
+      return {
+        code:-1,
+        out:(out ? out + "\n" : "") + "Verification timed out after " + duration
+          + " — ensure server closes or exits cleanly",
+        timeout:true
+      };
+    }
     return {
       code:r.status === null ? -1 : r.status,
       out:out.replace(/\u001b\[[0-9;]*m/g, ""),
-      timeout:r.status === null && /ETIMEDOUT|killed/i.test(String(r.error || ""))
+      timeout:false
     };
   }finally{
     if(outFd !== undefined) fs.closeSync(outFd);
@@ -51,7 +83,7 @@ export function runVerification(ctx, cwd, t, opsi){
       + " atau kerjakan task ini lewat jalur manual dan jangan tandai selesai lewat worker."], hasil, raw };
   for(const cmd of baris){
     const t0 = Date.now();
-    const r = runCmd(cmd, cwd, (opsi && opsi.timeoutMs) || 300000);
+    const r = runCmd(cmd, cwd, opsi && opsi.timeoutMs);
     const pass = r.code === 0;
     hasil.push({ cmd, code: r.code, pass, ms: Date.now() - t0, out: short(r.out, 2000) });
     log(ctx, "  verifikasi " + (pass ? "OK" : "GAGAL") + " (exit " + r.code + ", " + Math.round((Date.now() - t0) / 1000) + "s): " + short(cmd, 110));

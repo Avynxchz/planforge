@@ -2004,6 +2004,32 @@ t("missing environment does not block task handoff but failed proof still reject
   const result = call("mark_done",{id:"T-001",verification:"claimed complete"});
   assert.match(result,/TOLAK/); assert.notEqual(ctx.state.tasks["T-001"].status,"selesai");
 });
+t("hung verification times out quickly and leaves no verification child", ()=>{
+  const dir = envProject(), ctx = W.loadCtx(dir);
+  ctx.plan.tasks.tasks[0].verification = 'node -e "setInterval(()=>{},1000)"';
+  const call = (name,args={})=>W.mcpHandle({jsonrpc:"2.0",id:99,method:"tools/call",params:{name,arguments:args}},ctx).result.content[0].text;
+  const oldTimeout = process.env.PLANFORGE_VERIFY_TIMEOUT_MS;
+  process.env.PLANFORGE_VERIFY_TIMEOUT_MS = "500";
+  const start = Date.now();
+  let result;
+  try{
+    result = call("mark_done",{id:"T-001",verification:"node -e setInterval test"});
+  }finally{
+    if(oldTimeout === undefined) delete process.env.PLANFORGE_VERIFY_TIMEOUT_MS;
+    else process.env.PLANFORGE_VERIFY_TIMEOUT_MS = oldTimeout;
+  }
+  assert.ok(Date.now() - start < 3000, "mark_done must fail within 3 seconds");
+  assert.match(result,/TOLAK/);
+  assert.match(result,/Verification timed out after 500ms/);
+  assert.notEqual(ctx.state.tasks["T-001"].status,"selesai");
+  if(process.platform === "win32"){
+    const remaining = spawnSync("tasklist", ["/FO","CSV","/NH"], {encoding:"utf8"});
+    assert.doesNotMatch(String(remaining.stdout || ""), /node\.exe[^\\r\\n]*setInterval/i);
+  }else{
+    const remaining = spawnSync("pgrep", ["-af","node.*setInterval.*1000"], {encoding:"utf8"});
+    assert.equal(String(remaining.stdout || "").trim(),"");
+  }
+});
 t("setup-env fails closed on broad unignore and preserves production config", ()=>{
   const dir=envProject();
   fs.writeFileSync(path.join(dir,".gitignore"),".env.local\n!*\n");
