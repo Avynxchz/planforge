@@ -16,6 +16,7 @@ import { collectPlanIssues } from "../core/plan-readiness.mjs";
 import { hitungBudget, planTaskList, sisaMilestone } from "../core/plan-workspace.mjs";
 import { runnerCommand, shellQ } from "../core/runner.mjs";
 import { runnerBundle } from "../core/runner-package.mjs";
+import { starterAktif } from "../core/starter.mjs";
 
 export function restorePrev(){
   const h = readHistory();
@@ -26,7 +27,9 @@ export function restorePrev(){
   const h2 = readHistory();
   const rest = h2.filter((_,i)=>i !== 1).slice(0, 6);
   state.docs = {clarify:s.clarify, prd:s.prd, roadmap:s.roadmap, tasks:s.tasks};
-  state.issues = s.issues || []; state.savedAt = s.savedAt || s.at;
+  state.issues = collectPlanIssues(state.docs, starterAktif(readCfg()));
+  state.docs.issues = state.issues;
+  state.savedAt = s.savedAt || s.at;
   state.autoFixes = []; state.auditNote = "Dipulihkan ke versi " + new Date(s.at).toLocaleString("id-ID") + " (" + s.note + ").";
   localStorage.setItem(HIST_NAME, JSON.stringify(rest));
   saveDocs(); refreshRail(); drawActions();
@@ -73,7 +76,7 @@ export function simpanBehavior(id){
     msg.textContent = "Belum disimpan — " + rusak.join(" · ");
     return;
   }
-  state.issues = collectPlanIssues(state.docs);
+  state.issues = collectPlanIssues(state.docs, starterAktif(readCfg()));
   state.docs.issues = state.issues;
   saveDocs(); refreshRail();
   draw(el("tabs").querySelector(".tab.on").dataset.view);

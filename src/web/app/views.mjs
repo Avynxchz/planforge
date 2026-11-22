@@ -4,7 +4,7 @@ import { hasStage, readCfg, state } from "./state.mjs";
 import { ensureWorkerSource } from "./runner-config.mjs";
 import { renderRunner } from "./runner-view.mjs";
 import { copyText, exportBundle } from "./artifacts.mjs";
-import { masalahStrukturRencana } from "../core/plan-readiness.mjs";
+import { collectPlanIssues, masalahStrukturRencana } from "../core/plan-readiness.mjs";
 import { STAGES } from "../core/plan-schema.mjs";
 import { buildAgentPrompt, renderMarkdown, tasksToMd } from "../core/render.mjs";
 import { saranLingkungan, starterAktif } from "../core/starter.mjs";
@@ -55,8 +55,12 @@ export function draw(view){
   const d = state.docs;
   if(view === "issues") {
     const adaRencana = !!(d.prd || d.roadmap || d.tasks);
-    el("out").innerHTML = renderMarkdown("issues", state.issues, {empty:!adaRencana, fixes:state.autoFixes, auditNote:state.auditNote,
-      struktur:adaRencana ? masalahStrukturRencana(state.docs, starterAktif(readCfg())) : [], warn:saranLingkungan(starterAktif(readCfg()))});
+    const starter = starterAktif(readCfg());
+    const struktur = adaRencana ? masalahStrukturRencana(d, starter) : [];
+    const issues = adaRencana ? collectPlanIssues(d, starter)
+      .filter(issue=>typeof issue !== "string" || !struktur.includes(issue)) : state.issues;
+    el("out").innerHTML = renderMarkdown("issues", issues, {empty:!adaRencana, fixes:state.autoFixes, auditNote:state.auditNote,
+      struktur, warn:saranLingkungan(starter)});
     return;
   }
   if(view === "runner"){ el("out").innerHTML = renderRunner();

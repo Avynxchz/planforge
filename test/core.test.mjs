@@ -39,6 +39,19 @@ t("system prompt memuat aturan JSON-only, ID, cakupan, dan bahasa", ()=>{
   for(const s of ["HANYA dengan satu objek JSON", "R-001", "Setiap requirement tercakup", "Bahasa Indonesia", "Claude Code", "satu commit".slice(0,0) || "1-5 file"])
     assert.ok(p.includes(s), "kurang: " + s);
 });
+t("validatePlan menahan PRD kosong, requirement sintetis, dan judul requirement duplikat", ()=>{
+  const empty = structuredClone(PF.DEMO.prd);
+  empty.requirements = [];
+  assert.ok(PF.validatePlan(empty, PF.DEMO.roadmap, PF.DEMO.tasks)
+    .some(issue=>issue.includes("requirements kosong")));
+  const generated = PF.normalizePlan(empty, PF.DEMO.roadmap, PF.DEMO.tasks).prd;
+  assert.ok(PF.validatePlan(generated, PF.DEMO.roadmap, PF.DEMO.tasks)
+    .some(issue=>issue.includes("requirement disintesis otomatis")));
+  const duplicate = structuredClone(PF.DEMO.prd);
+  duplicate.requirements[1].title = duplicate.requirements[0].title;
+  assert.ok(PF.validatePlan(duplicate, PF.DEMO.roadmap, PF.DEMO.tasks)
+    .some(issue=>issue.includes("judul requirement duplikat")));
+});
 t("normalisasi behavior memetakan text.expected ke contains dan menghapus alias", ()=>{
   const tasks = JSON.parse(JSON.stringify(PF.DEMO.tasks));
   tasks.tasks[0].behavior.checks = [{type:"text",selector:"h1",expected:"Ringkasan"}];
@@ -65,8 +78,8 @@ t("requirements yang hilang disintesis dari requirement_refs task", ()=>{
   assert.ok(ids.includes("R-001"), JSON.stringify(ids));
   assert.ok(normalized.prd.requirements.every(requirement=>
     requirement.title && requirement.description && requirement.acceptance_criteria.length));
-  assert.ok(!PF.validatePlan(normalized.prd, normalized.roadmap, normalized.tasks)
-    .some(issue=>issue.includes("prd: requirements kosong atau tidak ada")));
+  assert.ok(PF.validatePlan(normalized.prd, normalized.roadmap, normalized.tasks)
+    .some(issue=>issue.includes("requirement disintesis otomatis")));
 });
 t("verification kosong diisi fallback sesuai target file", ()=>{
   const tasks = structuredClone(PF.DEMO.tasks);
@@ -172,6 +185,53 @@ t("requireOnlyExit menangkap destructuring require sebelum process.exit(0)", ()=
   }]}});
   assert.ok(issues.some(x=>x.taskId === "T-027a" && x.code === "always-zero-verification"), JSON.stringify(issues));
 });
+t("lint menolak ternary hasil teks, exit string, dan vakum builtin Node", ()=>{
+  const issues = lintPlanVerifications({tasks:{tasks:[
+    {id:"T-027f", verification:'node -e "console.log(ok ? \'OK\' : \'FAIL\')"'},
+    {id:"T-027g", verification:'node -e "process.exit(\'OK\')"'},
+    {id:"T-027h", verification:'node -e "require(\'node:util\'); console.log(\'valid\'); process.exit(0)"'}
+  ]}});
+  assert.ok(issues.some(x=>x.taskId === "T-027f" && x.code === "always-zero-verification"), JSON.stringify(issues));
+  assert.ok(issues.some(x=>x.taskId === "T-027g" && x.code === "invalid-verification-exit"), JSON.stringify(issues));
+  assert.ok(issues.some(x=>x.taskId === "T-027h" && x.code === "always-zero-verification"), JSON.stringify(issues));
+});
+t("lint dan sanitizer menangani path absolut, assertion kontradiktif, dan entry server", ()=>{
+  const docs = {tasks:{tasks:[
+    {id:"T-027i", verification:'node -e "require(\'/workspace/src/server.js\')"'},
+    {id:"T-027j", verification:'node -e "const rows=[]; if(rows.length === 0 && rows[0].name) process.exit(1)"'},
+    {id:"T-027k", files_or_areas:["src/server.js"], verification:'node -e "const app=require(\'./src/server.js\'); http.createServer(app)"'}
+  ]}};
+  const cleanDocs = structuredClone(docs);
+  assert.ok(sanitizePlanChecks(cleanDocs).some(x=>x.includes("verification disanitasi")));
+  assert.match(cleanDocs.tasks.tasks[0].verification, /require\('\.\/src\/server\.js'\)/);
+  const issues = lintPlanVerifications(docs);
+  assert.ok(issues.some(x=>x.taskId === "T-027i" && x.code === "hardcoded-workspace-path"), JSON.stringify(issues));
+  assert.ok(issues.some(x=>x.taskId === "T-027j" && x.code === "contradictory-verification"), JSON.stringify(issues));
+  assert.ok(!issues.some(x=>x.taskId === "T-027k" && x.code === "stub-application-server"), JSON.stringify(issues));
+});
+t("lint menangkap path entry server terbelah, properti model campur bahasa, dan depends_on modul", ()=>{
+  const issues = lintPlanVerifications({tasks:{tasks:[
+    {id:"T-027l", title:"Buat model barang dengan nama dan jumlah", files_or_areas:["server.js"]},
+    {id:"T-027m", title:"Uji model", verification:'node -e "const app=require(\'./server.js\'); console.log(app.name)"'},
+    {id:"T-027n", verification:'node -e "require(\'./src/server.js\')"'}
+  ]}});
+  for(const code of ["split-server-entry-path","mixed-model-field-language","missing-module-dependency"])
+    assert.ok(issues.some(x=>x.code === code), code + ": " + JSON.stringify(issues));
+});
+t("behavior-route-order mewajibkan task static serving untuk path halaman yang diuji", ()=>{
+  const missing = {tasks:{tasks:[
+    {id:"T-027q", title:"Uji API", behavior:{url:"http://localhost:3000/api/items"}}
+  ]}};
+  assert.ok(lintPlanVerifications(missing).some(x=>x.taskId === "T-027q" && x.code === "behavior-route-order"));
+  const docs = {tasks:{tasks:[
+    {id:"T-027o", title:"Uji dashboard", behavior:{url:"http://localhost:3000/dashboard.html"}},
+    {id:"T-027p", title:"Siapkan static serving express.static", files_or_areas:["server.js"]}
+  ]}};
+  assert.ok(lintPlanVerifications(docs).some(x=>x.taskId === "T-027o" && x.code === "behavior-route-order"));
+  docs.tasks.tasks[0].depends_on = ["T-027p"];
+  docs.tasks.tasks.reverse();
+  assert.ok(!lintPlanVerifications(docs).some(x=>x.taskId === "T-027o" && x.code === "behavior-route-order"));
+});
 t("lintPlanVerifications menolak background command dan fallback shell yang selalu sukses", ()=>{
   const issues = lintPlanVerifications({tasks:{tasks:[
     {id:"T-027b", verification:'node -e "process.exit(0)" &'},
@@ -243,6 +303,10 @@ t("prompt tasks dan audit menetapkan skema behavior serta verifikasi berbasis ex
     assert.match(text, /regex BRE/);
     assert.match(text, /idempotent dan state-independent/);
     assert.match(text, /jangan (?:pernah )?menulis\/menimpa file sumber proyek/);
+    assert.match(text, /acceptance_criteria, jangan membalik kondisi lulus\/gagal/);
+    assert.match(text, /process\.exit\(0\).*process\.exit\(1\)/);
+    assert.match(text, /path relatif \.\/\.\.\./);
+    assert.match(text, /satu bahasa nama properti model data yang konsisten/);
   }
 });
 t("prompt tasks dan audit menetapkan kontrak server, anti-vakum, dan urutan behavior", ()=>{
@@ -1773,11 +1837,11 @@ t("kata UI tunggal tidak menandai target backend sebagai task UI", ()=>{
   assert.equal(PF.taskUi({files_or_areas:["src/web/panel.jsx"], acceptance_criteria:["panel tampil"]}), true);
 });
 t("skor rubrik tetap 80 untuk satu celah, tanpa penalti behavior palsu pada backend", ()=>{
-  const docs = { tasks:{ tasks:[{ id:"T-001", title:"Scaffold CLI untuk data tombol", files_or_areas:["src/utils.js"],
-    verification:"node --test test/utils.test.mjs", acceptance_criteria:["API mengembalikan status tombol"] }] } };
-  const r = PF.rubrikRencana(docs, ["prd: requirements kosong"]);
+  const docs = structuredClone(PF.DEMO);
+  docs.tasks.tasks[0].verification = 'node -e "require(\'node:util\'); console.log(\'valid\'); process.exit(0)"';
+  const r = PF.rubrikRencana(docs, PF.collectPlanIssues(docs));
   assert.equal(r.skor, 80);
-  assert.deepEqual(r.error, ["prd: requirements kosong"]);
+  assert.ok(r.error.some(x=>x.includes("assertion/kondisi yang dapat menggagalkan")));
 });
 t("rubrik meloloskan rencana contoh yang punya T-001 scaffold", ()=>{
   const r = PF.rubrikRencana(PF.DEMO, []);
@@ -1825,11 +1889,12 @@ t("temp directory helper dibersihkan saat callback melempar", ()=>{
   assert.equal(fs.existsSync(dir), false);
 });
 t("rubrik menggabungkan celah validator lokal dengan celah struktur", ()=>{
-  const docs = { tasks:{ tasks:[{ id:"T-001", title:"Scaffold proyek statis", description:"buat kerangka", verification:"node --test test/a.test.mjs" }] } };
-  const r = PF.rubrikRencana(docs, ["prd: requirements kosong"]);
+  const docs = structuredClone(PF.DEMO);
+  docs.tasks.tasks[0].verification = "";
+  const r = PF.rubrikRencana(docs, PF.collectPlanIssues(docs));
   assert.equal(r.siap, false);
-  assert.ok(r.error.includes("prd: requirements kosong"));
-  assert.ok(r.skor === 80, "satu celah = skor 80, dapat: " + r.skor);
+  assert.ok(r.error.some(issue=>issue.includes("verification kosong")));
+  assert.ok(r.error.length > 1, "validator dan lint/struktur harus diagregasi: " + r.error.join(" | "));
 });
 t("skor rubrik fresh dan tersimpan memakai temuan validator serta lint yang sama", ()=>{
   const docs = structuredClone(PF.DEMO);
@@ -1837,14 +1902,24 @@ t("skor rubrik fresh dan tersimpan memakai temuan validator serta lint yang sama
   const freshIssues = PF.collectPlanIssues(docs);
   assert.ok(freshIssues.some(x=>x.code === "invalid-verification-syntax"), JSON.stringify(freshIssues));
   const storedIssues = structuredClone(freshIssues);
+  docs.issues = storedIssues;
   const fresh = PF.rubrikRencana(docs, freshIssues);
   const stored = PF.rubrikRencana(docs, storedIssues);
+  const runner = PF.rubrikRencana(docs, PF.collectPlanIssues(docs));
   assert.equal(fresh.skor, stored.skor);
+  assert.equal(fresh.skor, runner.skor);
   assert.deepEqual(fresh.error, stored.error);
 });
 
 console.log("\n13b) rubrik sadar-starter (bug: Connect ditahan padahal starter aktif)");
-const docsMigrasi = { tasks:{ tasks:[{ id:"T-001", title:"Buat migrasi tabel categories dan expenses di atas starter", description:"tambah tabel fitur di DB starter yang sudah jalan", files_or_areas:["db/migrations/001.sql","lib/db.js"], verification:"npm test", acceptance_criteria:["tabel dibuat"] }] } };
+const docsMigrasi = structuredClone(PF.DEMO);
+Object.assign(docsMigrasi.tasks.tasks[0], {
+  title:"Buat migrasi tabel categories dan expenses di atas starter",
+  description:"tambah tabel fitur di DB starter yang sudah jalan",
+  files_or_areas:["db/migrations/001.sql","lib/db.js"],
+  verification:"npm test"
+});
+delete docsMigrasi.tasks.tasks[0].behavior;
 t("starterAktif membaca pilihan nextjs-fullstack vs kosong", ()=>{
   assert.equal(PF.starterAktif({starter:"nextjs-fullstack"}), true);
   assert.equal(PF.starterAktif({starter:""}), false);
@@ -1940,7 +2015,7 @@ t("quoted code does not invent npm script calls; behavior server is checked", ()
 });
 t("wrong stack remains strict; rejected alternatives are not the chosen stack", ()=>{
   const d = structuredClone(docsMigrasi);
-  d.prd = {tech:[{decision:"SQLite", alternatives:["PostgreSQL"]}]};
+  d.prd.tech = [{decision:"SQLite", alternatives:["PostgreSQL"]}];
   assert.equal(PF.rubrikRencana(d, [], true).siap, false);
   d.prd.tech = [{decision:"Next.js 15 + PostgreSQL", alternatives:["SQLite"], rationale:"bukan FastAPI"}];
   assert.equal(PF.rubrikRencana(d, [], true).siap, true);
@@ -1953,7 +2028,7 @@ t("npm flags and exact script declarations agree in web and worker", ()=>{
   assert.equal(r.length,1); assert.equal(r[0].id,"T-002");
   assert.deepEqual(r,W.missingNpmScripts(ts,pkg));
   const d=structuredClone(docsMigrasi);
-  d.prd={tech:[{decision:"Next.js + PostgreSQL (not SQLite)"}]};
+  d.prd.tech=[{decision:"Next.js + PostgreSQL (not SQLite)"}];
   assert.equal(PF.rubrikRencana(d,[],true).siap,true);
   d.prd.tech[0].decision="Database: PostgreSQL bukan MySQL";
   assert.equal(PF.rubrikRencana(d,[],true).siap,true);

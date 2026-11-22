@@ -26,6 +26,13 @@ export function validatePlan(prd, roadmap, tasks){
   if(!prd || !Array.isArray(prd.requirements) || prd.requirements.length === 0){
     issues.push("prd: requirements kosong atau tidak ada"); return issues;
   }
+  if(prd.requirements.every(requirement=>
+    /^(?:requirement )?sintetis otomatis dari task\b/i.test(String(requirement && requirement.description || "").trim())))
+    issues.push("prd: seluruh requirement disintesis otomatis — PRD asli harus diperbaiki");
+  const requirementTitles = prd.requirements.map(requirement=>
+    String(requirement && requirement.title || "").trim().toLowerCase().replace(/\s+/g, " ")).filter(Boolean);
+  if(new Set(requirementTitles).size !== requirementTitles.length)
+    issues.push("prd: ada judul requirement duplikat");
   const reqIds = ids(prd.requirements).map(normId);
   if(new Set(reqIds).size !== reqIds.length) issues.push("prd: ada ID requirement duplikat");
   const mIds = roadmap && roadmap.milestones ? ids(roadmap.milestones).map(normId) : [];

@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { shouldRunFull } from "./full-review.mjs";
-import { taskList, isDone } from "../ledger/tasks.mjs";
+import { taskList, isDone, nextTask } from "../ledger/tasks.mjs";
 import { log } from "../ledger/log.mjs";
 import { runHardGates } from "../verification/hard-gates.mjs";
 import { short } from "../text.mjs";
@@ -11,7 +11,13 @@ import { runBehavior } from "../browser/run.mjs";
 
 /* GUI agents do full reviews themselves; the worker must recheck their evidence. */
 export function giliranJatuh(ctx, t){
-  if(ctx.state.giliran || !shouldRunFull(ctx, t)) return null;
+  const terminalFailure = arguments[2];
+  const hasFullReview = ctx.gates.reviews.some(review=>review.enabled && review.tier === "full");
+  if(ctx.state.giliran || !hasFullReview || (!terminalFailure && !shouldRunFull(ctx, t))) return null;
+  if(terminalFailure){
+    const next = nextTask(ctx.plan, ctx.state);
+    if(!ctx.state.sinceFull || (next && !next.__blocked)) return null;
+  }
   const list = taskList(ctx.plan);
   const ke = (ctx.state.giliranKe || 0) + 1;
   const g = { id: "GILIRAN-" + ke, from: ctx.state.lastFullMark || (list[0] && list[0].id) || t.id, to: t.id,

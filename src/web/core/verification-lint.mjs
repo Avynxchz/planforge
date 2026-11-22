@@ -164,7 +164,8 @@ export function sanitizePlanChecks(docs){
   for(const task of tasks){
     if(!task || typeof task !== "object") continue;
     if(task.verification != null){
-      const clean = sanitizeVerificationCommand(task.verification);
+      const clean = sanitizeVerificationCommand(task.verification)
+        .replace(/\brequire\s*\(\s*(['"])\/workspace\//gi, "require($1./");
       if(clean !== task.verification){
         task.verification = clean;
         fixes.push((task.id || "?") + ":verification disanitasi");
@@ -179,20 +180,55 @@ export function lintPlanVerifications(docs){
   const issue = (task, code, message)=>({ stage:"audit", taskId:task.id || "?", code, message });
   const tasks = docs && docs.tasks && Array.isArray(docs.tasks.tasks) ? docs.tasks.tasks : [];
   const issues = [];
-  const requireOnlyExit = command=>{
-    const code = sanitizeVerificationCommand(command, true).code;
-    if(code == null
-      || !/\brequire\s*\(/i.test(code)
-      || !/\bprocess\.exit\s*\(\s*0\s*\)/i.test(code)
-      || /\b(?:assert|if|test|it|describe|fetch)\s*(?:\.|\()/i.test(code)
-      || /\bhttps?\s*\.\s*(?:request|get)\s*\(/i.test(code)
-      || /(?<![=<>!])(?:===|!==|==|!=|<=|>=|<|>)/.test(code)) return false;
+  const isNodeEval = command=>/\bnode(?:\.exe)?\s+(?:-e|--eval)\s+/i.test(command);
+  const localRequire = code=>/\brequire\s*\(\s*(['"])(?:\.{1,2}\/)/i.test(code);
+  const smokeRequireOnly = code=>{
+    if(!localRequire(code)) return false;
     const rest = code
-      .replace(/\b(?:const|let|var)\s+(?:\{[^}]*\}|\[[^\]]*\]|[\w$]+)\s*(?:=\s*(?:require\s*\([^)]*\)|true|false|null|undefined|-?\d+(?:\.\d+)?|(['"`])(?:\\.|(?!\1)[^\\])*\1))?\s*;?/gi, "")
-      .replace(/\brequire\s*\([^)]*\)/gi, "")
-      .replace(/\bprocess\.exit\s*\(\s*0\s*\)/gi, "")
-      .replace(/[;,\s()[\]{}]/g, "");
-    return !/\b[\w$]+\s*\(/.test(rest) && !rest;
+      .replace(/\b(?:const|let|var)\s+(?:\{[^}]*\}|\[[^\]]*\]|[\w$]+)\s*=\s*require\s*\([^)]*\)\s*;?/gi, "")
+      .replace(/\brequire\s*\([^)]*\)\s*;?/gi, "")
+      .replace(/[;\s()[\]{}]/g, "");
+    return rest === "";
+  };
+  const hasFailureMechanism = code=>
+    /\bprocess\.exit\s*\(\s*(?!0\s*\))/i.test(code)
+    || /\bprocess\.exitCode\s*=\s*(?!0\b)/i.test(code)
+    || /\bassert(?:\.|\s*\()/i.test(code)
+    || /\bthrow\b/i.test(code)
+    || (/\b(?:fetch|https?\s*\.\s*(?:request|get))\s*\(/i.test(code)
+      && /\.\s*(?:ok|status)\b/i.test(code)
+      && /\b(?:if|assert|throw)\b/i.test(code));
+  const alwaysZeroNodeEval = code=>{
+    if(!isNodeEval(code)) return false;
+    const inspection = sanitizeVerificationCommand(code, true);
+    const source = inspection.code || "";
+    const outcomesOnly = /\bconsole\.log\s*\([^;\n]{0,400}\?\s*(['"`])(?:OK|PASS)\1\s*:\s*(['"`])FAIL\2/i.test(source);
+    const statusOutput = /\bconsole\.log\s*\(\s*(['"`])(?:PASS|valid|OK)\1\s*\)/i.test(source);
+    const exitsZero = /\bprocess\.exit\s*\(\s*0\s*\)/i.test(source);
+    if((outcomesOnly || (statusOutput && exitsZero)) && !hasFailureMechanism(source)) return true;
+    if(!hasFailureMechanism(source) && !smokeRequireOnly(source)) return true;
+    return false;
+  };
+  const contradictoryArrayCheck = code=>{
+    const empty = /\b([A-Za-z_$][\w$]*)\s*\.\s*length\s*={2,3}\s*0\b/g;
+    let match;
+    while((match = empty.exec(code))){
+      const name = match[1];
+      const remainder = code.slice(empty.lastIndex);
+      if(new RegExp("^\\s*&&\\s*" + name + "\\s*\\[\\s*0\\s*\\]\\s*\\.").test(remainder)) return true;
+      const reverse = code.slice(0, match.index);
+      if(new RegExp("\\b" + name + "\\s*\\[\\s*0\\s*\\]\\s*\\.[\\w$]+[^&]*&&\\s*$").test(reverse)) return true;
+    }
+    return false;
+  };
+  const hasLocalServerImport = line=>{
+    const declarations = /\b(?:const|let|var)\s+([\w$]+)\s*=\s*require\s*\(\s*(['"])(\.{1,2}\/[^'"]*(?:server|app)[^'"]*)\2\s*\)/gi;
+    let match;
+    while((match = declarations.exec(line))){
+      const use = new RegExp("\\bhttp\\.createServer\\s*\\(\\s*" + match[1] + "\\s*\\)", "i");
+      if(use.test(line)) return true;
+    }
+    return false;
   };
   const mutatesSource = command=>{
     const sourceFile = /\.(?:js|mjs|ts|html|css|ejs|jsx|tsx)$/i;
@@ -237,10 +273,57 @@ export function lintPlanVerifications(docs){
       || /\b(?:buat|membuat|definisikan|implement(?:asikan)?|tambahkan|add|create|build|develop)\b.{0,50}\b(?:endpoint|route|routing|rute|server|dashboard|halaman|dasbor)\b/i.test(details)
       || /\b(?:endpoint|route|routing|rute|server)\b.{0,50}\b(?:dibuat|ditambahkan|dibangun|diimplementasikan)\b/i.test(details);
   };
+  const servesBehaviorPath = (task, route)=>{
+    const files = Array.isArray(task.files_or_areas) ? task.files_or_areas.map(String)
+      : (Array.isArray(task.files) ? task.files.map(String) : []);
+    const details = files.join(" ") + " " + String(task.title || "") + " " + String(task.description || "");
+    const normalizedRoute = route.replace(/\\/g, "/").replace(/^\/+/, "");
+    if(normalizedRoute && details.replace(/\\/g, "/").toLowerCase().includes(normalizedRoute.toLowerCase())) return true;
+    const serverFile = files.some(file=>/(?:^|[\\/])(?:server|app)\.js$/i.test(file));
+    const staticServing = /\bexpress\.static\b|\bstatic(?:\s+file|\s+asset|\s+serving| server| files?)\b|serve\s+static/i.test(details);
+    if(serverFile && staticServing) return true;
+    return route === "/" && createsRoute(task);
+  };
+  const routeDependencies = (task, taskIndex, route)=>{
+    if(servesBehaviorPath(task, route)) return true;
+    const byId = new Map(tasks.map((candidate,index)=>[String(candidate && candidate.id || ""), { candidate:candidate || {}, index }]));
+    const pending = Array.isArray(task.depends_on) ? task.depends_on.map(String) : [];
+    const seen = new Set();
+    while(pending.length){
+      const id = pending.pop();
+      if(seen.has(id)) continue;
+      seen.add(id);
+      const dependency = byId.get(id);
+      if(!dependency || dependency.index >= taskIndex) continue;
+      if(servesBehaviorPath(dependency.candidate, route)) return true;
+      pending.push(...(Array.isArray(dependency.candidate.depends_on) ? dependency.candidate.depends_on.map(String) : []));
+    }
+    return false;
+  };
+  const verificationModuleRefs = line=>{
+    const refs = [];
+    const regex = /\brequire\s*\(\s*(['"])(\.{1,2}\/[^'"]+)\1\s*\)/gi;
+    let match;
+    while((match = regex.exec(line))) refs.push(match[2].replace(/\\/g, "/").replace(/^\.\//, ""));
+    return refs;
+  };
+  const fieldPairs = [["nama","name"],["jumlah","quantity"],["lokasi","location"]];
+  const taskList = tasks.map(task=>task || {});
+  const allCriteria = taskList.flatMap(task=>
+    [task.title, task.description, ...(Array.isArray(task.acceptance_criteria) ? task.acceptance_criteria : [])]).join(" ");
+  const allVerifications = taskList.map(task=>String(task.verification || "")).join("\n");
+  const languageMix = fieldPairs.some(([local, english])=>
+    new RegExp("\\b" + local + "\\b", "i").test(allCriteria)
+    && new RegExp("\\." + english + "\\b", "i").test(allVerifications)
+    || new RegExp("\\b" + english + "\\b", "i").test(allCriteria)
+    && new RegExp("\\." + local + "\\b", "i").test(allVerifications));
+  const serverPaths = new Set();
   for(let taskIndex = 0; taskIndex < tasks.length; taskIndex++){
     const task = tasks[taskIndex] || {};
     const verification = String(task && task.verification || "");
     const files = Array.isArray(task && task.files_or_areas) ? task.files_or_areas.map(String) : [];
+    for(const match of verification.matchAll(/\brequire\s*\(\s*(['"])(\.{1,2}\/(?:src\/)?server\.js)\1\s*\)/gi))
+      serverPaths.add(match[2].replace(/\\/g, "/"));
     for(const line of verification.split(/\r?\n/)){
       if(/\brequire\s*\(\s*(['"])(?:puppeteer|playwright)\1\s*\)|\bimport\s*\(\s*(['"])node-fetch\2\s*\)/i.test(line))
         issues.push(issue(task, "unavailable-dependency", "verification memakai puppeteer/playwright/node-fetch yang belum terpasang."));
@@ -250,12 +333,19 @@ export function lintPlanVerifications(docs){
         issues.push(issue(task, "dangling-localhost", "verification mengakses localhost tanpa menyalakan server lewat .listen(...) pada perintah yang sama."));
       if(/\bejs\.render\s*\(\s*(['"`])\s*</i.test(line) && !/\bfs\.readFileSync\s*\(/i.test(line))
         issues.push(issue(task, "hardcoded-ejs-template", "verification merender template HTML literal dengan ejs.render; baca file template asli memakai fs.readFileSync."));
-      if(/\bhttp\.createServer\s*\(/i.test(line) && files.some(file=>/(?:^|[\\/])(?:server\.js|app\.js|[^\\/]*route[^\\/]*)(?:$|[\\/])/i.test(file)))
+      if(/\bhttp\.createServer\s*\(/i.test(line) && files.some(file=>/(?:^|[\\/])(?:server\.js|app\.js|[^\\/]*route[^\\/]*)(?:$|[\\/])/i.test(file))
+        && !hasLocalServerImport(line))
         issues.push(issue(task, "stub-application-server", "verification membuat stub http.createServer pada task yang menyentuh server/route aplikasi."));
-      if((/\bconsole\.log\s*\([^;\n]{0,300}\?[^;\n]{0,180}\bPASS\b[^;\n]{0,180}:[^;\n]{0,180}\bFAIL\b/i.test(line)
-        && !/\bprocess\.exit\s*\(\s*1\s*\)|\bassert(?:\.|\s*\()/i.test(verification))
-        || requireOnlyExit(line))
+      if((/\bconsole\.log\s*\([^;\n]{0,400}\?\s*(['"`])(?:OK|PASS)\1\s*:\s*(['"`])FAIL\2/i.test(line)
+        && !hasFailureMechanism(verification))
+        || alwaysZeroNodeEval(line))
         issues.push(issue(task, "always-zero-verification", "verification tidak menjalankan assertion/kondisi yang dapat menggagalkan proses; hasil gagal bisa tetap exit 0."));
+      if(isNodeEval(line) && /\bprocess\.exit\s*\(\s*(['"])[^'"]*\1\s*\)/i.test(sanitizeVerificationCommand(line, true).code || ""))
+        issues.push(issue(task, "invalid-verification-exit", "process.exit menerima literal string; Node.js melempar ERR_INVALID_ARG_TYPE dan verification selalu gagal."));
+      if(/\brequire\s*\(\s*(['"])(?:\/workspace\/|\/home\/)[^'"]*\1\s*\)|\bcd\s+\/tmp(?:\/|\s|$)/i.test(line))
+        issues.push(issue(task, "hardcoded-workspace-path", "verification memakai path absolut khusus lingkungan; gunakan path relatif proyek."));
+      if(contradictoryArrayCheck(sanitizeVerificationCommand(line, true).code || ""))
+        issues.push(issue(task, "contradictory-verification", "verification memeriksa array yang sama sebagai kosong dan sekaligus mengakses elemen pertama."));
       const inspection = sanitizeVerificationCommand(line, true);
       if(inspection.background)
         issues.push(issue(task, "unsafe-background-process", "verification menjalankan proses latar belakang dengan '&'; proses dapat lolos dari gerbang dan tetap hidup setelah pemeriksaan."));
@@ -270,28 +360,24 @@ export function lintPlanVerifications(docs){
     }
     const behaviorUrl = String(task.behavior && task.behavior.url || "");
     if(/^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?(?:[/?#]|$)/i.test(behaviorUrl)){
-      const dependsOn = Array.isArray(task.depends_on) ? task.depends_on.map(String) : [];
+      const route = new URL(behaviorUrl).pathname || "/";
       const creators = tasks.map((candidate,index)=>({ candidate:candidate || {}, index }))
         .filter(({index,candidate})=>index !== taskIndex && createsRoute(candidate));
-      if(creators.length && !createsRoute(task)){
-        const byId = new Map(tasks.map((candidate,index)=>[String(candidate && candidate.id || ""), { candidate:candidate || {}, index }]));
-        const pending = dependsOn.slice(), seen = new Set();
-        let earlierCreator = false;
-        while(pending.length){
-          const id = pending.pop();
-          if(seen.has(id)) continue;
-          seen.add(id);
-          const dependency = byId.get(id);
-          if(!dependency || dependency.index >= taskIndex) continue;
-          if(createsRoute(dependency.candidate)){ earlierCreator = true; break; }
-          pending.push(...(Array.isArray(dependency.candidate.depends_on)
-            ? dependency.candidate.depends_on.map(String) : []));
-        }
-        if(!earlierCreator)
-          issues.push(issue(task, "behavior-route-order", "behavior localhost mendahului atau tidak bergantung pada task pembuat server/route: "
-            + creators.map(x=>x.candidate.id || "?").join(", ") + "."));
-      }
+      if(!routeDependencies(task, taskIndex, route))
+        issues.push(issue(task, "behavior-route-order", "behavior " + route + " mendahului atau tidak bergantung pada task yang secara spesifik menyajikan/mendefinisikan route tersebut: "
+          + (creators.map(x=>x.candidate.id || "?").join(", ") || "task route/static tidak ditemukan") + "."));
+    }
+    for(const ref of verificationModuleRefs(verification)){
+      const prior = taskList.slice(0, taskIndex).findIndex(candidate=>
+        (Array.isArray(candidate.files_or_areas) ? candidate.files_or_areas : [])
+          .some(file=>String(file).replace(/\\/g, "/").replace(/^\.\//, "") === ref));
+      if(prior >= 0 && !(Array.isArray(task.depends_on) && task.depends_on.length))
+        issues.push(issue(task, "missing-module-dependency", "task merujuk modul " + ref + " dari task sebelumnya tetapi tidak memiliki depends_on."));
     }
   }
+  if(serverPaths.size > 1)
+    issues.push(issue(taskList[taskList.length - 1] || {}, "split-server-entry-path", "verification memakai lebih dari satu path entry server dalam satu plan: " + [...serverPaths].join(", ") + "."));
+  if(languageMix)
+    issues.push(issue(taskList[taskList.length - 1] || {}, "mixed-model-field-language", "kriteria/task dan assertion verification mencampur nama properti model Indonesia dan Inggris."));
   return issues;
 }

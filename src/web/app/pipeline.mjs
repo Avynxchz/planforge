@@ -5,7 +5,7 @@ import { draw, drawActions, hentiJam, mulaiJam, setStage, showView } from "./vie
 import { DEMO } from "../core/demo.mjs";
 import { extractJson } from "../core/plan-normalize.mjs";
 import { applyImprovingPatches, mergeTaskChunk, taskChunks, terapkanJawabanClarify } from "../core/plan-ops.mjs";
-import { collectPlanIssues, masalahStrukturRencana } from "../core/plan-readiness.mjs";
+import { collectPlanIssues } from "../core/plan-readiness.mjs";
 import { lintPlanVerifications } from "../core/verification-lint.mjs";
 import { STAGES } from "../core/plan-schema.mjs";
 import { buildStageMessages } from "../core/prompts.mjs";
@@ -53,9 +53,8 @@ export async function tambalKonvergen(cfg){
     total.afterProblems = result.afterProblems;
     saveDocs();
   }
-  const structure = masalahStrukturRencana(state.docs, starter);
-  state.issues = collectPlanIssues(state.docs);
-  state.docs.issues = state.issues.concat(structure);
+  state.issues = collectPlanIssues(state.docs, starter);
+  state.docs.issues = state.issues;
   return total;
 }
 
@@ -137,9 +136,8 @@ export function recordUsage(stage, model, usage){
 
 export async function runStage(stage, cfg, focus){
   if(stage === "audit"){
-    const structure = masalahStrukturRencana(state.docs, starterAktif(cfg));
-    state.issues = collectPlanIssues(state.docs);
-    state.docs.issues = state.issues.concat(structure);
+    state.issues = collectPlanIssues(state.docs, starterAktif(cfg));
+    state.docs.issues = state.issues;
   }
   setStage(stage, "run", focus ? (focus.label || "mikir…") : "mikir…");
   mulaiJam(stage);
@@ -387,18 +385,16 @@ export async function runAll(force){
     if(ran){ state.ideaFp = ideaFp(); state.genBy = cfg.provider; }  // rekam ide+provider hanya kalau ada tahap yang benar-benar dibuat ulang
     // rapikan dulu (gratis, deterministik) — baru validator, supaya model tidak dibayar untuk kerjaan string
     const nz = tidyPlan();
-    const structure = masalahStrukturRencana(state.docs, starterAktif(cfg));
-    state.issues = collectPlanIssues(state.docs);
-    state.docs.issues = state.issues.concat(structure);
+    state.issues = collectPlanIssues(state.docs, starterAktif(cfg));
+    state.docs.issues = state.issues;
     const beforeIssues = state.docs.issues.length;
     if(nz.fixes.length) state.auditNote = "Rapikan otomatis: " + nz.fixes.length + " koreksi bentuk (ID, nama fitur, status task) — celah " + beforeIssues + " → " + state.issues.length + ".";
     if(state.docs.issues.length && cfg.provider !== "demo" && el("autoTambal").checked){
       setStage("audit", "run", state.docs.issues.length + " celah");
       const total = await tambalKonvergen(cfg);
       tidyPlan();
-      const afterStructure = masalahStrukturRencana(state.docs, starterAktif(cfg));
-      state.issues = collectPlanIssues(state.docs);
-      state.docs.issues = state.issues.concat(afterStructure);
+      state.issues = collectPlanIssues(state.docs, starterAktif(cfg));
+      state.docs.issues = state.issues;
       state.auditNote = (nz.fixes.length ? state.auditNote + " " : "") + "Cek rencana: " + total.applied + " patch diterapkan dalam "
         + total.rounds + " ronde, celah " + total.beforeProblems + " → " + state.docs.issues.length + "."
         + (total.skipped.length ? " " + total.skipped.slice(0,3).join("; ") + "." : "")

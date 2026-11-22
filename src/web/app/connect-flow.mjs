@@ -15,7 +15,8 @@ export async function connectSinkron(){
   const last = state.lastConnect;
   if(!last || !last.handle){ state.runnerNote = "Belum ada folder yang pernah di-Connect."; draw("runner"); return; }
   tidyPlan();
-  const audit = rubrikRencana(state.docs, collectPlanIssues(state.docs), starterAktif(readCfg()));
+  const starter = starterAktif(readCfg());
+  const audit = rubrikRencana(state.docs, collectPlanIssues(state.docs, starter), starter);
   if(!audit.siap){
     state.runnerNote = "Sinkron DITAHAN — rencana masih " + audit.label + ": " + audit.error.slice(0,3).join(" · ")
       + ". Bereskan dulu supaya rencana rusak tidak sampai ke folder proyek.";
@@ -64,7 +65,8 @@ export async function connectPilih(){
      atau lebih parah mengerjakan task yang file dasarnya tidak pernah ada. */
   if(el("runAll").disabled){ state.runnerNote = "Connect ditahan: pipeline masih berjalan. Tunggu semua tahap selesai dulu."; draw("runner"); return; }
   tidyPlan();
-  const audit = rubrikRencana(state.docs, collectPlanIssues(state.docs), starterAktif(readCfg()));
+  const starter = starterAktif(readCfg());
+  const audit = rubrikRencana(state.docs, collectPlanIssues(state.docs, starter), starter);
   if(!audit.siap){
     state.runnerNote = "Connect DITAHAN — " + audit.label + " (skor " + audit.skor + "): "
       + audit.error.slice(0, 4).join(" · ") + (audit.error.length > 4 ? " (+" + (audit.error.length-4) + " lagi)" : "")
@@ -91,7 +93,8 @@ export async function connectPilih(){
 
 export async function connectCek(){
   const c = state.connect; if(!c) return;
-  const audit = rubrikRencana(state.docs, collectPlanIssues(state.docs), starterAktif(readCfg()));
+  const starter = starterAktif(readCfg());
+  const audit = rubrikRencana(state.docs, collectPlanIssues(state.docs, starter), starter);
   if(!audit.siap){ c.error = "Rencana belum siap (" + audit.label + "): " + audit.error.slice(0,3).join(" · "); draw("runner"); return; }
   const bersih = String(c.path || "").trim().replace(/\\/g, "/").replace(/\/+$/, "");
   if(!/^[A-Za-z]:\//.test(bersih) && !bersih.startsWith("/")){

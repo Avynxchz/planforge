@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "baselineSha256": "47ddd301380749fc7c05da452c1aab4a469bd7f908db0683b081c3693acb303b",
+  "baselineSha256": "2a369f0b82c09052ab8db0bbed8d6516d57d2c1e481a195b9501a4ef430d7ee5",
   "normalization": "Acorn AST without source offsets, raw literal spelling or comments. Export wrappers are compared separately by the captured public characterization.",
   "declarations": [
     {
@@ -361,7 +361,7 @@
         "giliranJatuh"
       ],
       "kind": "function",
-      "sha256": "1909f0a73ba1878e30b00afdc4f512e2ef03f71618b5ac34832ed8cc94342ad7"
+      "sha256": "efaf0233792c5db44c2e535486256dcf4dec29353245cf094dbd39d5bac417d4"
     },
     {
       "names": [
@@ -550,7 +550,7 @@
         "mcpHandle"
       ],
       "kind": "function",
-      "sha256": "3cb871d58457582be8473df079f589375f004ff1c08e785394f3e229f2189312"
+      "sha256": "ddf28a307595e15c31316b18a80c88e4d8e8aa9dbd8af456af1ee7d4fd9d84c4"
     },
     {
       "names": [

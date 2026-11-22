@@ -1422,6 +1422,16 @@ t("giliran gagal mengunci next_task; hanya manusia yang membuka (--ulang / --lew
     "giliran selanjutnya harus melanjutkan dari task setelah rentang yang dilewati");
 });
 
+t("mark_failed membuka giliran penutup bila pekerjaan selesai tersisa dan task berikutnya terblokir", ()=>{
+  const dir = repoGiliran();
+  const ctx = W.loadCtx(dir);
+  selesaikan(ctx, dir, "T-001", "a.js");
+  const failed = panggil(ctx, "mark_failed", { id:"T-002", reason:"verification merah" });
+  assert.match(failed, /BERIKUTNYA: GILIRAN-1/);
+  assert.match(panggil(ctx, "next_task"), /GILIRAN-1: GILIRAN GERBANG PENUH atas T-001\.\.T-002/);
+  assert.equal(W.loadCtx(dir).state.sinceFull, 1);
+});
+
 t("buktiGiliran memulihkan state data setelah tiap task diverifikasi ulang", ()=>{
   const write = '"' + NODE + '" -e "require(\'fs\').writeFileSync(\'data/value.json\',\'changed\')"';
   const failAfterWrite = '"' + NODE + '" -e "require(\'fs\').writeFileSync(\'data/value.json\',\'broken\'); process.exit(1)"';

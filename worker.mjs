@@ -1571,7 +1571,13 @@ import fs11 from "node:fs";
 import os3 from "node:os";
 import path12 from "node:path";
 function giliranJatuh(ctx, t) {
-  if (ctx.state.giliran || !shouldRunFull(ctx, t)) return null;
+  const terminalFailure = arguments[2];
+  const hasFullReview = ctx.gates.reviews.some((review) => review.enabled && review.tier === "full");
+  if (ctx.state.giliran || !hasFullReview || !terminalFailure && !shouldRunFull(ctx, t)) return null;
+  if (terminalFailure) {
+    const next = nextTask(ctx.plan, ctx.state);
+    if (!ctx.state.sinceFull || next && !next.__blocked) return null;
+  }
   const list = taskList(ctx.plan);
   const ke = (ctx.state.giliranKe || 0) + 1;
   const g = {
@@ -2247,8 +2253,11 @@ function mcpHandle(msg, ctx, opsi) {
       const s = ctx.state.tasks[a.id] || (ctx.state.tasks[a.id] = {});
       s.status = "gagal";
       s.note = short(a.reason, 200);
+      const task = ctx.plan.tasks.tasks.find((x) => x.id === a.id);
+      const next = nextTask(ctx.plan, ctx.state);
+      const giliranBaru = task && ctx.state.sinceFull > 0 && (!next || next.__blocked) ? giliranJatuh(ctx, task, true) : null;
       saveCtx(ctx);
-      return txt("ok, " + a.id + " ditandai gagal");
+      return txt("ok, " + a.id + " ditandai gagal" + (giliranBaru ? "\nBERIKUTNYA: " + giliranBaru.id + " — audit penutup atas pekerjaan selesai sebelum run berhenti. Panggil next_task untuk kartunya." : ""));
     }
     if (t === "mark_blocked") {
       kerja(1);

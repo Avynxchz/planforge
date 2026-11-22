@@ -32,7 +32,8 @@ export function renderRunner(){
     + "<span class='cost'>" + (state.workerSource ? "worker.mjs terbaca, ikut ke paket" : "worker.mjs belum terbaca — jalankan `node worker.mjs embed` lalu muat ulang") + "</span></div>");
   if(state.runnerNote) h.push("<p class='" + (/DITAHAN|ditahan|gagal|Berhenti/i.test(state.runnerNote) ? "warn" : "ok") + "'>" + esc(state.runnerNote) + "</p>");
   /* rubrik kualitas + gerbang 1 klik: tampil di atas panel Connect supaya kelihatan duluan */
-  const rubrik = rubrikRencana(d, collectPlanIssues(d), starterAktif(readCfg()));
+  const starter = starterAktif(readCfg());
+  const rubrik = rubrikRencana(d, collectPlanIssues(d, starter), starter);
   h.push("<p class='" + (rubrik.siap ? "ok" : "warn") + "'><b>Kualitas rencana: " + esc(rubrik.label) + " (skor " + rubrik.skor + ")</b>"
     + (rubrik.siap ? " — aman dikirim ke folder proyek." : " — " + esc(rubrik.error.slice(0,3).join(" · "))
       + (rubrik.error.length > 3 ? " (+" + (rubrik.error.length-3) + " lagi)" : "") + ". Connect ditahan sampai beres.") + "</p>");

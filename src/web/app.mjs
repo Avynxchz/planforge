@@ -41,7 +41,7 @@ el("out").addEventListener("click", (e)=>{
   if(!t) return;
   const kini = normStatus(t.status) || (String(t.status || "").trim().toLowerCase() === "terkendala" ? "terkendala" : "belum mulai");
   t.status = order[(order.indexOf(kini) + 1) % order.length];
-  state.issues = collectPlanIssues(state.docs);
+  state.issues = collectPlanIssues(state.docs, !!readCfg().starter);
   state.docs.issues = state.issues;
   saveDocs(); refreshRail();
   draw(el("tabs").querySelector(".tab.on").dataset.view);

@@ -5,6 +5,7 @@ import { normalizePlan } from "../core/plan-normalize.mjs";
 import { normalisasiAliasBehavior } from "../core/behavior-alias.mjs";
 import { sanitizePlanChecks } from "../core/verification-lint.mjs";
 import { collectPlanIssues } from "../core/plan-readiness.mjs";
+import { starterAktif } from "../core/starter.mjs";
 
 /* ===================== UI + TRANSPORT ===================== */
 export const PROFILES = {
@@ -101,7 +102,9 @@ export function restore(){
     el("apiKey").value = k; el("saveKey").checked = !!readKeyRecord();
     const docs = JSON.parse(localStorage.getItem(STATE_NAME) || "null");
     if(docs && (docs.clarify || docs.prd || docs.roadmap || docs.tasks)){
-      state.docs = docs; state.issues = docs.issues || state.issues;
+      state.docs = docs;
+      state.issues = collectPlanIssues(docs, starterAktif(readCfg()));
+      state.docs.issues = state.issues;
       state.savedAt = docs.savedAt || null; state.ideaFp = docs.ideaFp || null; state.genBy = docs.genBy || null;
       state.autoFixes = Array.isArray(docs.autoFixes) ? docs.autoFixes : [];
       state.auditNote = docs.auditNote || null;
@@ -179,7 +182,7 @@ export function tidyPlan(note){
   normalisasiAliasBehavior(state.docs);
   const checkFixes = sanitizePlanChecks(state.docs);
   if(checkFixes.length) state.autoFixes = (state.autoFixes || []).concat(checkFixes);
-  state.issues = collectPlanIssues(state.docs);
+  state.issues = collectPlanIssues(state.docs, starterAktif(readCfg()));
   state.docs.issues = state.issues;
   if(note) state.auditNote = note;
   saveDocs();

@@ -95,7 +95,8 @@ export function normalizePlan(prd, roadmap, tasks){
         synthesized.set(id, {
           id,
           title: features.length ? "Kebutuhan " + features[0] : "Kebutuhan " + id,
-          description: summary || "Kebutuhan disintesis dari task yang merujuk " + id + ".",
+          description: "Requirement sintetis otomatis dari task yang merujuk " + id
+            + (summary ? ": " + summary : "."),
           acceptance_criteria: criteria.length ? criteria : ["Task yang merujuk " + id + " memenuhi hasil yang direncanakan."],
           priority:"must",
           scope:"mvp"

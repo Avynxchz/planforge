@@ -143,9 +143,9 @@ try{
   const gerbang = await nilai(`(()=>{
     const docs = { tasks:{ tasks:[{ id:"T-002", title:"Definisikan token warna gelap", description:"atur warna", files_or_areas:["index.html"], verification:"npm run build" }] } };
     const r = rubrikRencana(docs, []);
-    return { siap:r.siap, skor:r.skor, pertama:r.error[0] || "" };
+    return { siap:r.siap, skor:r.skor, scaffold:r.error.some(error=>/bukan T-001|bukan scaffold/.test(error)) };
   })()`);
-  catat("gerbang kualitas menolak rencana tanpa T-001 scaffold", gerbang.siap === false && /bukan T-001|bukan scaffold/.test(gerbang.pertama), JSON.stringify(gerbang));
+  catat("gerbang kualitas menolak rencana tanpa T-001 scaffold", gerbang.siap === false && gerbang.scaffold, JSON.stringify(gerbang));
   const sinkron = await nilai(`(()=>{
     const simpanDocs = state.docs, simpanLast = state.lastConnect;
     state.docs = JSON.parse(JSON.stringify(DEMO));
@@ -687,7 +687,10 @@ try{
     const sd = state.docs, si = state.issues;
     const sel = document.getElementById("starterPilih"); const sv = sel ? sel.value : "";
     try{
-      state.docs = { tasks:{ tasks:[{ id:"T-001", title:"Buat migrasi tabel categories dan expenses di atas starter", description:"tambah tabel fitur di DB starter yang sudah jalan", files_or_areas:["db/migrations/001.sql","lib/db.js"], verification:"npm test", acceptance_criteria:["tabel dibuat"] }] } };
+      state.docs = JSON.parse(JSON.stringify(DEMO));
+      Object.assign(state.docs.tasks.tasks[0], {title:"Buat migrasi tabel categories dan expenses di atas starter",
+        description:"tambah tabel fitur di DB starter yang sudah jalan", files_or_areas:["db/migrations/001.sql","lib/db.js"], verification:"npm test"});
+      delete state.docs.tasks.tasks[0].behavior;
       state.issues = [];
       if(sel) sel.value = "nextjs-fullstack";
       const aktif = starterAktif(readCfg());
@@ -703,7 +706,10 @@ try{
     const sd = state.docs, si = state.issues;
     const sel = document.getElementById("starterPilih"); const sv = sel ? sel.value : "";
     try{
-      state.docs = { tasks:{ tasks:[{ id:"T-001", title:"Buat migrasi tabel categories dan expenses", description:"tambah tabel fitur", files_or_areas:["db/001.sql"], verification:"npm test", acceptance_criteria:["tabel dibuat"] }] } };
+      state.docs = JSON.parse(JSON.stringify(DEMO));
+      Object.assign(state.docs.tasks.tasks[0], {title:"Buat migrasi tabel categories dan expenses",
+        description:"tambah tabel fitur", files_or_areas:["db/001.sql"], verification:"npm test"});
+      delete state.docs.tasks.tasks[0].behavior;
       state.issues = [];
       if(sel) sel.value = "";
       const aktif = starterAktif(readCfg());
@@ -720,7 +726,9 @@ try{
   const envUi = await nilai(`(()=>{
     const sd=state.docs, si=state.issues, sel=el("starterPilih"), sv=sel.value;
     try{
-      state.docs={tasks:{tasks:[{id:"T-001",title:"Tambah tabel",verification:"npm run migrate",files_or_areas:["db/schema.sql"],acceptance_criteria:["tabel tersedia"]}]}};
+      state.docs=JSON.parse(JSON.stringify(DEMO));
+      Object.assign(state.docs.tasks.tasks[0], {title:"Tambah tabel",verification:"npm run migrate",files_or_areas:["db/schema.sql"]});
+      delete state.docs.tasks.tasks[0].behavior;
       state.issues=[]; sel.value="nextjs-fullstack";
       const good=rubrikRencana(state.docs,[],true); draw("issues");
       const issueText=el("out").textContent;

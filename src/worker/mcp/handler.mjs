@@ -167,7 +167,19 @@ export function mcpHandle(msg, ctx, opsi){
       log(ctx, gl.id + " ditandai gagal lewat MCP: " + gl.gagal + " — next_task berhenti sampai manusia memutuskan");
       return txt("ok, " + gl.id + " ditandai gagal. BERHENTI: task baru tidak diserahkan sampai manusia menjalankan `node worker.mjs giliran --ulang` atau `--lewati`.");
     }
-    if(t === "mark_failed"){ kerja(1); const s = ctx.state.tasks[a.id] || (ctx.state.tasks[a.id] = {}); s.status = "gagal"; s.note = short(a.reason, 200); saveCtx(ctx); return txt("ok, " + a.id + " ditandai gagal"); }
+    if(t === "mark_failed"){
+      kerja(1);
+      const s = ctx.state.tasks[a.id] || (ctx.state.tasks[a.id] = {});
+      s.status = "gagal"; s.note = short(a.reason, 200);
+      const task = ctx.plan.tasks.tasks.find(x=>x.id === a.id);
+      const next = nextTask(ctx.plan, ctx.state);
+      const giliranBaru = task && ctx.state.sinceFull > 0 && (!next || next.__blocked)
+        ? giliranJatuh(ctx, task, true) : null;
+      saveCtx(ctx);
+      return txt("ok, " + a.id + " ditandai gagal"
+        + (giliranBaru ? "\nBERIKUTNYA: " + giliranBaru.id + " — audit penutup atas pekerjaan selesai sebelum run berhenti. Panggil next_task untuk kartunya."
+          : ""));
+    }
     if(t === "mark_blocked"){
       kerja(1);
       const task = ctx.plan.tasks.tasks.find(x=>x.id === a.id);

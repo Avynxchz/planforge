@@ -10,8 +10,9 @@ import { lintPlanVerifications } from "./verification-lint.mjs";
 export const KATA_SCAFFOLD = /scaffold|kerangka|skeleton|setup|inisial|struktur dasar|bootstrap|bangun dasar/i;
 export const potongTeks = (s, n)=>{ const x = String(s == null ? "" : s); return x.length > n ? x.slice(0, n) + "..." : x; };
 export function collectPlanIssues(docs){
+  const starter = arguments[1];
   return validatePlan(docs && docs.prd, docs && docs.roadmap, docs && docs.tasks)
-    .concat(lintPlanVerifications(docs));
+    .concat(lintPlanVerifications(docs), masalahStrukturRencana(docs, starter));
 }
 export function masalahStrukturRencana(docs, starter){
   const out = [];
@@ -103,8 +104,8 @@ export function masalahStrukturRencana(docs, starter){
   return out;
 }
 export function rubrikRencana(docs, issues, starter){
-  const error = (Array.isArray(issues) ? issues : []).map(x=>x && typeof x === "object" ? String(x.message || JSON.stringify(x)) : String(x))
-    .concat(masalahStrukturRencana(docs, starter));
+  const allIssues = collectPlanIssues(docs, starter);
+  const error = allIssues.map(x=>x && typeof x === "object" ? String(x.message || JSON.stringify(x)) : String(x));
   const skor = Math.max(0, 100 - error.length * 20);
   return { siap: error.length === 0, skor, error, warn:saranLingkungan(starter), label: error.length ? "Perlu diperbaiki" : "Siap dikirim (lingkungan belum diverifikasi)" };
 }
